@@ -4,82 +4,96 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#111827">
-<title>My Progress Tracker</title>
+<title>Progress Tracker V3</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
-:root{--bg:#f4f5f7;--card:#fff;--ink:#17191c;--muted:#707780;--line:#cfd4da;--soft:#f0f2f5;--accent:#111827}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
-.app{max-width:1250px;margin:auto;padding:14px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px #00000008}
-.header{padding:20px}.top{display:flex;align-items:center;justify-content:space-between;gap:14px}.title{font:700 30px Georgia,serif;letter-spacing:1px}.sub{color:var(--muted);font-size:13px;margin-top:5px}
-.controls{display:flex;gap:8px;flex-wrap:wrap}.controls input,.controls button,.add input,.add button{height:42px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:0 12px;font-size:14px}.controls button,.add button{background:var(--accent);color:#fff;border-color:var(--accent);cursor:pointer}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}.stat{background:var(--soft);border-radius:12px;padding:12px}.stat b{font-size:23px;display:block}.stat span{font-size:12px;color:var(--muted)}
-.progress{display:flex;align-items:center;gap:12px;margin-top:14px}.ring{width:58px;height:58px;border-radius:50%;background:conic-gradient(var(--accent) var(--p),#e3e6ea 0);display:grid;place-items:center;flex:none}.ring:after{content:attr(data-v);width:42px;height:42px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:11px;font-weight:700}.bar{height:10px;background:#e7e9ec;border-radius:20px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent);width:0;transition:.25s}.message{font-size:12px;color:var(--muted);margin-top:7px}
-h2{text-align:center;font-size:16px;margin:0 0 12px;letter-spacing:.3px}.scroll{overflow:auto;border:1px solid var(--line);border-radius:10px}.grid{border-collapse:collapse;min-width:1060px;width:100%;table-layout:fixed}.grid th,.grid td{border:1px solid var(--line);height:31px;text-align:center;font-size:11px}.grid th{background:#f3f4f6;font-weight:700}.grid th:first-child,.grid td:first-child{width:220px;min-width:220px;position:sticky;left:0;background:#fff;z-index:2;text-align:left;padding:0 8px}.grid th:first-child{background:#f3f4f6}.day{cursor:pointer}.day.done{background:var(--accent);color:#fff;font-weight:700}.habit-name{display:flex;align-items:center;justify-content:space-between;gap:5px}.x{border:0;background:transparent;color:#9aa0a6;cursor:pointer;font-size:16px}
-.add{display:flex;gap:8px;margin-top:10px}.add input{flex:1}.add button{white-space:nowrap}
-.sleep{display:grid;grid-template-columns:100px repeat(31,1fr);min-width:1060px}.sleep>div{height:31px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px}.sleep .head{background:#f3f4f6;font-weight:700}.sleep .cell{cursor:pointer}.sleep .cell.selected{background:var(--accent);color:#fff;font-weight:700}
-.notes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.notes label{display:block;text-align:center;font-size:13px;font-weight:700;margin-bottom:7px}.notes textarea{width:100%;min-height:135px;resize:vertical;border:1px solid var(--line);border-radius:10px;padding:11px;font:14px Arial}
-.actions{display:flex;justify-content:center;gap:8px;margin-top:12px}.actions button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 13px;cursor:pointer}.footer{text-align:center;color:#8a9097;font-size:11px;padding:5px}
-@media(max-width:700px){.app{padding:8px}.header{padding:14px}.top{flex-direction:column;align-items:stretch}.title{font-size:24px;text-align:center}.sub{text-align:center}.controls>*{flex:1;min-width:110px}.stats{grid-template-columns:repeat(2,1fr)}.notes{grid-template-columns:1fr}.card{padding:12px}.grid th:first-child,.grid td:first-child{width:180px;min-width:180px}}
-@media print{body{background:#fff}.controls,.add,.actions{display:none}.card{box-shadow:none;break-inside:avoid}}
+:root{--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#738096;--line:#e5e9f1;--a:#635bff;--a2:#7c3aed;--good:#16a34a;--soft:#eef0ff;--danger:#ef4444;--shadow:0 8px 30px rgba(25,35,60,.08)}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
+body.dark{--bg:#0a1020;--card:#141b2d;--text:#f4f6ff;--muted:#9ca9c2;--line:#29334b;--soft:#202846;--shadow:0 8px 30px rgba(0,0,0,.25)}
+button,input,textarea,select{font:inherit}button{cursor:pointer}.app{max-width:1120px;margin:auto;padding:12px 14px 90px}
+.top{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:8px 0 15px}.title h1{font-size:25px;margin:0}.title p{margin:3px 0;color:var(--muted);font-size:13px}
+.actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.btn{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:11px;padding:9px 11px}.primary{background:var(--a);border-color:var(--a);color:white}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px;margin-bottom:13px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:11px}.stats{grid-template-columns:repeat(5,1fr)}.stat{padding:13px;border-radius:15px;background:var(--soft)}.stat small{color:var(--muted)}.stat b{font-size:23px;display:block;margin-top:3px}
+.tabs{display:flex;gap:7px;overflow:auto;margin-bottom:13px;padding-bottom:2px}.tab{white-space:nowrap}.tab.active{background:var(--a);color:white;border-color:var(--a)}
+.section{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:11px}.section h2{font-size:18px;margin:0}
+input,textarea,select{width:100%;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:11px;padding:10px 11px;outline:none}textarea{min-height:90px;resize:vertical}
+.form{display:grid;grid-template-columns:1.5fr .7fr auto;gap:7px}.two{grid-template-columns:1fr 1fr}
+.habit{border:1px solid var(--line);border-radius:15px;padding:11px;margin:9px 0}.habittop{display:flex;align-items:center;gap:8px}.habittop strong{flex:1}.mini{font-size:12px;color:var(--muted)}.bar{height:8px;border-radius:9px;background:var(--bg);overflow:hidden;margin:9px 0}.bar i{height:100%;display:block;background:linear-gradient(90deg,var(--a),var(--a2))}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.day{text-align:center;font-size:9px;color:var(--muted)}.day button{width:100%;aspect-ratio:1;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--muted);font-size:10px}.day button.done{background:var(--good);border-color:var(--good);color:white}
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.cell{min-height:48px;border:1px solid var(--line);border-radius:9px;padding:5px;font-size:10px}.cell b{display:block;font-size:12px}.l1{background:#e1f7e7}.l2{background:#b7e9c4}.l3{background:#68ce83}.l4{background:#16a34a;color:#fff}.dark .l1{background:#173523}.dark .l2{background:#205f35}.dark .l3{background:#238446}.dark .l4{background:#16a34a}
+.chart{display:flex;align-items:flex-end;height:160px;gap:4px;padding-top:15px}.col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;text-align:center;font-size:8px;color:var(--muted)}.col i{display:block;min-height:3px;background:var(--a);border-radius:5px 5px 2px 2px}.badge{display:inline-block;background:var(--soft);border-radius:20px;padding:7px 10px;margin:3px;font-size:12px}.empty{text-align:center;color:var(--muted);padding:20px}.danger{background:var(--danger);color:white;border-color:var(--danger)}
+.bottom{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;z-index:10}.bottom button{flex:1;max-width:150px;background:none;color:var(--muted);border:0;padding:9px 4px;font-size:11px}.bottom button.active{color:var(--a);font-weight:700}
+.kpi{font-size:30px;font-weight:800}.muted{color:var(--muted);font-size:13px}.check{display:flex;align-items:center;gap:8px;padding:8px 0}.check input{width:auto}
+@media(max-width:780px){.stats{grid-template-columns:repeat(2,1fr)}.stats .stat:last-child{grid-column:span 2}.top{align-items:flex-start}.actions{max-width:200px}.form{grid-template-columns:1fr 1fr}.form .full{grid-column:1/-1}}
+@media(max-width:430px){.form,.two{grid-template-columns:1fr}.form .full{grid-column:auto}.title h1{font-size:21px}.actions .btn{padding:8px}.app{padding-left:10px;padding-right:10px}}
+@media print{.bottom,.actions,.tabs,.btn{display:none!important}.card{box-shadow:none}}
 </style>
 </head>
-<body>
-<main class="app">
-<section class="card header">
-<div class="top">
-<div><div class="title">✦ MY PROGRESS TRACKER ✦</div><div class="sub">Build better days, one check at a time.</div></div>
-<div class="controls"><input id="name" placeholder="Name"><input id="month" type="month"><button id="reset">Reset Month</button></div>
-</div>
-<div class="stats">
-<div class="stat"><b id="overall">0%</b><span>Overall progress</span></div>
-<div class="stat"><b id="completed">0</b><span>Completed checks</span></div>
-<div class="stat"><b id="streak">0</b><span>Full-day streak</span></div>
-<div class="stat"><b id="sleepavg">0h</b><span>Average sleep</span></div>
-</div>
-<div class="progress"><div class="ring" id="ring" data-v="0%" style="--p:0%"></div><div style="flex:1"><b>Monthly Progress</b><div class="bar"><i id="bar"></i></div><div class="message" id="message">Start with one small win today.</div></div></div>
-</section>
+<body><div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useMemo}=React;
+const KEY="tracker_v3_data";
+const today=new Date();
+const pad=n=>String(n).padStart(2,"0");
+const key=(y,m,d)=>`${y}-${pad(m+1)}-${pad(d)}`;
+const days=(y,m)=>new Date(y,m+1,0).getDate();
+const blank=()=>({name:"",dark:false,habits:[
+{id:1,name:"Workout",target:20,done:{}},{id:2,name:"Study",target:25,done:{}},{id:3,name:"Water",target:25,done:{}}
+],sleep:{},notes:{},goal:"",achieved:"",improve:"",xp:0});
+function read(){try{return {...blank(),...JSON.parse(localStorage.getItem(KEY)||"{}")}}catch{return blank()}}
+function App(){
+ const [d,setD]=useState(read); const [tab,setTab]=useState("home");
+ const [y,setY]=useState(today.getFullYear()),[m,setM]=useState(today.getMonth());
+ const [newH,setNewH]=useState(""),[target,setTarget]=useState(20);
+ const [date,setDate]=useState(key(y,m,today.getDate()<=days(y,m)?today.getDate():1));
+ useEffect(()=>{localStorage.setItem(KEY,JSON.stringify(d));document.body.classList.toggle("dark",!!d.dark)},[d]);
+ const dates=Array.from({length:days(y,m)},(_,i)=>key(y,m,i+1));
+ const totals=d.habits.map(h=>({h,n:dates.filter(x=>h.done?.[x]).length}));
+ const total=totals.reduce((a,x)=>a+x.n,0),possible=d.habits.length*dates.length;
+ const percent=possible?Math.round(total/possible*100):0;
+ function streak(h){let s=0,dt=new Date();dt.setHours(0,0,0,0);for(let i=0;i<400;i++){let k=key(dt.getFullYear(),dt.getMonth(),dt.getDate());if(h.done?.[k])s++;else if(i)break;dt.setDate(dt.getDate()-1)}return s}
+ const streaks=d.habits.map(h=>({h,s:streak(h)})); const current=Math.max(0,...streaks.map(x=>x.s));
+ const best=Math.max(0,...streaks.map(x=>x.s));
+ const sleep=dates.map(x=>+d.sleep?.[x]?.hours||0).filter(Boolean), avg=sleep.length?(sleep.reduce((a,b)=>a+b,0)/sleep.length).toFixed(1):"0.0";
+ const xp=total*10+current*5,level=Math.floor(xp/100)+1,levelPct=xp%100;
+ const achievements=[percent>=25&&"🚀 25% Complete",percent>=50&&"🔥 Halfway Hero",percent>=75&&"💪 75% Strong",percent===100&&"🏆 Perfect Month",current>=3&&"🔥 3 Day Streak",current>=7&&"⚡ 7 Day Streak",current>=30&&"👑 30 Day Streak"].filter(Boolean);
+ const first=new Date(y,m,1).getDay(),cal=Array(first).fill(null).concat(dates);
+ const weekLabels=["S","M","T","W","T","F","S"];
+ function toggle(id,k){setD(x=>({...x,habits:x.habits.map(h=>h.id===id?{...h,done:{...h.done,[k]:!h.done?.[k]}}:h),xp:x.xp+(!d.habits.find(h=>h.id===id)?.done?.[k]?10:-10)}))}
+ function add(){if(!newH.trim())return;setD(x=>({...x,habits:[...x.habits,{id:Date.now(),name:newH.trim(),target:+target||20,done:{}}]}));setNewH("")}
+ function del(id){if(confirm("Habit delete karna hai?"))setD(x=>({...x,habits:x.habits.filter(h=>h.id!==id)}))}
+ function month(v){let z=new Date(y,m+v,1);setY(z.getFullYear());setM(z.getMonth());setDate(key(z.getFullYear(),z.getMonth(),1))}
+ function backup(){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:"application/json"}));a.download="tracker-v3-backup.json";a.click()}
+ function restore(e){let f=e.target.files?.[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{setD(JSON.parse(r.result));alert("Restore complete ✅")}catch{alert("Invalid backup")}};r.readAsText(f)}
+ function saveSleep(field,val){let s={...(d.sleep?.[date]||{}),[field]:val};if(s.bed&&s.wake){let [a,b]=s.bed.split(":").map(Number),[c,e]=s.wake.split(":").map(Number),mins=c*60+e-(a*60+b);if(mins<0)mins+=1440;s.hours=(mins/60).toFixed(1)}setD(x=>({...x,sleep:{...x.sleep,[date]:s}}))}
+ function notify(){if(!("Notification"in window)){alert("Notifications supported nahi hain.");return}Notification.requestPermission().then(p=>p==="granted"&&new Notification("Progress Tracker",{body:"Aaj ke habits complete karna mat bhoolna 💪"}))}
+ const sleepDay=d.sleep?.[date]||{}, note=d.notes?.[date]||"";
+ const weekData=Array.from({length:7},(_,i)=>{let dt=new Date();dt.setDate(dt.getDate()-(6-i));let k=key(dt.getFullYear(),dt.getMonth(),dt.getDate());return {k,n:d.habits.filter(h=>h.done?.[k]).length}});
+ return <><main className="app">
+  <header className="top"><div className="title"><h1>📈 Progress Tracker <small style={{fontSize:11,color:"var(--a)"}}>V3</small></h1><p>{d.name?`Hi ${d.name} 👋 — keep going!`:"Your daily progress, one day at a time."}</p></div><div className="actions">
+   <button className="btn" onClick={()=>setD(x=>({...x,dark:!x.dark}))}>{d.dark?"☀️":"🌙"}</button><button className="btn" onClick={backup}>💾</button><label className="btn">↩️<input hidden type="file" accept=".json" onChange={restore}/></label><button className="btn" onClick={()=>print()}>🖨️</button>
+  </div></header>
 
-<section class="card"><h2>HABITS / DAYS</h2><div class="scroll"><table class="grid"><thead id="habitHead"></thead><tbody id="habitBody"></tbody></table></div><div class="add"><input id="habitInput" placeholder="Add a habit — Workout, Study, Water..."><button id="addHabit">+ Add Habit</button></div></section>
+  {tab==="home"&&<><div className="card"><div className="form"><input className="full" placeholder="Your name" value={d.name} onChange={e=>setD(x=>({...x,name:e.target.value}))}/><select value={m} onChange={e=>setM(+e.target.value)}>{Array.from({length:12},(_,i)=><option value={i}>{new Date(2000,i,1).toLocaleString("en",{month:"long"})}</option>)}</select><input type="number" value={y} onChange={e=>setY(+e.target.value||y)}/></div></div>
+   <div className="grid stats"><div className="stat"><small>Progress</small><b>{percent}%</b></div><div className="stat"><small>Completed</small><b>{total}</b></div><div className="stat"><small>Streak</small><b>🔥 {current}</b></div><div className="stat"><small>Sleep</small><b>😴 {avg}h</b></div><div className="stat"><small>Level</small><b>⭐ {level}</b></div></div>
+   <div className="card"><div className="section"><h2>⚡ Level Progress</h2><b>{levelPct}/100 XP</b></div><div className="bar"><i style={{width:levelPct+"%"}}/></div>
+   <div className="card"><div className="section"><h2>📅 {new Date(y,m,1).toLocaleString("en",{month:"long",year:"numeric"})}</h2><div><button className="btn" onClick={()=>month(-1)}>‹</button> <button className="btn" onClick={()=>month(1)}>›</button></div></div><div className="calendar">{weekLabels.map(x=><div className="cell" style={{minHeight:25,textAlign:"center",color:"var(--muted)"}}><b>{x}</b></div>)}{cal.map(k=>k?<div className={"cell "+(()=>{let n=d.habits.filter(h=>h.done?.[k]).length;return n>=3?"l4":n===2?"l3":n===1?"l2":""})()} onClick={()=>setDate(k)}><b>{+k.slice(-2)}</b><span>{d.habits.filter(h=>h.done?.[k]).length}/{d.habits.length} ✓</span></div>:<div/> )}</div></div>
+   <div className="card"><div className="section"><h2>📈 Last 7 Days</h2></div><div className="chart">{weekData.map(x=><div className="col"><i style={{height:Math.max(4,(x.n/Math.max(1,d.habits.length))*125)}}></i><span>{x.k.slice(-2)}</span></div>)}</div></div>
+  </>}
 
-<section class="card"><h2>SLEEP TRACKER</h2><div class="scroll"><div class="sleep" id="sleepGrid"></div></div></section>
+  {tab==="habits"&&<div className="card"><div className="section"><h2>✅ Habits</h2></div><div className="form"><input className="full" placeholder="New habit" value={newH} onChange={e=>setNewH(e.target.value)}/><input type="number" min="1" max={dates.length} value={target} onChange={e=>setTarget(e.target.value)}/><button className="btn primary" onClick={add}>＋ Add</button></div>{d.habits.map(h=>{let n=totals.find(x=>x.h.id===h.id)?.n||0,p=Math.min(100,Math.round(n/h.target*100));return <div className="habit"><div className="habittop"><strong>{h.name}</strong><span className="mini">{n}/{h.target} • 🔥 {streak(h)}</span><button className="btn danger" style={{padding:"5px 8px"}} onClick={()=>del(h.id)}>×</button></div><div className="bar"><i style={{width:p+"%"}}/></div><div className="days">{dates.map(k=><div className="day"><button className={h.done?.[k]?"done":""} onClick={()=>toggle(h.id,k)}>{+k.slice(-2)}</button></div>)}</div></div>})}</div>}
 
-<section class="card"><h2>MONTHLY REFLECTION</h2><div class="notes">
-<div><label>MY MONTHLY GOAL</label><textarea id="goal" placeholder="What do I want to achieve this month?"></textarea></div>
-<div><label>WHAT I HAVE ACHIEVED THIS MONTH</label><textarea id="achieved" placeholder="Write your wins..."></textarea></div>
-<div><label>WHAT SHOULD I IMPROVE</label><textarea id="improve" placeholder="What will I improve next month?"></textarea></div>
-</div>
-<div class="actions"><button id="export">Export Backup</button><button id="print">Print</button></div>
-</section>
-<div class="footer">Your tracker is saved automatically on this device. No account required.</div>
-</main>
-<script>
-const KEY='tracker_v2';
-const defaultHabits=['Wake up early','Exercise','Study / Work','Drink water','Read','Meditation','No junk food','Walk','Sleep on time','Personal goal'];
-let db=JSON.parse(localStorage.getItem(KEY)||'null')||{name:'',months:{}};
-const el=id=>document.getElementById(id);
-const monthKey=()=>el('month').value;
-function blank(){return{habits:[...defaultHabits],checks:{},sleep:{},goal:'',achieved:'',improve:''}}
-function current(){let k=monthKey();if(!db.months[k])db.months[k]=blank();return db.months[k]}
-function save(){db.name=el('name').value;localStorage.setItem(KEY,JSON.stringify(db))}
-function days(){let [y,m]=monthKey().split('-').map(Number);return new Date(y,m,0).getDate()}
-function render(){
-let d=current(), n=days();el('name').value=db.name||'';
-let h='<tr><th>HABITS / DAYS</th>';for(let i=1;i<=n;i++)h+='<th>'+i+'</th>';h+='</tr>';el('habitHead').innerHTML=h;
-let b='';d.habits.forEach((name,r)=>{b+='<tr><td><div class="habit-name"><span>'+esc(name)+'</span><button class="x" onclick="removeHabit('+r+')">×</button></div></td>';for(let day=1;day<=n;day++){let done=!!d.checks[r+'-'+day];b+='<td class="day '+(done?'done':'')+'" onclick="toggle('+r+','+day+')">'+(done?'✓':'')+'</td>'}b+='</tr>'});el('habitBody').innerHTML=b;
-let s='<div class="head">Sleep</div>';for(let i=1;i<=n;i++)s+='<div class="head">'+i+'</div>';for(let hr=10;hr>=4;hr--){s+='<div><b>'+hr+' hrs</b></div>';for(let day=1;day<=n;day++){let on=+d.sleep[day]===hr;s+='<div class="cell '+(on?'selected':'')+'" onclick="sleepSet('+day+','+hr+')">'+(on?'✓':'')+'</div>'}}el('sleepGrid').innerHTML=s;
-el('goal').value=d.goal||'';el('achieved').value=d.achieved||'';el('improve').value=d.improve||'';stats();
+  {tab==="analytics"&&<><div className="grid two"><div className="card"><div className="section"><h2>📊 Habit Analytics</h2></div>{totals.map(x=><div style={{margin:"12px 0"}}><div className="section" style={{marginBottom:5}}><span>{x.h.name}</span><b>{Math.round(x.n/dates.length*100)}%</b></div><div className="bar"><i style={{width:(x.n/dates.length*100)+"%"}}/></div>)}</div><div className="card"><div className="section"><h2>🏆 Achievements</h2></div>{achievements.length?achievements.map(a=><span className="badge">{a}</span>):<div className="empty">Complete habits to unlock badges.</div>}<hr style={{border:0,borderTop:"1px solid var(--line)"}}/><p className="muted">Best current streak: <b>{best} days</b></p></div></div></>}
+
+  {tab==="goals"&&<><div className="card"><div className="section"><h2>🎯 Monthly Goal</h2></div><textarea placeholder="Main goal..." value={d.goal} onChange={e=>setD(x=>({...x,goal:e.target.value}))}/><textarea style={{marginTop:8}} placeholder="What did you achieve?" value={d.achieved} onChange={e=>setD(x=>({...x,achieved:e.target.value}))}/><textarea style={{marginTop:8}} placeholder="What will you improve?" value={d.improve} onChange={e=>setD(x=>({...x,improve:e.target.value}))}/></div><div className="card"><div className="section"><h2>🔔 Reminder</h2></div><p className="muted">Browser notification permission test.</p><button className="btn primary" onClick={notify}>🔔 Test Reminder</button></div></>}
+
+  {tab==="daily"&&<><div className="card"><div className="section"><h2>📝 Daily Journal</h2><input type="date" value={date} onChange={e=>setDate(e.target.value)}/></div><textarea placeholder="Aaj kaisa raha? Kya seekha?..." value={note} onChange={e=>setD(x=>({...x,notes:{...x.notes,[date]:e.target.value}}))}/></div><div className="card"><div className="section"><h2>😴 Sleep — {date}</h2></div><div className="form"><label>Bed<input type="time" value={sleepDay.bed||""} onChange={e=>saveSleep("bed",e.target.value)}/></label><label>Wake<input type="time" value={sleepDay.wake||""} onChange={e=>saveSleep("wake",e.target.value)}/></label><label>Hours<input readOnly value={sleepDay.hours||""}/></label></div></div></>}
+
+  <p className="muted" style={{textAlign:"center"}}>🔒 Data is stored locally on this device. Use Backup before clearing browser data.</p>
+ </main><nav className="bottom">{[["home","🏠","Home"],["habits","✅","Habits"],["analytics","📊","Stats"],["goals","🎯","Goals"],["daily","📝","Daily"]].map(x=><button className={tab===x[0]?"active":""} onClick={()=>setTab(x[0])}><span style={{fontSize:18}}>{x[1]}</span><br/>{x[2]}</button>)}</nav></>
 }
-function toggle(r,day){let d=current(),k=r+'-'+day;d.checks[k]=!d.checks[k];save();render()}
-function sleepSet(day,hr){let d=current();d.sleep[day]=+d.sleep[day]===hr?0:hr;save();render()}
-function addHabit(){let v=el('habitInput').value.trim();if(!v)return;current().habits.push(v);el('habitInput').value='';save();render()}
-function removeHabit(r){let d=current();if(d.habits.length<=1)return;if(!confirm('Remove this habit?'))return;d.habits.splice(r,1);let c={};Object.keys(d.checks).forEach(k=>{let [rr,dd]=k.split('-').map(Number);if(rr<r)c[rr+'-'+dd]=d.checks[k];if(rr>r)c[(rr-1)+'-'+dd]=d.checks[k]});d.checks=c;save();render()}
-function stats(){let d=current(),n=days(),total=d.habits.length*n,done=Object.values(d.checks).filter(Boolean).length,p=total?Math.round(done/total*100):0;el('overall').textContent=p+'%';el('completed').textContent=done;let full=0;for(let day=n;day>=1;day--){let ok=d.habits.every((_,r)=>d.checks[r+'-'+day]);if(ok)full++;else break}el('streak').textContent=full;let vals=Object.values(d.sleep).filter(v=>v>=4&&v<=10);el('sleepavg').textContent=(vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):0)+'h';el('bar').style.width=p+'%';el('ring').style.setProperty('--p',p+'%');el('ring').dataset.v=p+'%';el('message').textContent=p===0?'Start with one small win today.':p<25?'Good start — keep showing up.':p<50?'You are building momentum.':p<75?'Nice consistency. Keep going!':p<100?'Excellent progress — finish strong!':'Amazing! Month completed.'}
-function esc(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-el('month').value=new Date().toISOString().slice(0,7);
-el('name').oninput=save;el('month').onchange=render;el('addHabit').onclick=addHabit;
-el('reset').onclick=()=>{if(confirm('Reset this month? All checks, sleep and notes for this month will be cleared.')){db.months[monthKey()]=blank();save();render()}};
-['goal','achieved','improve'].forEach(id=>el(id).oninput=()=>{current()[id]=el(id).value;save()});
-el('export').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='tracker-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)};
-el('print').onclick=()=>window.print();render();
-</script>
-</body>
-</html>
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script></body></html>
