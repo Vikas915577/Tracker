@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#111827">
-<title>Progress Tracker V4</title>
+<title>Progress Tracker V5</title>
 <style>
 :root{--bg:#f4f7fb;--card:#fff;--text:#172033;--muted:#718096;--line:#e3e8f0;--accent:#635bff;--accent2:#8b5cf6;--good:#16a34a;--bad:#ef4444;--soft:#eef0ff;--shadow:0 8px 28px rgba(20,30,60,.08)}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
@@ -29,6 +29,11 @@ input,textarea,select{width:100%;background:var(--card);color:var(--text);border
 .bar{height:9px;background:var(--line);border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent)}
 .badge{display:inline-block;background:var(--soft);padding:6px 9px;border-radius:10px;margin:3px;font-size:12px}
 .goalbar{display:flex;gap:8px;align-items:center}.goalbar .bar{flex:1}
+.motivation{background:linear-gradient(135deg,var(--soft),var(--card));border:2px solid var(--accent)}
+.motive-title{display:flex;justify-content:space-between;gap:8px;align-items:center}.motive-title h2{margin:0;font-size:18px}
+.motive-msg{font-size:15px;line-height:1.45;margin:8px 0}.mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.mini{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}.mini b{display:block;font-size:18px}.mini small{color:var(--muted)}
+.challenge{border:1px dashed var(--accent);border-radius:14px;padding:11px;background:var(--card)}
+.plan-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .empty{padding:18px;text-align:center;color:var(--muted)}
 .bottom{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;gap:2px;padding:7px 5px calc(7px + env(safe-area-inset-bottom));z-index:50}.bottom button{border:0;background:transparent;color:var(--muted);padding:7px 12px;border-radius:12px;font-size:11px}.bottom button.active{background:var(--soft);color:var(--accent);font-weight:700}
 @media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}.stats .stat:last-child{grid-column:span 2}.form{grid-template-columns:1fr}.title h1{font-size:21px}.actions{max-width:175px}.bottom button{padding:7px 9px}.today-row{padding:9px}.matrix{min-width:700px}}
@@ -46,7 +51,7 @@ const today=()=>new Date().toISOString().slice(0,10);
 const currentMonth=()=>today().slice(0,7);
 const daysInMonth=m=>{const [y,mo]=m.split("-").map(Number);return new Date(y,mo,0).getDate()};
 const makeDays=m=>Array.from({length:daysInMonth(m)},(_,i)=>m+"-"+String(i+1).padStart(2,"0"));
-const defaults=()=>({name:"",month:currentMonth(),habits:["Wake up early","Exercise","Study / Work","Drink water","Read","Meditation","No junk food","Walk"],checks:{},sleep:{},notes:{},goal:"",achieved:"",improve:"",target:7,dark:false});
+const defaults=()=>({name:"",month:currentMonth(),habits:["Wake up early","Exercise","Study / Work","Drink water","Read","Meditation","No junk food","Walk"],checks:{},sleep:{},notes:{},goal:"",achieved:"",improve:"",target:7,ifThen:"",barrier:"",win:"",dark:false});
 let data=load(),tab="home",selectedDate=today();
 function load(){try{const x=JSON.parse(localStorage.getItem(KEY)||"null");return x?Object.assign(defaults(),x):defaults()}catch(e){return defaults()}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
@@ -70,13 +75,32 @@ function stats(){
  return {total,completed,pct:total?Math.round(completed/total*100):0,todayDone,streak,longest,bestH,best,avg};
 }
 function checkedCount(d){return data.habits.filter(h=>done(h,d)).length}
+
+function motivation(s){
+ const td=s.todayDone,total=data.habits.length;
+ if(!total)return {msg:"Add one small habit and start your first win today.",tag:"START"};
+ if(td===total)return {msg:"Perfect day! You showed up for every habit. 🔥",tag:"FULL DAY"};
+ if(td>=Math.max(1,Math.ceil(total*.7)))return {msg:"You are close. Finish one more habit and keep the momentum going. 💪",tag:"ALMOST"};
+ if(td>0)return {msg:"Small wins count. You already started today — keep going. 🌱",tag:"MOMENTUM"};
+ return {msg:"No pressure. Pick the easiest habit and get one win right now. ▶️",tag:"ONE WIN"};
+}
+function weeklyScore(){
+ const ds=days().slice(-7),total=data.habits.length*ds.length;
+ return total?Math.round(ds.reduce((a,d)=>a+checkedCount(d),0)/total*100):0;
+}
+function challengeText(s){
+ if(!data.habits.length)return "Create your first habit.";
+ if(s.todayDone===0)return "2-minute start: complete your easiest habit.";
+ if(s.todayDone<data.habits.length)return "Finish one more habit today.";
+ return "Protect your momentum: keep tomorrow's easiest habit ready.";
+}
 function render(){
  document.body.classList.toggle("dark",!!data.dark);
  const s=stats(),ds=days();
  $("#app").innerHTML=`
  <main class="app">
   <header class="top">
-   <div class="title"><h1>Progress Tracker V4</h1><p>${esc(data.name||"Build better days, one check at a time.")}</p></div>
+   <div class="title"><h1>Progress Tracker V5</h1><p>${esc(data.name||"Build better days, one check at a time.")}</p></div>
    <div class="actions"><button class="btn" id="dark">${data.dark?"☀️":"🌙"}</button><button class="btn" id="backup">Backup</button><button class="btn" id="restoreBtn">Restore</button><input id="restore" type="file" accept=".json" hidden></div>
   </header>
   <div class="tabs">${["home","habits","stats","goals","daily"].map((x,i)=>`<button class="btn tab ${tab===x?"active":""}" data-tab="${x}">${["🏠 Home","☑️ Habits","📊 Stats","🎯 Goals","📝 Daily"][i]}</button>`).join("")}</div>
@@ -87,7 +111,7 @@ function render(){
  bind();
 }
 function home(s,ds){
- const td=checkedCount(today());
+ const td=checkedCount(today()),m=motivation(s),ws=weeklyScore();
  return `
  <div class="grid stats">
   <div class="stat"><small>Overall</small><b>${s.pct}%</b></div>
@@ -96,6 +120,15 @@ function home(s,ds){
   <div class="stat"><small>Avg sleep</small><b>${s.avg?s.avg.toFixed(1):"—"}h</b></div>
   <div class="stat"><small>XP / Level</small><b>${s.completed*10} / ${Math.floor(s.completed/10)+1}</b></div>
  </div>
+ <div class="card motivation">
+  <div class="motive-title"><h2>💬 ${m.tag}</h2><b>${ws}% week</b></div>
+  <p class="motive-msg">${m.msg}</p>
+  <div class="mini-grid">
+   <div class="mini"><small>Today's wins</small><b>${td}</b></div>
+   <div class="mini"><small>Best streak</small><b>${s.longest} 🔥</b></div>
+   <div class="mini"><small>Next move</small><b>+1</b></div>
+  </div>
+ </div>
  <div class="card today-box">
   <div class="section"><h2>☀️ TODAY — ${today()}</h2><b>${td}/${data.habits.length} done</b></div>
   <div class="progress"><i style="width:${data.habits.length?Math.round(td/data.habits.length*100):0}%"></i></div>
@@ -103,6 +136,7 @@ function home(s,ds){
    ${data.habits.length?data.habits.map(h=>`<div class="today-row ${done(h,today())?"done":""}"><button class="bigcheck ${done(h,today())?"done":""}" data-check="${esc(h)}" data-date="${today()}">${done(h,today())?"✓":"☐"}</button><span class="habit-name"><b>${esc(h)}</b></span></div>`).join(""):`<div class="empty">Add your first habit in Habits.</div>`}
   </div>
  </div>
+ <div class="card challenge"><div class="section"><h2>🎯 Today's tiny challenge</h2><b>+10 XP</b></div><p style="margin:0">${challengeText(s)}</p></div>
  <div class="card">
   <div class="section"><h2>📅 ${esc(data.month)}</h2><input id="month" type="month" value="${esc(data.month)}" style="max-width:170px"></div>
   <div class="progress"><i style="width:${s.pct}%"></i></div><p class="muted">${s.completed} of ${s.total} monthly checks completed.</p>
@@ -110,6 +144,7 @@ function home(s,ds){
  <div class="card"><div class="section"><h2>🔥 Current streak</h2><b>${s.streak} days</b></div><div class="heat">${ds.map(d=>`<div class="${data.habits.length&&data.habits.every(h=>done(h,d))?"on ":""}${d===today()?"today":""}">${+d.slice(-2)}</div>`).join("")}</div></div>
  `;
 }
+
 function habitPage(ds){
  return `
  <div class="card">
@@ -137,13 +172,21 @@ function statsPage(s,ds){
  ${ds.slice(-7).map(d=>{const n=checkedCount(d),p=data.habits.length?Math.round(n/data.habits.length*100):0;return `<div style="margin:12px 0"><div class="section"><span>${d}</span><b>${n}/${data.habits.length} • ${p}%</b></div><div class="bar"><i style="width:${p}%"></i></div></div>`}).join("")}
  </div>
  <div class="card"><h2>🏆 Progress</h2><p>Best habit: <b>${esc(s.bestH)}</b> — ${s.best} days</p><p>Current streak: <b>${s.streak} days 🔥</b></p><p>Longest streak: <b>${s.longest} days</b></p><p>Monthly completion: <b>${s.pct}%</b></p></div>
- <div class="card"><h2>🏅 Achievements</h2>${s.completed>=1?'<span class="badge">🌱 Started</span>':""}${s.completed>=10?'<span class="badge">⭐ 10 Checks</span>':""}${s.streak>=3?'<span class="badge">🔥 3 Day Streak</span>':""}${s.completed>=50?'<span class="badge">🏆 50 Checks</span>':""}${s.pct>=90?'<span class="badge">🎯 90% Month</span>':""}</div>`;
+ <div class="card"><h2>🏅 Achievements</h2>${s.completed>=1?'<span class="badge">🌱 Started</span>':""}${s.completed>=10?'<span class="badge">⭐ 10 Checks</span>':""}${s.streak>=3?'<span class="badge">🔥 3 Day Streak</span>':""}${s.completed>=50?'<span class="badge">🏆 50 Checks</span>':""}${s.pct>=90?'<span class="badge">🎯 90% Month</span>':""}</div>
+ <div class="card"><h2>🧠 Weekly review</h2><p class="muted">The goal is not perfection — notice what works and adjust.</p>
+  <div class="plan-row"><textarea id="win" placeholder="What went well this week?">${esc(data.win)}</textarea><textarea id="barrier" placeholder="What got in the way?">${esc(data.barrier)}</textarea></div>
+ </div>`;
 }
+
 function goalsPage(){
  return `
  <div class="card"><div class="section"><h2>🎯 Monthly Goal</h2></div><textarea id="goal" placeholder="Is month ka main goal...">${esc(data.goal)}</textarea><textarea id="achieved" placeholder="What did you achieve?">${esc(data.achieved)}</textarea><textarea id="improve" placeholder="What will you improve?">${esc(data.improve)}</textarea></div>
+ <div class="card"><h2>🧩 If–Then plan</h2><p class="muted">Plan for a common obstacle: “If this happens, then I will…”</p>
+  <div class="plan-row"><input id="ifThen" value="${esc(data.ifThen)}" placeholder="If I feel lazy / busy..."><input id="barrier" value="${esc(data.barrier)}" placeholder="Then I will do..."></div>
+ </div>
  <div class="card"><div class="section"><h2>⚙️ Data</h2><div><button class="btn" id="print">🖨️ Print</button> <button class="btn danger" id="reset">Reset</button></div></div><p class="muted">Backup your data before resetting.</p></div>`;
 }
+
 function dailyPage(){
  const sl=data.sleep[selectedDate]||{};
  return `
@@ -165,7 +208,7 @@ function bind(){
  document.querySelectorAll("[data-check]").forEach(b=>b.onclick=()=>toggle(b.dataset.check,b.dataset.date));
  document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{data.habits=data.habits.filter(h=>h!==b.dataset.remove);save();render()});
  const add=$("#addHabit");if(add)add.onclick=()=>{const h=prompt("Habit name?");if(h&&h.trim()&&!data.habits.includes(h.trim())){data.habits.push(h.trim());save();render()}};
- ["goal","achieved","improve"].forEach(k=>{const e=$("#"+k);if(e)e.oninput=()=>{data[k]=e.value;save()}});
+ ["goal","achieved","improve","win","barrier","ifThen"].forEach(k=>{const e=$("#"+k);if(e)e.oninput=()=>{data[k]=e.value;save()}});
  const note=$("#note");if(note)note.oninput=()=>{data.notes[selectedDate]=note.value;save()};
  const bed=$("#bed"),wake=$("#wake"),hours=$("#hours");
  if(bed&&wake){const f=()=>{const h=calcSleep(bed.value,wake.value);hours.value=h;if(h)data.sleep[selectedDate]={bed:bed.value,wake:wake.value,hours:Number(h)};else delete data.sleep[selectedDate];save()};bed.onchange=f;wake.onchange=f}
