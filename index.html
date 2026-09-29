@@ -4,40 +4,144 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#111827">
-<title>Progress Tracker V5</title>
+<title>Progress Tracker V6</title>
 <style>
-:root{--bg:#f4f7fb;--card:#fff;--text:#172033;--muted:#718096;--line:#e3e8f0;--accent:#635bff;--accent2:#8b5cf6;--good:#16a34a;--bad:#ef4444;--soft:#eef0ff;--shadow:0 8px 28px rgba(20,30,60,.08)}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-body.dark{--bg:#0b1220;--card:#141c2e;--text:#f4f7ff;--muted:#9aa8c0;--line:#29344b;--soft:#202846;--shadow:0 8px 28px rgba(0,0,0,.28)}
-button,input,textarea,select{font:inherit}button{cursor:pointer}
-.app{max-width:1120px;margin:auto;padding:12px 12px 92px}
-.top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:7px 0 14px}.title h1{margin:0;font-size:25px}.title p{margin:4px 0 0;color:var(--muted);font-size:13px}.actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-.btn{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:11px;padding:9px 11px}.primary{background:var(--accent);border-color:var(--accent);color:#fff}.danger{color:var(--bad)}
-.tabs{display:flex;gap:7px;overflow:auto;margin-bottom:13px}.tab{white-space:nowrap}.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+:root{
+  --bg:#f4f7fb;--card:#fff;--text:#172033;--muted:#718096;--line:#e3e8f0;
+  --accent:#635bff;--accent2:#8b5cf6;--good:#16a34a;--bad:#ef4444;--soft:#eef0ff;
+  --warn:#f59e0b;--shadow:0 8px 28px rgba(20,30,60,.08)
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+body.dark{
+  --bg:#0b1220;--card:#141c2e;--text:#f4f7ff;--muted:#9aa8c0;--line:#29344b;
+  --soft:#202846;--shadow:0 8px 28px rgba(0,0,0,.28)
+}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+.app{max-width:1120px;margin:auto;padding:12px 12px 96px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:7px 0 14px}
+.title h1{margin:0;font-size:25px}
+.title p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:11px;padding:9px 11px}
+.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.danger{color:var(--bad)}
+.small{font-size:12px;padding:7px 9px}
+.tabs{display:flex;gap:7px;overflow:auto;margin-bottom:13px}
+.tab{white-space:nowrap}
+.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:13px;box-shadow:var(--shadow)}
-.grid{display:grid;gap:10px}.stats{grid-template-columns:repeat(5,1fr)}.stat{background:var(--soft);border-radius:15px;padding:12px}.stat small{color:var(--muted)}.stat b{display:block;font-size:22px;margin-top:3px}
-.section{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}.section h2{margin:0;font-size:18px}
-.muted{color:var(--muted)}.progress{height:10px;background:var(--line);border-radius:99px;overflow:hidden}.progress i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px}
-input,textarea,select{width:100%;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px}textarea{min-height:100px;resize:vertical}
-.form{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.form label{font-size:12px;color:var(--muted)}
+.grid{display:grid;gap:10px}
+.stats{grid-template-columns:repeat(5,1fr)}
+.stat{background:var(--soft);border-radius:15px;padding:12px}
+.stat small{color:var(--muted)}
+.stat b{display:block;font-size:22px;margin-top:3px}
+.section{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.section h2{margin:0;font-size:18px}
+.muted{color:var(--muted)}
+.progress{height:10px;background:var(--line);border-radius:99px;overflow:hidden}
+.progress i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px}
+.form{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.form label{font-size:12px;color:var(--muted)}
+input,textarea,select{width:100%;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px}
+textarea{min-height:100px;resize:vertical}
 .today-box{border:2px solid var(--accent);background:linear-gradient(135deg,var(--soft),var(--card))}
-.today-list{display:grid;gap:8px}.today-row{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:13px}
-.bigcheck{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:23px;flex:0 0 auto}.bigcheck.done{background:var(--good);border-color:var(--good);color:#fff}
+.today-list{display:grid;gap:8px}
+.today-row{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:13px}
+.bigcheck{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:23px;flex:0 0 auto}
+.bigcheck.done{background:var(--good);border-color:var(--good);color:#fff}
+.bigcheck.freeze{background:var(--warn);border-color:var(--warn);color:#fff}
 .today-row.done .habit-name{text-decoration:line-through;opacity:.65}
-.matrix-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}.matrix{min-width:720px;border-collapse:separate;border-spacing:4px;width:100%}.matrix th{font-size:10px;color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--card);z-index:2}.matrix th:first-child,.matrix td:first-child{position:sticky;left:0;background:var(--card);z-index:3}.matrix td{height:38px;text-align:center}.matrix .habit-cell{text-align:left;min-width:150px;padding:7px;font-size:12px;font-weight:600}.daycheck{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:transparent}.daycheck.done{background:var(--good);border-color:var(--good);color:#fff}.daycheck.today{outline:2px solid var(--accent);outline-offset:-2px}
-.heat{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.heat div{aspect-ratio:1;border-radius:7px;background:var(--line);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted)}.heat .on{background:var(--accent);color:#fff}.heat .today{outline:2px solid var(--accent)}
-.bar{height:9px;background:var(--line);border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent)}
+.matrix-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.matrix{min-width:720px;border-collapse:separate;border-spacing:4px;width:100%}
+.matrix th{font-size:10px;color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--card);z-index:2}
+.matrix th:first-child,.matrix td:first-child{position:sticky;left:0;background:var(--card);z-index:3}
+.matrix td{height:38px;text-align:center}
+.matrix .habit-cell{text-align:left;min-width:160px;padding:7px;font-size:12px;font-weight:600}
+.daycheck{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:transparent}
+.daycheck.done{background:var(--good);border-color:var(--good);color:#fff}
+.daycheck.today{outline:2px solid var(--accent);outline-offset:-2px}
+.heat{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.heat div{aspect-ratio:1;border-radius:7px;background:var(--line);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted)}
+.heat .on{background:var(--accent);color:#fff}
+.heat .today{outline:2px solid var(--accent)}
+.bar{height:9px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
 .badge{display:inline-block;background:var(--soft);padding:6px 9px;border-radius:10px;margin:3px;font-size:12px}
-.goalbar{display:flex;gap:8px;align-items:center}.goalbar .bar{flex:1}
+.goalbar{display:flex;gap:8px;align-items:center}
+.goalbar .bar{flex:1}
+.empty{padding:18px;text-align:center;color:var(--muted)}
 .motivation{background:linear-gradient(135deg,var(--soft),var(--card));border:2px solid var(--accent)}
-.motive-title{display:flex;justify-content:space-between;gap:8px;align-items:center}.motive-title h2{margin:0;font-size:18px}
-.motive-msg{font-size:15px;line-height:1.45;margin:8px 0}.mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.mini{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}.mini b{display:block;font-size:18px}.mini small{color:var(--muted)}
+.motive-title{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.motive-title h2{margin:0;font-size:18px}
+.motive-msg{font-size:15px;line-height:1.45;margin:8px 0}
+.mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mini{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}
+.mini b{display:block;font-size:18px}
+.mini small{color:var(--muted)}
 .challenge{border:1px dashed var(--accent);border-radius:14px;padding:11px;background:var(--card)}
 .plan-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.empty{padding:18px;text-align:center;color:var(--muted)}
-.bottom{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;gap:2px;padding:7px 5px calc(7px + env(safe-area-inset-bottom));z-index:50}.bottom button{border:0;background:transparent;color:var(--muted);padding:7px 12px;border-radius:12px;font-size:11px}.bottom button.active{background:var(--soft);color:var(--accent);font-weight:700}
-@media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}.stats .stat:last-child{grid-column:span 2}.form{grid-template-columns:1fr}.title h1{font-size:21px}.actions{max-width:175px}.bottom button{padding:7px 9px}.today-row{padding:9px}.matrix{min-width:700px}}
-@media print{.bottom,.actions,.tabs{display:none!important}.app{padding-bottom:10px}.card{box-shadow:none}}
+.habit-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.habit-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px;position:relative}
+.habit-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.habit-icon{font-size:26px}
+.habit-name{font-weight:800;font-size:16px}
+.habit-meta{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}
+.habit-meta span{background:var(--soft);border-radius:999px;padding:5px 8px;font-size:11px}
+.habit-actions{display:flex;gap:6px;margin-top:10px}
+.habit-actions .btn{flex:1}
+.streak{font-size:30px;font-weight:900;line-height:1}
+.streak small{font-size:12px;color:var(--muted);font-weight:600}
+.calendar7{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:9px}
+.calday{min-width:0;text-align:center}
+.calday small{display:block;font-size:9px;color:var(--muted);margin-bottom:3px}
+.dot{height:28px;border-radius:8px;background:var(--line);display:flex;align-items:center;justify-content:center;font-size:13px}
+.dot.on{background:var(--good);color:#fff}
+.dot.today{outline:2px solid var(--accent);outline-offset:-2px}
+.private-pill{background:#fff4e8!important;color:#a15c00!important}
+body.dark .private-pill{background:#352714!important;color:#ffd28a!important}
+.overlay{position:fixed;inset:0;background:rgba(7,14,28,.58);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100}
+.modal{max-width:720px;width:100%;max-height:92vh;overflow:auto;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:24px;padding:18px;box-shadow:0 24px 80px rgba(0,0,0,.25)}
+.modal h2{margin:0 0 6px}
+.modal p{color:var(--muted);margin:6px 0 14px}
+.preset-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin:10px 0}
+.preset{border:1px solid var(--line);background:var(--card);border-radius:14px;padding:11px;text-align:left}
+.preset.selected{border-color:var(--accent);background:var(--soft)}
+.preset .line{display:flex;gap:10px;align-items:center}
+.preset input{width:auto}
+.private-section{margin-top:12px}
+.custom-row{display:flex;gap:8px}
+.custom-row input{flex:1}
+.toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 14px;border-radius:999px;font-size:13px;z-index:120;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.lock{font-size:12px;color:var(--muted)}
+.kicker{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:800}
+.big-number{font-size:42px;font-weight:900;line-height:1}
+.two{grid-template-columns:repeat(2,1fr)}
+.three{grid-template-columns:repeat(3,1fr)}
+.note{background:var(--soft);padding:10px;border-radius:12px;font-size:13px}
+.bottom{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;gap:2px;padding:7px 5px calc(7px + env(safe-area-inset-bottom));z-index:50}
+.bottom button{border:0;background:transparent;color:var(--muted);padding:7px 12px;border-radius:12px;font-size:11px}
+.bottom button.active{background:var(--soft);color:var(--accent);font-weight:700}
+@media(max-width:760px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stats .stat:last-child{grid-column:span 2}
+  .form{grid-template-columns:1fr}
+  .title h1{font-size:21px}
+  .actions{max-width:175px}
+  .bottom button{padding:7px 9px}
+  .today-row{padding:9px}
+  .matrix{min-width:700px}
+  .habit-grid{grid-template-columns:1fr}
+  .preset-grid{grid-template-columns:1fr}
+  .two,.three{grid-template-columns:1fr}
+}
+@media print{
+  .bottom,.actions,.tabs,.habit-actions{display:none!important}
+  .app{padding-bottom:10px}
+  .card{box-shadow:none}
+}
 </style>
 </head>
 <body>
@@ -45,180 +149,771 @@ input,textarea,select{width:100%;background:var(--card);color:var(--text);border
 <script>
 (function(){
 "use strict";
-const KEY="progress_tracker_v4";
+
+const KEY="progress_tracker_v6";
+const OLD_KEYS=["progress_tracker_v5","progress_tracker_v4","progress_tracker_v3_plain"];
 const $=s=>document.querySelector(s);
 const today=()=>new Date().toISOString().slice(0,10);
 const currentMonth=()=>today().slice(0,7);
 const daysInMonth=m=>{const [y,mo]=m.split("-").map(Number);return new Date(y,mo,0).getDate()};
 const makeDays=m=>Array.from({length:daysInMonth(m)},(_,i)=>m+"-"+String(i+1).padStart(2,"0"));
-const defaults=()=>({name:"",month:currentMonth(),habits:["Wake up early","Exercise","Study / Work","Drink water","Read","Meditation","No junk food","Walk"],checks:{},sleep:{},notes:{},goal:"",achieved:"",improve:"",target:7,ifThen:"",barrier:"",win:"",dark:false});
-let data=load(),tab="home",selectedDate=today();
-function load(){try{const x=JSON.parse(localStorage.getItem(KEY)||"null");return x?Object.assign(defaults(),x):defaults()}catch(e){return defaults()}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
+const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-3);
+
+const PRESETS=[
+  {name:"Exercise",icon:"🏃",cat:"Health"},
+  {name:"Study / Work",icon:"📚",cat:"Focus"},
+  {name:"Drink Water",icon:"💧",cat:"Health"},
+  {name:"Read",icon:"📖",cat:"Mind"},
+  {name:"Meditation",icon:"🧘",cat:"Mind"},
+  {name:"Sleep on Time",icon:"😴",cat:"Health"},
+  {name:"Walk",icon:"🚶",cat:"Health"},
+  {name:"Healthy Food",icon:"🥗",cat:"Health"},
+  {name:"Less Phone",icon:"📵",cat:"Focus"},
+  {name:"Masturbation",icon:"🔒",cat:"Private",private:true}
+];
+
+const defaults=()=>({
+  name:"",
+  month:currentMonth(),
+  habits:[],
+  checks:{},
+  freezes:{},
+  sleep:{},
+  notes:{},
+  goal:"",
+  achieved:"",
+  improve:"",
+  target:7,
+  ifThen:"",
+  barrier:"",
+  win:"",
+  dark:false,
+  xp:0,
+  onboardingDone:false
+});
+
+let data=load();
+let tab="home";
+let selectedHabit=null;
+let toastTimer=null;
+
+function load(){
+  try{
+    const current=JSON.parse(localStorage.getItem(KEY)||"null");
+    if(current) return normalize(current);
+    for(const k of OLD_KEYS){
+      const old=JSON.parse(localStorage.getItem(k)||"null");
+      if(old){
+        const migrated=normalize(old);
+        migrated.onboardingDone=!!migrated.name;
+        saveObj(migrated);
+        return migrated;
+      }
+    }
+  }catch(e){}
+  return defaults();
+}
+function normalize(x){
+  const d=Object.assign(defaults(),x||{});
+  if(!Array.isArray(d.habits)) d.habits=[];
+  d.habits=d.habits.map(h=>{
+    if(typeof h==="string") return {id:uid(),name:h,icon:"✅",private:false,created:currentMonth()};
+    return Object.assign({id:uid(),name:"Habit",icon:"✅",private:false,created:currentMonth()},h);
+  }).filter(h=>h.name);
+  d.checks=d.checks&&typeof d.checks==="object"?d.checks:{};
+  d.freezes=d.freezes&&typeof d.freezes==="object"?d.freezes:{};
+  return d;
+}
+function saveObj(obj){try{localStorage.setItem(KEY,JSON.stringify(obj))}catch(e){}}
+function save(){saveObj(data)}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
-function id(h,d){return h+"|"+d}
-function done(h,d){return !!data.checks[id(h,d)]}
-function toggle(h,d){data.checks[id(h,d)]=!done(h,d);save();render()}
+function key(h,d){return h.id+"|"+d}
+function done(h,d){return !!data.checks[key(h,d)]}
+function frozen(h,d){return !!data.freezes[key(h,d)]}
+function active(h,d){return done(h,d)||frozen(h,d)}
+
+function addXp(n){
+  data.xp=(data.xp||0)+n;
+  save();
+}
+function level(){return Math.floor((data.xp||0)/100)+1}
+function xpToNext(){return (data.xp||0)%100}
+
+function toggle(h,d){
+  const k=key(h,d);
+  if(frozen(h,d)) delete data.freezes[k];
+  data.checks[k]=!done(h,d);
+  if(data.checks[k]){addXp(10);showToast("Nice! +10 XP 🔥")}
+  else {save();render()}
+}
+function useFreeze(h,d){
+  const k=key(h,d);
+  if(done(h,d)) return;
+  if(frozen(h,d)){delete data.freezes[k];save();render();return}
+  data.freezes[k]=true;
+  save();
+  showToast("Streak Freeze used 🛡️");
+  render();
+}
 function days(){return makeDays(data.month)}
+function habitDays(h){return days().filter(d=>active(h,d))}
+function habitStats(h){
+  const ds=days();
+  let total=0;
+  ds.forEach(d=>{if(done(h,d))total++});
+  let run=0;
+  for(let i=ds.length-1;i>=0;i--){
+    if(active(h,ds[i])) run++;
+    else if(ds[i]<=today()) break;
+  }
+  let longest=0,cur=0;
+  ds.forEach(d=>{
+    if(active(h,d)){cur++;longest=Math.max(longest,cur)}
+    else cur=0;
+  });
+  const last7=ds.slice(-7);
+  const weekDone=last7.filter(d=>active(h,d)).length;
+  const monthPct=ds.length?Math.round(total/ds.length*100):0;
+  const weekPct=7?Math.round(weekDone/Math.min(7,last7.length)*100):0;
+  return {total,run,longest,weekDone,monthPct,weekPct};
+}
 function stats(){
- const ds=days(), total=data.habits.length*ds.length;
- let completed=0;ds.forEach(d=>data.habits.forEach(h=>{if(done(h,d))completed++}));
- let todayDone=data.habits.filter(h=>done(h,today())).length;
- let streak=0;
- for(let i=ds.length-1;i>=0;i--){if(data.habits.length&&data.habits.every(h=>done(h,ds[i])))streak++;else if(ds[i]<=today())break}
- let longest=0,run=0;
- ds.forEach(d=>{if(data.habits.length&&data.habits.every(h=>done(h,d))){run++;longest=Math.max(longest,run)}else run=0});
- let bestH="—",best=0;
- data.habits.forEach(h=>{const n=ds.filter(d=>done(h,d)).length;if(n>best){best=n;bestH=h}});
- let sleep=ds.map(d=>Number(data.sleep[d]?.hours)).filter(Boolean);
- let avg=sleep.length?sleep.reduce((a,b)=>a+b,0)/sleep.length:0;
- return {total,completed,pct:total?Math.round(completed/total*100):0,todayDone,streak,longest,bestH,best,avg};
+  const ds=days();
+  const total=data.habits.length*ds.length;
+  let completed=0;
+  ds.forEach(d=>data.habits.forEach(h=>{if(done(h,d))completed++}));
+  const todayDone=data.habits.filter(h=>done(h,today())).length;
+  let fullStreak=0;
+  for(let i=ds.length-1;i>=0;i--){
+    if(data.habits.length&&data.habits.every(h=>active(h,ds[i])))fullStreak++;
+    else if(ds[i]<=today())break;
+  }
+  let longest=0,run=0;
+  ds.forEach(d=>{
+    if(data.habits.length&&data.habits.every(h=>active(h,d))){run++;longest=Math.max(longest,run)}
+    else run=0;
+  });
+  let bestH=null,best=0;
+  data.habits.forEach(h=>{
+    const n=habitStats(h).total;
+    if(n>best){best=n;bestH=h}
+  });
+  let sleep=ds.map(d=>Number(data.sleep[d]?.hours)).filter(Boolean);
+  const avg=sleep.length?sleep.reduce((a,b)=>a+b,0)/sleep.length:0;
+  const score=weeklyScore();
+  return {total,completed,pct:total?Math.round(completed/total*100):0,todayDone,fullStreak,longest,bestH,best,avg,score};
 }
 function checkedCount(d){return data.habits.filter(h=>done(h,d)).length}
+function activeCount(d){return data.habits.filter(h=>active(h,d)).length}
 
 function motivation(s){
- const td=s.todayDone,total=data.habits.length;
- if(!total)return {msg:"Add one small habit and start your first win today.",tag:"START"};
- if(td===total)return {msg:"Perfect day! You showed up for every habit. 🔥",tag:"FULL DAY"};
- if(td>=Math.max(1,Math.ceil(total*.7)))return {msg:"You are close. Finish one more habit and keep the momentum going. 💪",tag:"ALMOST"};
- if(td>0)return {msg:"Small wins count. You already started today — keep going. 🌱",tag:"MOMENTUM"};
- return {msg:"No pressure. Pick the easiest habit and get one win right now. ▶️",tag:"ONE WIN"};
+  const total=data.habits.length, td=s.todayDone;
+  if(!total)return {msg:"Add one small habit and start your first win today.",tag:"START"};
+  if(td===total)return {msg:"Perfect day! You showed up for every habit. 🔥",tag:"FULL DAY"};
+  if(td>=Math.max(1,Math.ceil(total*.7)))return {msg:"You are close. Finish one more habit and keep the momentum going. 💪",tag:"ALMOST"};
+  if(td>0)return {msg:"Small wins count. You already started today — keep going. 🌱",tag:"MOMENTUM"};
+  return {msg:"No pressure. Pick the easiest habit and get one win right now. ▶️",tag:"ONE WIN"};
 }
 function weeklyScore(){
- const ds=days().slice(-7),total=data.habits.length*ds.length;
- return total?Math.round(ds.reduce((a,d)=>a+checkedCount(d),0)/total*100):0;
+  const ds=days().slice(-7);
+  const total=data.habits.length*Math.max(1,ds.length);
+  if(!data.habits.length)return 0;
+  return Math.round(ds.reduce((a,d)=>a+activeCount(d),0)/total*100);
 }
 function challengeText(s){
- if(!data.habits.length)return "Create your first habit.";
- if(s.todayDone===0)return "2-minute start: complete your easiest habit.";
- if(s.todayDone<data.habits.length)return "Finish one more habit today.";
- return "Protect your momentum: keep tomorrow's easiest habit ready.";
+  if(!data.habits.length)return "Create your first habit.";
+  if(s.todayDone===0)return "2-minute start: complete your easiest habit.";
+  if(s.todayDone<data.habits.length)return "Finish one more habit today.";
+  return "Protect your momentum: keep tomorrow's easiest habit ready.";
 }
-function render(){
- document.body.classList.toggle("dark",!!data.dark);
- const s=stats(),ds=days();
- $("#app").innerHTML=`
- <main class="app">
-  <header class="top">
-   <div class="title"><h1>Progress Tracker V5</h1><p>${esc(data.name||"Build better days, one check at a time.")}</p></div>
-   <div class="actions"><button class="btn" id="dark">${data.dark?"☀️":"🌙"}</button><button class="btn" id="backup">Backup</button><button class="btn" id="restoreBtn">Restore</button><input id="restore" type="file" accept=".json" hidden></div>
-  </header>
-  <div class="tabs">${["home","habits","stats","goals","daily"].map((x,i)=>`<button class="btn tab ${tab===x?"active":""}" data-tab="${x}">${["🏠 Home","☑️ Habits","📊 Stats","🎯 Goals","📝 Daily"][i]}</button>`).join("")}</div>
-  ${tab==="home"?home(s,ds):tab==="habits"?habitPage(ds):tab==="stats"?statsPage(s,ds):tab==="goals"?goalsPage():dailyPage()}
-  <p class="muted" style="text-align:center">🔒 Your tracker data stays on this device. Use Backup before clearing browser data.</p>
- </main>
- <nav class="bottom">${["home","habits","stats","goals","daily"].map((x,i)=>`<button class="${tab===x?"active":""}" data-tab="${x}"><span style="font-size:18px">${["🏠","☑️","📊","🎯","📝"][i]}</span><br>${["Home","Habits","Stats","Goals","Daily"][i]}</button>`).join("")}</nav>`;
- bind();
+function formatDay(d){
+  const dt=new Date(d+"T12:00:00");
+  return dt.toLocaleDateString(undefined,{day:"numeric",month:"short"});
 }
-function home(s,ds){
- const td=checkedCount(today()),m=motivation(s),ws=weeklyScore();
- return `
- <div class="grid stats">
-  <div class="stat"><small>Overall</small><b>${s.pct}%</b></div>
-  <div class="stat"><small>Today</small><b>${td}/${data.habits.length}</b></div>
-  <div class="stat"><small>Streak</small><b>${s.streak} 🔥</b></div>
-  <div class="stat"><small>Avg sleep</small><b>${s.avg?s.avg.toFixed(1):"—"}h</b></div>
-  <div class="stat"><small>XP / Level</small><b>${s.completed*10} / ${Math.floor(s.completed/10)+1}</b></div>
- </div>
- <div class="card motivation">
-  <div class="motive-title"><h2>💬 ${m.tag}</h2><b>${ws}% week</b></div>
-  <p class="motive-msg">${m.msg}</p>
-  <div class="mini-grid">
-   <div class="mini"><small>Today's wins</small><b>${td}</b></div>
-   <div class="mini"><small>Best streak</small><b>${s.longest} 🔥</b></div>
-   <div class="mini"><small>Next move</small><b>+1</b></div>
-  </div>
- </div>
- <div class="card today-box">
-  <div class="section"><h2>☀️ TODAY — ${today()}</h2><b>${td}/${data.habits.length} done</b></div>
-  <div class="progress"><i style="width:${data.habits.length?Math.round(td/data.habits.length*100):0}%"></i></div>
-  <div class="today-list" style="margin-top:12px">
-   ${data.habits.length?data.habits.map(h=>`<div class="today-row ${done(h,today())?"done":""}"><button class="bigcheck ${done(h,today())?"done":""}" data-check="${esc(h)}" data-date="${today()}">${done(h,today())?"✓":"☐"}</button><span class="habit-name"><b>${esc(h)}</b></span></div>`).join(""):`<div class="empty">Add your first habit in Habits.</div>`}
-  </div>
- </div>
- <div class="card challenge"><div class="section"><h2>🎯 Today's tiny challenge</h2><b>+10 XP</b></div><p style="margin:0">${challengeText(s)}</p></div>
- <div class="card">
-  <div class="section"><h2>📅 ${esc(data.month)}</h2><input id="month" type="month" value="${esc(data.month)}" style="max-width:170px"></div>
-  <div class="progress"><i style="width:${s.pct}%"></i></div><p class="muted">${s.completed} of ${s.total} monthly checks completed.</p>
- </div>
- <div class="card"><div class="section"><h2>🔥 Current streak</h2><b>${s.streak} days</b></div><div class="heat">${ds.map(d=>`<div class="${data.habits.length&&data.habits.every(h=>done(h,d))?"on ":""}${d===today()?"today":""}">${+d.slice(-2)}</div>`).join("")}</div></div>
- `;
+function showToast(msg){
+  clearTimeout(toastTimer);
+  let old=document.querySelector(".toast");
+  if(old) old.remove();
+  const el=document.createElement("div");
+  el.className="toast";
+  el.textContent=msg;
+  document.body.appendChild(el);
+  toastTimer=setTimeout(()=>el.remove(),1800);
+}
+function iconFor(name){
+  return name==="Exercise"?"🏃":name==="Study / Work"?"📚":name==="Drink Water"?"💧":name==="Read"?"📖":name==="Meditation"?"🧘":name==="Sleep on Time"?"😴":name==="Walk"?"🚶":name==="Healthy Food"?"🥗":name==="Less Phone"?"📵":name==="Masturbation"?"🔒":"✅";
+}
+function addHabit(name,icon="✅",priv=false){
+  const trimmed=String(name||"").trim();
+  if(!trimmed)return false;
+  if(data.habits.some(h=>h.name.toLowerCase()===trimmed.toLowerCase())){showToast("That habit already exists.");return false}
+  data.habits.push({id:uid(),name:trimmed,icon,private:!!priv,created:currentMonth()});
+  save();
+  return true;
+}
+function removeHabit(h){
+  if(!confirm("Delete this habit and its history?"))return;
+  data.habits=data.habits.filter(x=>x.id!==h.id);
+  Object.keys(data.checks).forEach(k=>{if(k.startsWith(h.id+"|"))delete data.checks[k]});
+  Object.keys(data.freezes).forEach(k=>{if(k.startsWith(h.id+"|"))delete data.freezes[k]});
+  if(selectedHabit===h.id) selectedHabit=null;
+  save();render();
+}
+function editHabit(h){
+  const name=prompt("Habit name",h.name);
+  if(name===null)return;
+  const n=name.trim();
+  if(!n)return;
+  h.name=n;
+  save();
+  render();
 }
 
-function habitPage(ds){
- return `
- <div class="card">
-  <div class="section"><h2>☑️ Daily Habit Tracker</h2><button class="btn primary" id="addHabit">+ Add habit</button></div>
-  <div class="form">
-   <label>Name<input id="name" value="${esc(data.name)}" placeholder="Your name"></label>
-   <label>Month<input id="month" type="month" value="${esc(data.month)}"></label>
-   <label>Weekly target<select id="target">${[3,5,7].map(n=>`<option value="${n}" ${data.target===n?"selected":""}>${n} days</option>`).join("")}</select></label>
-  </div>
- </div>
- <div class="card">
-  <div class="section"><h2>📋 ${esc(data.month)} — Tick your work daily</h2><span class="muted">Swipe left/right →</span></div>
-  <div class="matrix-wrap"><table class="matrix"><thead><tr><th class="habit-cell">Habit</th>${ds.map(d=>`<th>${+d.slice(-2)}</th>`).join("")}</tr></thead>
-  <tbody>${data.habits.map(h=>`<tr><td class="habit-cell">${esc(h)}</td>${ds.map(d=>`<td><button class="daycheck ${done(h,d)?"done":""} ${d===today()?"today":""}" data-check="${esc(h)}" data-date="${d}">${done(h,d)?"✓":"✓"}</button></td>`).join("")}</tr>`).join("")}</tbody></table></div>
-  <p class="muted" style="margin-bottom:0">☐ = not done &nbsp;&nbsp; ☑ = completed. Tap any box to change it.</p>
- </div>
- <div class="card">
-  <div class="section"><h2>🗓 Selected day</h2><input id="date" type="date" value="${selectedDate}" style="max-width:170px"></div>
-  ${data.habits.map(h=>`<div class="today-row ${done(h,selectedDate)?"done":""}"><button class="bigcheck ${done(h,selectedDate)?"done":""}" data-check="${esc(h)}" data-date="${selectedDate}">${done(h,selectedDate)?"✓":"☐"}</button><span class="habit-name">${esc(h)}</span><button class="btn danger remove" data-remove="${esc(h)}">Remove</button></div>`).join("")}
- </div>`;
+function render(){
+  document.body.classList.toggle("dark",!!data.dark);
+  const s=stats(),ds=days();
+  $("#app").innerHTML=`
+  <main class="app">
+    <header class="top">
+      <div class="title">
+        <h1>Progress Tracker V6</h1>
+        <p>${esc(data.name?("Hi, "+data.name+" 👋 — one win at a time."):"Build better days, one check at a time.")}</p>
+      </div>
+      <div class="actions">
+        <button class="btn" id="dark">${data.dark?"☀️":"🌙"}</button>
+        <button class="btn" id="backup">Backup</button>
+        <button class="btn" id="restoreBtn">Restore</button>
+        <input id="restore" type="file" accept=".json" hidden>
+      </div>
+    </header>
+
+    <div class="tabs">${["home","habits","stats","goals","daily"].map((x,i)=>`
+      <button class="btn tab ${tab===x?"active":""}" data-tab="${x}">
+        ${["🏠 Home","☑️ Habits","📊 Stats","🎯 Goals","📝 Daily"][i]}
+      </button>`).join("")}</div>
+
+    ${tab==="home"?home(s,ds):tab==="habits"?habitsPage(ds):tab==="stats"?statsPage(s,ds):tab==="goals"?goalsPage():dailyPage()}
+
+    <p class="muted" style="text-align:center">
+      🔒 Your tracker is stored on this device. Backup before clearing browser data.
+    </p>
+  </main>
+  <nav class="bottom">${["home","habits","stats","goals","daily"].map((x,i)=>`
+    <button class="${tab===x?"active":""}" data-tab="${x}">
+      <span style="font-size:18px">${["🏠","☑️","📊","🎯","📝"][i]}</span><br>
+      ${["Home","Habits","Stats","Goals","Daily"][i]}
+    </button>`).join("")}</nav>
+  ${!data.onboardingDone?onboarding():selectedHabit?habitDetailOverlay():""}
+  `;
+  bind();
 }
+
+function home(s,ds){
+  const td=checkedCount(today()),m=motivation(s);
+  return `
+  <section class="grid stats">
+    <div class="stat"><small>Overall</small><b>${s.pct}%</b></div>
+    <div class="stat"><small>Today</small><b>${td}/${data.habits.length}</b></div>
+    <div class="stat"><small>Best full-day streak</small><b>${s.fullStreak} 🔥</b></div>
+    <div class="stat"><small>Weekly score</small><b>${s.score}%</b></div>
+    <div class="stat"><small>Level</small><b>${level()} · ${xpToNext()}/100 XP</b></div>
+  </section>
+
+  <section class="card motivation">
+    <div class="motive-title"><h2>💜 ${esc(m.tag)}</h2><span class="badge">${s.score}% week</span></div>
+    <div class="motive-msg">${esc(m.msg)}</div>
+    <div class="progress"><i style="width:${s.pct}%"></i></div>
+    <div class="mini-grid" style="margin-top:10px">
+      <div class="mini"><b>${s.todayDone}/${data.habits.length}</b><small>Today done</small></div>
+      <div class="mini"><b>${s.fullStreak}</b><small>Full-day streak</small></div>
+      <div class="mini"><b>${s.bestH?esc(s.bestH.name):"—"}</b><small>Most completed habit</small></div>
+    </div>
+  </section>
+
+  <section class="card today-box">
+    <div class="section"><h2>✅ Today's habits</h2><span class="badge">${td}/${data.habits.length}</span></div>
+    ${data.habits.length?`
+      <div class="today-list">
+        ${data.habits.map(h=>{
+          const d=done(h,today()),f=frozen(h,today());
+          return `<div class="today-row ${d?"done":""}">
+            <button class="bigcheck ${d?"done":f?"freeze":""}" data-toggle="${h.id}|${today()}">${d?"✓":f?"🛡":"○"}</button>
+            <div style="flex:1">
+              <div class="habit-name">${esc(h.icon)} ${esc(h.name)} ${h.private?'<span class="badge private-pill">🔒 Private</span>':""}</div>
+              <small class="muted">🔥 ${habitStats(h).run} day streak · ${habitStats(h).weekPct}% this week</small>
+            </div>
+            <button class="btn small" data-openhabit="${h.id}">View</button>
+          </div>`
+        }).join("")}
+      </div>
+    `:`<div class="empty">No habits yet. Add your first habit above.</div>`}
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <button class="btn primary" data-tab="habits">Manage habits</button>
+      <button class="btn" id="openChallenge">🎯 Tiny challenge</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section"><h2>🔥 Your streaks</h2><span class="muted">Every habit has its own journey</span></div>
+    <div class="habit-grid">
+      ${data.habits.length?data.habits.map(h=>streakCard(h)).join(""):`<div class="empty">Choose some habits to start tracking.</div>`}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section"><h2>🎯 Today's tiny challenge</h2><span class="badge">Low pressure</span></div>
+    <div class="challenge">${esc(challengeText(s))}</div>
+  </section>
+
+  <section class="card">
+    <div class="section"><h2>📈 Last 7 days</h2><span class="muted">${formatDay(ds[Math.max(0,ds.length-7)])} → ${formatDay(ds[ds.length-1])}</span></div>
+    <div class="heat">${ds.slice(-7).map(d=>{
+      const n=activeCount(d);
+      const pct=data.habits.length?Math.round(n/data.habits.length*100):0;
+      return `<div class="${n?'on ':''}${d===today()?'today':''}" title="${d}: ${n}/${data.habits.length}">${pct}%</div>`
+    }).join("")}</div>
+  </section>
+  `;
+}
+
+function streakCard(h){
+  const hs=habitStats(h),last7=days().slice(-7);
+  return `<div class="habit-card">
+    <div class="habit-head">
+      <div>
+        <div class="habit-icon">${esc(h.icon)}</div>
+        <div class="habit-name">${esc(h.name)}</div>
+        ${h.private?'<div class="lock">🔒 Private habit</div>':""}
+      </div>
+      <div class="streak">${hs.run}<small> days 🔥</small></div>
+    </div>
+    <div class="habit-meta">
+      <span>Best ${hs.longest}</span>
+      <span>Total ${hs.total}</span>
+      <span>${hs.monthPct}% month</span>
+      <span>${hs.weekPct}% week</span>
+    </div>
+    <div class="calendar7">${last7.map(d=>`
+      <div class="calday"><small>${new Date(d+"T12:00:00").toLocaleDateString(undefined,{weekday:"short"}).slice(0,2)}</small>
+      <div class="dot ${active(h,d)?"on":""} ${d===today()?"today":""}">${active(h,d)?"✓":""}</div></div>`).join("")}</div>
+    <div class="habit-actions">
+      <button class="btn primary small" data-openhabit="${h.id}">Open tracker</button>
+      <button class="btn small" data-toggle="${h.id}|${today()}">${done(h,today())?"Undo today":"✓ Today"}</button>
+    </div>
+  </div>`
+}
+
+function habitDetailOverlay(){
+  const h=data.habits.find(x=>x.id===selectedHabit);
+  if(!h)return "";
+  const hs=habitStats(h),ds=days();
+  return `
+  <div class="overlay" id="habitOverlay">
+    <div class="modal">
+      <div class="section">
+        <div>
+          <div class="kicker">Habit tracker</div>
+          <h2>${esc(h.icon)} ${esc(h.name)} ${h.private?'<span class="badge private-pill">🔒 Private</span>':""}</h2>
+          <p>Track this habit day by day. Your streak belongs to this habit alone.</p>
+        </div>
+        <button class="btn" id="closeHabit">✕</button>
+      </div>
+
+      <div class="grid three">
+        <div class="stat"><small>Current streak</small><b>${hs.run} 🔥</b></div>
+        <div class="stat"><small>Longest streak</small><b>${hs.longest}</b></div>
+        <div class="stat"><small>Total days</small><b>${hs.total}</b></div>
+      </div>
+
+      <div class="card" style="box-shadow:none;margin-top:10px">
+        <div class="section">
+          <h2>📅 ${esc(data.month)}</h2>
+          <span class="badge">${hs.monthPct}% this month</span>
+        </div>
+        <div class="matrix-wrap">
+          <table class="matrix">
+            <thead><tr><th>Habit</th>${ds.map(d=>`<th>${Number(d.slice(-2))}</th>`).join("")}</tr></thead>
+            <tbody><tr>
+              <td class="habit-cell">${esc(h.icon)} ${esc(h.name)}</td>
+              ${ds.map(d=>`<td><button class="daycheck ${done(h,d)?"done":""} ${frozen(h,d)?"freeze":""} ${d===today()?"today":""}" data-toggle="${h.id}|${d}">${done(h,d)?"✓":frozen(h,d)?"🛡":""}</button></td>`).join("")}
+            </tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid two">
+        <div class="card" style="box-shadow:none">
+          <div class="section"><h2>🛡️ Streak Freeze</h2><span class="badge">1 available</span></div>
+          <p class="muted">Use a freeze on a missed day to protect continuity. It counts for streak display, not as a completed habit.</p>
+          <button class="btn" data-freeze="${h.id}|${today()}">${frozen(h,today())?"Remove today's freeze":"Use freeze on today"}</button>
+        </div>
+        <div class="card" style="box-shadow:none">
+          <div class="section"><h2>📝 Habit note</h2></div>
+          <textarea id="habitNote" placeholder="Optional note for this habit...">${esc((data.notes[h.id]||""))}</textarea>
+          <button class="btn primary" id="saveHabitNote" style="margin-top:8px">Save note</button>
+        </div>
+      </div>
+
+      <div class="habit-actions">
+        <button class="btn" id="editThisHabit">Edit name</button>
+        <button class="btn danger" id="deleteThisHabit">Delete habit</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function habitsPage(ds){
+  return `
+  <section class="card">
+    <div class="section"><h2>☑️ My habits</h2><span class="badge">${data.habits.length} active</span></div>
+    <p class="muted">Each habit gets its own streak, calendar, weekly score and history.</p>
+    <div class="habit-grid">
+      ${data.habits.length?data.habits.map(h=>streakCard(h)).join(""):`<div class="empty">Start by adding a habit.</div>`}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section"><h2>➕ Add a habit</h2><span class="muted">Preset or custom</span></div>
+    <div class="preset-grid">
+      ${PRESETS.filter(x=>!x.private).map(p=>`
+        <button class="preset" data-preset="${esc(p.name)}" data-picon="${p.icon}">
+          <div class="line"><span style="font-size:24px">${p.icon}</span><div><b>${esc(p.name)}</b><div class="muted">${esc(p.cat)}</div></div></div>
+        </button>`).join("")}
+    </div>
+    <div class="private-section">
+      <div class="section"><h2>🔒 Private habit</h2><span class="muted">Optional</span></div>
+      ${PRESETS.filter(x=>x.private).map(p=>`
+        <button class="preset" style="width:100%" data-preset="${esc(p.name)}" data-picon="${p.icon}" data-private="1">
+          <div class="line"><span style="font-size:24px">${p.icon}</span><div><b>${esc(p.name)}</b><div class="muted">Kept behind a private label in the app</div></div></div>
+        </button>`).join("")}
+    </div>
+    <div style="margin-top:12px">
+      <div class="custom-row">
+        <input id="customHabit" placeholder="e.g. Sleep 8 hours">
+        <button class="btn primary" id="addCustom">Add</button>
+      </div>
+    </div>
+  </section>
+  `;
+}
+
 function statsPage(s,ds){
- return `
- <div class="card"><h2>📊 Analytics</h2><p class="muted">Last 7 days</p>
- ${ds.slice(-7).map(d=>{const n=checkedCount(d),p=data.habits.length?Math.round(n/data.habits.length*100):0;return `<div style="margin:12px 0"><div class="section"><span>${d}</span><b>${n}/${data.habits.length} • ${p}%</b></div><div class="bar"><i style="width:${p}%"></i></div></div>`}).join("")}
- </div>
- <div class="card"><h2>🏆 Progress</h2><p>Best habit: <b>${esc(s.bestH)}</b> — ${s.best} days</p><p>Current streak: <b>${s.streak} days 🔥</b></p><p>Longest streak: <b>${s.longest} days</b></p><p>Monthly completion: <b>${s.pct}%</b></p></div>
- <div class="card"><h2>🏅 Achievements</h2>${s.completed>=1?'<span class="badge">🌱 Started</span>':""}${s.completed>=10?'<span class="badge">⭐ 10 Checks</span>':""}${s.streak>=3?'<span class="badge">🔥 3 Day Streak</span>':""}${s.completed>=50?'<span class="badge">🏆 50 Checks</span>':""}${s.pct>=90?'<span class="badge">🎯 90% Month</span>':""}</div>
- <div class="card"><h2>🧠 Weekly review</h2><p class="muted">The goal is not perfection — notice what works and adjust.</p>
-  <div class="plan-row"><textarea id="win" placeholder="What went well this week?">${esc(data.win)}</textarea><textarea id="barrier" placeholder="What got in the way?">${esc(data.barrier)}</textarea></div>
- </div>`;
+  return `
+  <section class="card">
+    <div class="section"><h2>📊 Analytics</h2><span class="badge">${s.score}% weekly score</span></div>
+    <div class="grid three">
+      <div class="stat"><small>Completion</small><b>${s.pct}%</b></div>
+      <div class="stat"><small>Longest full-day streak</small><b>${s.longest}</b></div>
+      <div class="stat"><small>Most completed</small><b>${s.bestH?esc(s.bestH.name):"—"}</b></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section"><h2>🔥 Habit leaderboard</h2><span class="muted">Sorted by current streak</span></div>
+    ${data.habits.slice().sort((a,b)=>habitStats(b).run-habitStats(a).run).map((h,i)=>{
+      const hs=habitStats(h);
+      return `<div style="margin:10px 0">
+        <div style="display:flex;justify-content:space-between;gap:8px"><b>${i+1}. ${esc(h.icon)} ${esc(h.name)}</b><span>${hs.run} 🔥</span></div>
+        <div class="bar" style="margin-top:5px"><i style="width:${Math.min(100,hs.run*5)}%"></i></div>
+      </div>`
+    }).join("") || `<div class="empty">Add habits to see analytics.</div>`}
+  </section>
+
+  <section class="card">
+    <div class="section"><h2>📅 Monthly habit matrix</h2><span class="muted">${esc(data.month)}</span></div>
+    <div class="matrix-wrap">
+      <table class="matrix">
+        <thead><tr><th>Habit</th>${ds.map(d=>`<th>${Number(d.slice(-2))}</th>`).join("")}</tr></thead>
+        <tbody>${data.habits.map(h=>`
+          <tr>
+            <td class="habit-cell">${esc(h.icon)} ${esc(h.name)}</td>
+            ${ds.map(d=>`<td><button class="daycheck ${done(h,d)?"done":""} ${frozen(h,d)?"freeze":""} ${d===today()?"today":""}" data-toggle="${h.id}|${d}">${done(h,d)?"✓":frozen(h,d)?"🛡":""}</button></td>`).join("")}
+          </tr>`).join("") || `<tr><td colspan="${ds.length+1}" class="empty">No habits yet.</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section"><h2>🏆 Achievements</h2><span class="muted">Earned from showing up</span></div>
+    ${achievements().map(a=>`<span class="badge">${a.done?"🏆":"🔒"} ${a.label}</span>`).join("")}
+  </section>
+  `;
+}
+
+function achievements(){
+  const all=days(),completed=all.reduce((n,d)=>n+checkedCount(d),0);
+  const maxStreak=Math.max(0,...data.habits.map(h=>habitStats(h).longest));
+  return [
+    {label:"First Win",done:completed>=1},
+    {label:"3-Day Streak",done:maxStreak>=3},
+    {label:"7-Day Streak",done:maxStreak>=7},
+    {label:"30-Day Streak",done:maxStreak>=30},
+    {label:"100 Total Checks",done:completed>=100},
+    {label:"Perfect Week",done:weeklyScore()===100},
+    {label:"Level 5",done:level()>=5}
+  ];
 }
 
 function goalsPage(){
- return `
- <div class="card"><div class="section"><h2>🎯 Monthly Goal</h2></div><textarea id="goal" placeholder="Is month ka main goal...">${esc(data.goal)}</textarea><textarea id="achieved" placeholder="What did you achieve?">${esc(data.achieved)}</textarea><textarea id="improve" placeholder="What will you improve?">${esc(data.improve)}</textarea></div>
- <div class="card"><h2>🧩 If–Then plan</h2><p class="muted">Plan for a common obstacle: “If this happens, then I will…”</p>
-  <div class="plan-row"><input id="ifThen" value="${esc(data.ifThen)}" placeholder="If I feel lazy / busy..."><input id="barrier" value="${esc(data.barrier)}" placeholder="Then I will do..."></div>
- </div>
- <div class="card"><div class="section"><h2>⚙️ Data</h2><div><button class="btn" id="print">🖨️ Print</button> <button class="btn danger" id="reset">Reset</button></div></div><p class="muted">Backup your data before resetting.</p></div>`;
+  return `
+  <section class="card">
+    <div class="section"><h2>🎯 Monthly goal</h2><span class="badge">${esc(data.month)}</span></div>
+    <div class="form">
+      <div><label>Goal</label><input id="goal" value="${esc(data.goal||"")}" placeholder="e.g. Exercise 20 days"></div>
+      <div><label>Target days</label><input id="target" type="number" min="1" max="31" value="${Number(data.target||7)}"></div>
+      <div><label>Achieved days</label><input id="achieved" type="number" min="0" max="31" value="${Number(data.achieved||0)}"></div>
+    </div>
+    <button class="btn primary" id="saveGoal" style="margin-top:9px">Save goal</button>
+    <div style="margin-top:13px"><div class="goalbar"><b>${Number(data.achieved||0)}/${Number(data.target||7)}</b><div class="bar"><i style="width:${Math.min(100,Math.round((Number(data.achieved||0)/Math.max(1,Number(data.target||7)))*100))}%"></i></div></div></div>
+  </section>
+
+  <section class="card">
+    <div class="section"><h2>🧠 Weekly review</h2><span class="muted">Turn feedback into the next step</span></div>
+    <div class="form">
+      <div><label>What went well?</label><textarea id="win">${esc(data.win||"")}</textarea></div>
+      <div><label>What got in the way?</label><textarea id="barrier">${esc(data.barrier||"")}</textarea></div>
+      <div><label>My If–Then plan</label><textarea id="ifThen">${esc(data.ifThen||"")}</textarea></div>
+    </div>
+    <button class="btn primary" id="saveReview" style="margin-top:9px">Save review</button>
+  </section>
+
+  <section class="card">
+    <div class="section"><h2>🏅 XP & level</h2><span class="badge">Level ${level()}</span></div>
+    <div class="big-number">${data.xp||0}</div>
+    <div class="muted">total XP</div>
+    <div class="progress" style="margin-top:10px"><i style="width:${xpToNext()}%"></i></div>
+    <p class="muted">Every completed habit check gives +10 XP.</p>
+  </section>
+  `;
 }
 
 function dailyPage(){
- const sl=data.sleep[selectedDate]||{};
- return `
- <div class="card"><div class="section"><h2>📝 Daily Journal</h2><input id="date" type="date" value="${selectedDate}" style="max-width:170px"></div><textarea id="note" placeholder="Aaj kaisa raha? Kya seekha?">${esc(data.notes[selectedDate]||"")}</textarea></div>
- <div class="card"><div class="section"><h2>😴 Sleep — ${selectedDate}</h2></div><div class="form"><label>Bed time<input id="bed" type="time" value="${esc(sl.bed||"")}"></label><label>Wake time<input id="wake" type="time" value="${esc(sl.wake||"")}"></label><label>Hours<input id="hours" readonly value="${esc(sl.hours||"")}"></label></div></div>
- <div class="card"><h2>📌 Today's checklist</h2>${data.habits.map(h=>`<div class="today-row ${done(h,selectedDate)?"done":""}"><button class="bigcheck ${done(h,selectedDate)?"done":""}" data-check="${esc(h)}" data-date="${selectedDate}">${done(h,selectedDate)?"✓":"☐"}</button><span class="habit-name">${esc(h)}</span></div>`).join("")}</div>`;
+  const d=today();
+  return `
+  <section class="card today-box">
+    <div class="section"><h2>📝 Daily check-in</h2><span class="badge">${formatDay(d)}</span></div>
+    <div class="today-list">
+      ${data.habits.map(h=>{
+        const doneNow=done(h,d),freezeNow=frozen(h,d);
+        return `<div class="today-row ${doneNow?"done":""}">
+          <button class="bigcheck ${doneNow?"done":freezeNow?"freeze":""}" data-toggle="${h.id}|${d}">${doneNow?"✓":freezeNow?"🛡":"○"}</button>
+          <div style="flex:1"><div class="habit-name">${esc(h.icon)} ${esc(h.name)} ${h.private?'<span class="badge private-pill">🔒 Private</span>':""}</div><small class="muted">Streak ${habitStats(h).run} days</small></div>
+          <button class="btn small" data-freeze="${h.id}|${d}">${freezeNow?"Undo freeze":"🛡 Freeze"}</button>
+        </div>`
+      }).join("") || `<div class="empty">Add a habit first.</div>`}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section"><h2>😴 Sleep</h2><span class="muted">Optional daily log</span></div>
+    <div class="form">
+      <div><label>Hours</label><input id="sleepHours" type="number" min="0" max="24" step="0.1" value="${esc(data.sleep[d]?.hours||"")}"></div>
+      <div><label>Bedtime</label><input id="bed" type="time" value="${esc(data.sleep[d]?.bed||"")}"></div>
+      <div><label>Wake time</label><input id="wake" type="time" value="${esc(data.sleep[d]?.wake||"")}"></div>
+    </div>
+    <button class="btn primary" id="saveSleep" style="margin-top:9px">Save sleep</button>
+  </section>
+
+  <section class="card">
+    <div class="section"><h2>✍️ Journal</h2><span class="muted">One line is enough</span></div>
+    <textarea id="dailyNote" placeholder="How was today?">${esc(data.notes[d]||"")}</textarea>
+    <button class="btn primary" id="saveDailyNote" style="margin-top:9px">Save note</button>
+  </section>
+  `;
 }
-function calcSleep(a,b){
- if(!a||!b)return "";
- let [ah,am]=a.split(":").map(Number),[bh,bm]=b.split(":").map(Number),x=bh*60+bm-(ah*60+am);if(x<0)x+=1440;return (x/60).toFixed(1);
+
+function onboarding(){
+  return `
+  <div class="overlay" id="onboardingOverlay">
+    <div class="modal">
+      <div class="kicker">V6 setup</div>
+      <h2>👋 Let's build your routine</h2>
+      <p>Choose the habits you actually want to track. You can change them later.</p>
+      <label class="muted" style="font-size:12px">Your name</label>
+      <input id="onName" value="${esc(data.name||"")}" placeholder="Enter your name">
+
+      <div class="section" style="margin-top:15px">
+        <h2>Choose habits</h2>
+        <span class="badge" id="selCount">0 selected</span>
+      </div>
+
+      <div class="preset-grid" id="onPresets">
+        ${PRESETS.filter(x=>!x.private).map((p,i)=>`
+          <button class="preset ${i<4?"selected":""}" data-onpreset="${esc(p.name)}" data-picon="${p.icon}">
+            <div class="line">
+              <input type="checkbox" ${i<4?"checked":""}>
+              <span style="font-size:23px">${p.icon}</span>
+              <div><b>${esc(p.name)}</b><div class="muted">${esc(p.cat)}</div></div>
+            </div>
+          </button>`).join("")}
+      </div>
+
+      <div class="private-section">
+        <div class="section"><h2>🔒 Private habit</h2><span class="muted">Optional & discreet</span></div>
+        <button class="preset" style="width:100%" data-onpreset="Masturbation" data-picon="🔒" data-private="1">
+          <div class="line">
+            <input type="checkbox">
+            <span style="font-size:23px">🔒</span>
+            <div><b>Masturbation</b><div class="muted">Private habit option</div></div>
+          </div>
+        </button>
+      </div>
+
+      <div style="margin-top:14px">
+        <label class="muted" style="font-size:12px">Add your own habit (optional)</label>
+        <div class="custom-row" style="margin-top:6px">
+          <input id="onCustom" placeholder="e.g. No smoking">
+          <button class="btn" id="onAddCustom">Add</button>
+        </div>
+      </div>
+
+      <div class="note" style="margin-top:13px">💡 Start with a small set you can realistically repeat. You can add more later.</div>
+      <button class="btn primary" id="finishOnboarding" style="width:100%;margin-top:14px;padding:12px">Save My Routine 🚀</button>
+    </div>
+  </div>`;
 }
+
 function bind(){
- document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render()});
- const dark=$("#dark");if(dark)dark.onclick=()=>{data.dark=!data.dark;save();render()};
- const month=$("#month");if(month)month.onchange=()=>{data.month=month.value;save();render()};
- const name=$("#name");if(name)name.onchange=()=>{data.name=name.value;save();render()};
- const target=$("#target");if(target)target.onchange=()=>{data.target=Number(target.value);save()};
- const date=$("#date");if(date)date.onchange=()=>{selectedDate=date.value;render()};
- document.querySelectorAll("[data-check]").forEach(b=>b.onclick=()=>toggle(b.dataset.check,b.dataset.date));
- document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{data.habits=data.habits.filter(h=>h!==b.dataset.remove);save();render()});
- const add=$("#addHabit");if(add)add.onclick=()=>{const h=prompt("Habit name?");if(h&&h.trim()&&!data.habits.includes(h.trim())){data.habits.push(h.trim());save();render()}};
- ["goal","achieved","improve","win","barrier","ifThen"].forEach(k=>{const e=$("#"+k);if(e)e.oninput=()=>{data[k]=e.value;save()}});
- const note=$("#note");if(note)note.oninput=()=>{data.notes[selectedDate]=note.value;save()};
- const bed=$("#bed"),wake=$("#wake"),hours=$("#hours");
- if(bed&&wake){const f=()=>{const h=calcSleep(bed.value,wake.value);hours.value=h;if(h)data.sleep[selectedDate]={bed:bed.value,wake:wake.value,hours:Number(h)};else delete data.sleep[selectedDate];save()};bed.onchange=f;wake.onchange=f}
- const print=$("#print");if(print)print.onclick=()=>window.print();
- const reset=$("#reset");if(reset)reset.onclick=()=>{if(confirm("Reset all tracker data?")){localStorage.removeItem(KEY);data=defaults();save();render()}};
- const backup=$("#backup");if(backup)backup.onclick=()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="progress-tracker-v4-backup.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
- const restoreBtn=$("#restoreBtn"),restore=$("#restore");
- if(restoreBtn&&restore)restoreBtn.onclick=()=>restore.click();
- if(restore)restore.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{data=Object.assign(defaults(),JSON.parse(r.result));save();render();alert("Backup restored ✅")}catch(x){alert("Invalid backup file")}};r.readAsText(f)};
+  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{
+    tab=b.dataset.tab;
+    selectedHabit=null;
+    render();
+  });
+
+  $("#dark")?.addEventListener("click",()=>{data.dark=!data.dark;save();render()});
+  $("#backup")?.addEventListener("click",()=>{
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="progress-tracker-v6-backup.json";
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  });
+  $("#restoreBtn")?.addEventListener("click",()=>$("#restore")?.click());
+  $("#restore")?.addEventListener("change",e=>{
+    const f=e.target.files?.[0]; if(!f)return;
+    const r=new FileReader();
+    r.onload=()=>{
+      try{data=normalize(JSON.parse(r.result));data.onboardingDone=true;save();render();showToast("Backup restored ✅")}
+      catch(err){alert("Could not restore that file.")}
+    };
+    r.readAsText(f);
+  });
+
+  document.querySelectorAll("[data-toggle]").forEach(b=>b.onclick=()=>{
+    const [hid,d]=b.dataset.toggle.split("|"),h=data.habits.find(x=>x.id===hid); if(h)toggle(h,d);
+  });
+  document.querySelectorAll("[data-freeze]").forEach(b=>b.onclick=()=>{
+    const [hid,d]=b.dataset.freeze.split("|"),h=data.habits.find(x=>x.id===hid); if(h)useFreeze(h,d);
+  });
+  document.querySelectorAll("[data-openhabit]").forEach(b=>b.onclick=()=>{
+    selectedHabit=b.dataset.openhabit;render();
+  });
+
+  $("#closeHabit")?.addEventListener("click",()=>{selectedHabit=null;render()});
+  $("#habitOverlay")?.addEventListener("click",e=>{if(e.target.id==="habitOverlay"){selectedHabit=null;render()}});
+
+  $("#saveHabitNote")?.addEventListener("click",()=>{
+    const h=data.habits.find(x=>x.id===selectedHabit); if(!h)return;
+    data.notes[h.id]=$("#habitNote").value;save();showToast("Habit note saved ✅");render();
+  });
+  $("#editThisHabit")?.addEventListener("click",()=>{
+    const h=data.habits.find(x=>x.id===selectedHabit); if(h)editHabit(h);
+  });
+  $("#deleteThisHabit")?.addEventListener("click",()=>{
+    const h=data.habits.find(x=>x.id===selectedHabit); if(h)removeHabit(h);
+  });
+
+  document.querySelectorAll("[data-preset]").forEach(b=>b.onclick=()=>{
+    addHabit(b.dataset.preset,b.dataset.picon,b.dataset.private==="1");
+    render();
+  });
+  $("#addCustom")?.addEventListener("click",()=>{
+    const v=$("#customHabit").value.trim();
+    if(addHabit(v,iconFor(v),false)){ $("#customHabit").value=""; showToast("Habit added ✅"); render(); }
+  });
+  $("#customHabit")?.addEventListener("keydown",e=>{if(e.key==="Enter")$("#addCustom")?.click()});
+
+  $("#saveGoal")?.addEventListener("click",()=>{
+    data.goal=$("#goal").value.trim();
+    data.target=Math.max(1,Number($("#target").value||7));
+    data.achieved=Math.max(0,Number($("#achieved").value||0));
+    save();showToast("Goal saved 🎯");render();
+  });
+  $("#saveReview")?.addEventListener("click",()=>{
+    data.win=$("#win").value;
+    data.barrier=$("#barrier").value;
+    data.ifThen=$("#ifThen").value;
+    save();showToast("Review saved 🧠");render();
+  });
+  $("#saveSleep")?.addEventListener("click",()=>{
+    const d=today();
+    data.sleep[d]={hours:Number($("#sleepHours").value||0),bed:$("#bed").value,wake:$("#wake").value};
+    save();showToast("Sleep saved 😴");render();
+  });
+  $("#saveDailyNote")?.addEventListener("click",()=>{
+    data.notes[today()]=$("#dailyNote").value;save();showToast("Journal saved ✍️");render();
+  });
+  $("#openChallenge")?.addEventListener("click",()=>{
+    const easiest=data.habits.find(h=>habitStats(h).run===Math.min(...data.habits.map(x=>habitStats(x).run)));
+    if(easiest){selectedHabit=easiest.id;render()}
+  });
+
+  document.querySelectorAll("[data-onpreset]").forEach(b=>b.onclick=()=>{
+    const cb=b.querySelector("input");
+    cb.checked=!cb.checked;
+    b.classList.toggle("selected",cb.checked);
+    updateSelCount();
+  });
+  $("#onAddCustom")?.addEventListener("click",()=>{
+    const v=$("#onCustom").value.trim();
+    if(!v)return;
+    const exists=[...document.querySelectorAll("[data-oncustom-extra]")].some(x=>x.textContent.trim().toLowerCase()===v.toLowerCase());
+    if(exists)return;
+    const wrap=document.createElement("div");
+    wrap.dataset.oncustomExtra="1";
+    wrap.className="note";
+    wrap.style.marginTop="7px";
+    wrap.innerHTML=`✅ ${esc(v)} <span class="muted">(will be added)</span>`;
+    $("#onCustom").parentElement.parentElement.appendChild(wrap);
+    $("#onCustom").value="";
+    showToast("Custom habit added to setup");
+  });
+  $("#finishOnboarding")?.addEventListener("click",finishOnboarding);
+  updateSelCount();
 }
+
+function updateSelCount(){
+  const wrap=$("#onPresets");
+  if(!wrap)return;
+  const n=wrap.querySelectorAll("input:checked").length+(document.querySelector("[data-onpreset][data-private='1'] input:checked")?.checked?1:0);
+  const el=$("#selCount");if(el)el.textContent=n+" selected";
+}
+
+function finishOnboarding(){
+  const name=$("#onName").value.trim();
+  if(!name){alert("Please enter your name.");return}
+  const chosen=[];
+  document.querySelectorAll("[data-onpreset]").forEach(b=>{
+    const cb=b.querySelector("input");
+    if(cb?.checked) chosen.push({name:b.dataset.onpreset,icon:b.dataset.picon,private:b.dataset.private==="1"});
+  });
+  document.querySelectorAll("[data-oncustom-extra]").forEach(el=>{
+    const v=el.textContent.replace("✅ ","").replace(" (will be added)","").trim();
+    if(v)chosen.push({name:v,icon:iconFor(v),private:false});
+  });
+  if(!chosen.length){alert("Select at least one habit.");return}
+  data.name=name;
+  data.habits=[];
+  chosen.slice(0,15).forEach(x=>data.habits.push({id:uid(),name:x.name,icon:x.icon,private:!!x.private,created:currentMonth()}));
+  data.onboardingDone=true;
+  data.xp=0;
+  save();
+  showToast("Routine saved 🚀");
+  render();
+}
+
 render();
 })();
 </script>
