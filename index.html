@@ -4,27 +4,34 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#111827">
-<title>Progress Tracker V3</title>
+<title>Progress Tracker V4</title>
 <style>
-:root{--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#738096;--line:#e5e9f1;--a:#635bff;--a2:#7c3aed;--good:#16a34a;--soft:#eef0ff;--danger:#ef4444;--shadow:0 8px 30px rgba(25,35,60,.08)}
-*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
-body.dark{--bg:#0a1020;--card:#141b2d;--text:#f4f6ff;--muted:#9ca9c2;--line:#29334b;--soft:#202846;--shadow:0 8px 30px rgba(0,0,0,.25)}
-button,input,textarea,select{font:inherit}button{cursor:pointer}.app{max-width:1120px;margin:auto;padding:12px 14px 90px}
-.top{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:8px 0 15px}.title h1{font-size:25px;margin:0}.title p{margin:3px 0;color:var(--muted);font-size:13px}
-.actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.btn{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:11px;padding:9px 11px}.primary{background:var(--a);border-color:var(--a);color:#fff}
-.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px;margin-bottom:13px;box-shadow:var(--shadow)}
-.grid{display:grid;gap:11px}.stats{grid-template-columns:repeat(5,1fr)}.stat{padding:13px;border-radius:15px;background:var(--soft)}.stat small{color:var(--muted)}.stat b{font-size:23px;display:block;margin-top:3px}
-.tabs{display:flex;gap:7px;overflow:auto;margin-bottom:13px;padding-bottom:2px}.tab{white-space:nowrap}.tab.active{background:var(--a);color:#fff;border-color:var(--a)}
-.section{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:11px}.section h2{font-size:18px;margin:0}
-input,textarea,select{width:100%;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px}textarea{min-height:100px;resize:vertical}.form{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.form label{font-size:12px;color:var(--muted)}.form input,.form select{margin-top:4px}
-.muted{color:var(--muted)}.progress{height:10px;background:var(--line);border-radius:99px;overflow:hidden}.progress i{display:block;height:100%;background:linear-gradient(90deg,var(--a),var(--a2));border-radius:99px}
-.habit-list{display:grid;gap:9px}.habit-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:13px}
-.check{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-size:20px}.check.on{background:var(--good);border-color:var(--good);color:#fff}
-.bar{height:9px;background:var(--line);border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:var(--a)}
-.heat{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.heat div{aspect-ratio:1;border-radius:6px;background:var(--line);font-size:9px;display:flex;align-items:center;justify-content:center;color:var(--muted)}.heat .on{background:#6d63ff;color:#fff}.heat .today{outline:2px solid var(--a)}
-.bottom{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;gap:2px;padding:7px 5px calc(7px + env(safe-area-inset-bottom));z-index:20}.bottom button{border:0;background:transparent;color:var(--muted);padding:7px 13px;border-radius:12px;font-size:11px}.bottom button.active{background:var(--soft);color:var(--a);font-weight:700}
-.badge{display:inline-block;background:var(--soft);padding:6px 9px;border-radius:10px;margin:3px;font-size:12px}.danger{color:var(--danger)}
-@media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}.form{grid-template-columns:1fr}.top{align-items:flex-start}.actions{max-width:170px}.title h1{font-size:21px}.bottom button{padding:7px 9px}.habit-row{grid-template-columns:1fr auto}.habit-row .remove{grid-column:1/-1;justify-self:end}}
+:root{--bg:#f4f7fb;--card:#fff;--text:#172033;--muted:#718096;--line:#e3e8f0;--accent:#635bff;--accent2:#8b5cf6;--good:#16a34a;--bad:#ef4444;--soft:#eef0ff;--shadow:0 8px 28px rgba(20,30,60,.08)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+body.dark{--bg:#0b1220;--card:#141c2e;--text:#f4f7ff;--muted:#9aa8c0;--line:#29344b;--soft:#202846;--shadow:0 8px 28px rgba(0,0,0,.28)}
+button,input,textarea,select{font:inherit}button{cursor:pointer}
+.app{max-width:1120px;margin:auto;padding:12px 12px 92px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:7px 0 14px}.title h1{margin:0;font-size:25px}.title p{margin:4px 0 0;color:var(--muted);font-size:13px}.actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:11px;padding:9px 11px}.primary{background:var(--accent);border-color:var(--accent);color:#fff}.danger{color:var(--bad)}
+.tabs{display:flex;gap:7px;overflow:auto;margin-bottom:13px}.tab{white-space:nowrap}.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:13px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:10px}.stats{grid-template-columns:repeat(5,1fr)}.stat{background:var(--soft);border-radius:15px;padding:12px}.stat small{color:var(--muted)}.stat b{display:block;font-size:22px;margin-top:3px}
+.section{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}.section h2{margin:0;font-size:18px}
+.muted{color:var(--muted)}.progress{height:10px;background:var(--line);border-radius:99px;overflow:hidden}.progress i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px}
+input,textarea,select{width:100%;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px}textarea{min-height:100px;resize:vertical}
+.form{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.form label{font-size:12px;color:var(--muted)}
+.today-box{border:2px solid var(--accent);background:linear-gradient(135deg,var(--soft),var(--card))}
+.today-list{display:grid;gap:8px}.today-row{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:13px}
+.bigcheck{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:23px;flex:0 0 auto}.bigcheck.done{background:var(--good);border-color:var(--good);color:#fff}
+.today-row.done .habit-name{text-decoration:line-through;opacity:.65}
+.matrix-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}.matrix{min-width:720px;border-collapse:separate;border-spacing:4px;width:100%}.matrix th{font-size:10px;color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--card);z-index:2}.matrix th:first-child,.matrix td:first-child{position:sticky;left:0;background:var(--card);z-index:3}.matrix td{height:38px;text-align:center}.matrix .habit-cell{text-align:left;min-width:150px;padding:7px;font-size:12px;font-weight:600}.daycheck{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:transparent}.daycheck.done{background:var(--good);border-color:var(--good);color:#fff}.daycheck.today{outline:2px solid var(--accent);outline-offset:-2px}
+.heat{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.heat div{aspect-ratio:1;border-radius:7px;background:var(--line);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted)}.heat .on{background:var(--accent);color:#fff}.heat .today{outline:2px solid var(--accent)}
+.bar{height:9px;background:var(--line);border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent)}
+.badge{display:inline-block;background:var(--soft);padding:6px 9px;border-radius:10px;margin:3px;font-size:12px}
+.goalbar{display:flex;gap:8px;align-items:center}.goalbar .bar{flex:1}
+.empty{padding:18px;text-align:center;color:var(--muted)}
+.bottom{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;gap:2px;padding:7px 5px calc(7px + env(safe-area-inset-bottom));z-index:50}.bottom button{border:0;background:transparent;color:var(--muted);padding:7px 12px;border-radius:12px;font-size:11px}.bottom button.active{background:var(--soft);color:var(--accent);font-weight:700}
+@media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}.stats .stat:last-child{grid-column:span 2}.form{grid-template-columns:1fr}.title h1{font-size:21px}.actions{max-width:175px}.bottom button{padding:7px 9px}.today-row{padding:9px}.matrix{min-width:700px}}
 @media print{.bottom,.actions,.tabs{display:none!important}.app{padding-bottom:10px}.card{box-shadow:none}}
 </style>
 </head>
@@ -33,57 +40,143 @@ input,textarea,select{width:100%;background:var(--card);color:var(--text);border
 <script>
 (function(){
 "use strict";
-const KEY="progress_tracker_v3_stable";
+const KEY="progress_tracker_v4";
 const $=s=>document.querySelector(s);
-const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
-function today(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
-function ym(){return today().slice(0,7)}
-function daysInMonth(m){const p=m.split("-");return new Date(Number(p[0]),Number(p[1]),0).getDate()}
-function defaults(){return {name:"",month:ym(),habits:["Wake up early","Exercise","Study / Work","Drink water","Read","Meditation","No junk food","Walk"],checks:{},sleep:{},notes:{},goal:"",achieved:"",improve:"",dark:false}}
-function load(){
- try{const raw=localStorage.getItem(KEY);if(raw){const x=JSON.parse(raw);const d=Object.assign(defaults(),x);d.habits=Array.isArray(x.habits)?x.habits:defaults().habits;d.checks=x.checks||{};d.sleep=x.sleep||{};d.notes=x.notes||{};return d}}
- catch(e){}
- return defaults()
-}
-let data=load(),tab="home",date=today();
+const today=()=>new Date().toISOString().slice(0,10);
+const currentMonth=()=>today().slice(0,7);
+const daysInMonth=m=>{const [y,mo]=m.split("-").map(Number);return new Date(y,mo,0).getDate()};
+const makeDays=m=>Array.from({length:daysInMonth(m)},(_,i)=>m+"-"+String(i+1).padStart(2,"0"));
+const defaults=()=>({name:"",month:currentMonth(),habits:["Wake up early","Exercise","Study / Work","Drink water","Read","Meditation","No junk food","Walk"],checks:{},sleep:{},notes:{},goal:"",achieved:"",improve:"",target:7,dark:false});
+let data=load(),tab="home",selectedDate=today();
+function load(){try{const x=JSON.parse(localStorage.getItem(KEY)||"null");return x?Object.assign(defaults(),x):defaults()}catch(e){return defaults()}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
-function key(h,d){return h+"|"+d}
-function checked(h,d){return !!data.checks[key(h,d)]}
-function monthDays(){const n=daysInMonth(data.month);const a=[];for(let i=1;i<=n;i++)a.push(data.month+"-"+String(i).padStart(2,"0"));return a}
-function calcSleep(bed,wake){if(!bed||!wake)return "";let [bh,bm]=bed.split(":").map(Number),[wh,wm]=wake.split(":").map(Number);let x=wh*60+wm-(bh*60+bm);if(x<0)x+=1440;return (x/60).toFixed(1)}
-function stats(){const ds=monthDays(),total=data.habits.length*ds.length;let done=0;ds.forEach(d=>data.habits.forEach(h=>{if(checked(h,d))done++}));let streak=0;for(let i=ds.length-1;i>=0;i--){if(data.habits.length&&data.habits.every(h=>checked(h,ds[i])))streak++;else break}let best=0,bestH="—";data.habits.forEach(h=>{let n=ds.filter(d=>checked(h,d)).length;if(n>best){best=n;bestH=h}});let sl=ds.map(d=>Number(data.sleep[d]&&data.sleep[d].hours)).filter(Boolean);let avg=sl.length?sl.reduce((a,b)=>a+b,0)/sl.length:0;return{done,total,pct:total?Math.round(done/total*100):0,streak,best,bestH,avg}}
-function home(s,ds){return '<div class="grid stats"><div class="stat"><small>Overall</small><b>'+s.pct+'%</b></div><div class="stat"><small>Completed</small><b>'+s.done+'</b></div><div class="stat"><small>Streak</small><b>'+s.streak+' 🔥</b></div><div class="stat"><small>Avg sleep</small><b>'+(s.avg?s.avg.toFixed(1):"—")+'h</b></div><div class="stat"><small>XP / Level</small><b>'+(s.done*10)+' / '+(Math.floor(s.done/10)+1)+'</b></div></div><div class="card"><div class="section"><h2>📅 '+esc(data.month)+'</h2><input id="month" type="month" value="'+esc(data.month)+'" style="max-width:170px"></div><div class="progress"><i style="width:'+s.pct+'%"></i></div><p class="muted">'+s.done+' of '+s.total+' checks completed.</p></div><div class="card"><div class="section"><h2>🔥 Current streak</h2><b>'+s.streak+' days</b></div><div class="heat">'+ds.map(d=>'<div class="'+(data.habits.length&&data.habits.every(h=>checked(h,d))?"on ":"")+(d===today()?"today":"")+'">'+d.slice(-2)+'</div>').join("")+'</div></div><div class="card"><div class="section"><h2>🏆 Best habit</h2><b>'+esc(s.bestH)+'</b></div><p class="muted">'+s.best+' completed days this month.</p></div>'}
-function habits(ds){return '<div class="card"><div class="section"><h2>✅ Habits</h2><button class="btn primary" id="addHabit">+ Add habit</button></div><div class="form"><label>Name<input id="name" value="'+esc(data.name)+'" placeholder="Your name"></label><label>Month<input id="month" type="month" value="'+esc(data.month)+'"></label></div></div><div class="card"><div class="habit-list">'+data.habits.map(h=>'<div class="habit-row"><div><b>'+esc(h)+'</b><div class="muted" style="font-size:12px">'+ds.filter(d=>checked(h,d)).length+'/'+ds.length+' days</div></div><button class="check '+(checked(h,date)?"on":"")+'" data-check="'+esc(h)+'">'+(checked(h,date)?"✓":"○")+'</button><button class="btn remove" data-remove="'+esc(h)+'">Remove</button></div>').join("")+'</div></div><div class="card"><div class="section"><h2>📆 Selected day</h2><input id="date" type="date" value="'+date+'" style="max-width:170px"></div><p class="muted">Tap ○ to complete a habit for '+date+'.</p></div>'}
-function analytics(s,ds){return '<div class="card"><h2>📊 Analytics</h2><p class="muted">Last '+Math.min(7,ds.length)+' days completion</p>'+ds.slice(-7).map(d=>{let n=data.habits.filter(h=>checked(h,d)).length,p=data.habits.length?Math.round(n/data.habits.length*100):0;return '<div style="margin:12px 0"><div class="section"><span>'+d+'</span><b>'+p+'%</b></div><div class="bar"><i style="width:'+p+'%"></i></div></div>'}).join("")+'</div><div class="card"><h2>🏅 Achievements</h2><span class="badge">🌱 Started</span>'+(s.done>=10?'<span class="badge">⭐ 10 Checks</span>':"")+(s.streak>=3?'<span class="badge">🔥 3 Day Streak</span>':"")+(s.done>=50?'<span class="badge">🏆 50 Checks</span>':"")+'</div>'}
-function goals(){return '<div class="card"><div class="section"><h2>🎯 Monthly Goal</h2></div><textarea id="goal" placeholder="Is month ka main goal...">'+esc(data.goal)+'</textarea><textarea id="achieved" placeholder="What did you achieve?">'+esc(data.achieved)+'</textarea><textarea id="improve" placeholder="What will you improve?">'+esc(data.improve)+'</textarea></div><div class="card"><h2>⚙️ Data</h2><button class="btn" id="print">🖨️ Print</button> <button class="btn danger" id="reset">Reset all data</button></div>'}
-function daily(){const sl=data.sleep[date]||{};return '<div class="card"><div class="section"><h2>📝 Daily Journal</h2><input id="date" type="date" value="'+date+'" style="max-width:170px"></div><textarea id="note" placeholder="Aaj kaisa raha? Kya seekha?...">'+esc(data.notes[date]||"")+'</textarea></div><div class="card"><h2>😴 Sleep — '+date+'</h2><div class="form"><label>Bed<input id="bed" type="time" value="'+esc(sl.bed||"")+'"></label><label>Wake<input id="wake" type="time" value="'+esc(sl.wake||"")+'"></label><label>Hours<input id="hours" readonly value="'+esc(sl.hours||"")+'"></label></div></div><div class="card"><h2>🔔 Reminder</h2><p class="muted">Browser notification test.</p><button class="btn primary" id="notify">🔔 Test Reminder</button></div>'}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function id(h,d){return h+"|"+d}
+function done(h,d){return !!data.checks[id(h,d)]}
+function toggle(h,d){data.checks[id(h,d)]=!done(h,d);save();render()}
+function days(){return makeDays(data.month)}
+function stats(){
+ const ds=days(), total=data.habits.length*ds.length;
+ let completed=0;ds.forEach(d=>data.habits.forEach(h=>{if(done(h,d))completed++}));
+ let todayDone=data.habits.filter(h=>done(h,today())).length;
+ let streak=0;
+ for(let i=ds.length-1;i>=0;i--){if(data.habits.length&&data.habits.every(h=>done(h,ds[i])))streak++;else if(ds[i]<=today())break}
+ let longest=0,run=0;
+ ds.forEach(d=>{if(data.habits.length&&data.habits.every(h=>done(h,d))){run++;longest=Math.max(longest,run)}else run=0});
+ let bestH="—",best=0;
+ data.habits.forEach(h=>{const n=ds.filter(d=>done(h,d)).length;if(n>best){best=n;bestH=h}});
+ let sleep=ds.map(d=>Number(data.sleep[d]?.hours)).filter(Boolean);
+ let avg=sleep.length?sleep.reduce((a,b)=>a+b,0)/sleep.length:0;
+ return {total,completed,pct:total?Math.round(completed/total*100):0,todayDone,streak,longest,bestH,best,avg};
+}
+function checkedCount(d){return data.habits.filter(h=>done(h,d)).length}
 function render(){
- document.body.classList.toggle("dark",!!data.dark);const s=stats(),ds=monthDays();
- $("#app").innerHTML='<main class="app"><header class="top"><div class="title"><h1>Progress Tracker V3</h1><p>'+esc(data.name||"Build better days, one check at a time.")+'</p></div><div class="actions"><button class="btn" id="dark">☾</button><button class="btn" id="backup">Backup</button><button class="btn" id="restoreBtn">Restore</button><input id="restore" type="file" accept=".json" hidden></div></header><div class="tabs">'+["home","habits","analytics","goals","daily"].map((x,i)=>'<button class="btn tab '+(tab===x?"active":"")+'" data-tab="'+x+'">'+["🏠 Home","✅ Habits","📊 Stats","🎯 Goals","📝 Daily"][i]+'</button>').join("")+'</div>'+(tab==="home"?home(s,ds):tab==="habits"?habits(ds):tab==="analytics"?analytics(s,ds):tab==="goals"?goals():daily())+'<p class="muted" style="text-align:center">🔒 Data is stored locally on this device. Use Backup before clearing browser data.</p></main><nav class="bottom">'+["home","habits","analytics","goals","daily"].map((x,i)=>'<button class="'+(tab===x?"active":"")+'" data-tab="'+x+'"><span style="font-size:18px">'+["🏠","✅","📊","🎯","📝"][i]+'</span><br>'+["Home","Habits","Stats","Goals","Daily"][i]+'</button>').join("")+'</nav>';
- bind()
+ document.body.classList.toggle("dark",!!data.dark);
+ const s=stats(),ds=days();
+ $("#app").innerHTML=`
+ <main class="app">
+  <header class="top">
+   <div class="title"><h1>Progress Tracker V4</h1><p>${esc(data.name||"Build better days, one check at a time.")}</p></div>
+   <div class="actions"><button class="btn" id="dark">${data.dark?"☀️":"🌙"}</button><button class="btn" id="backup">Backup</button><button class="btn" id="restoreBtn">Restore</button><input id="restore" type="file" accept=".json" hidden></div>
+  </header>
+  <div class="tabs">${["home","habits","stats","goals","daily"].map((x,i)=>`<button class="btn tab ${tab===x?"active":""}" data-tab="${x}">${["🏠 Home","☑️ Habits","📊 Stats","🎯 Goals","📝 Daily"][i]}</button>`).join("")}</div>
+  ${tab==="home"?home(s,ds):tab==="habits"?habitPage(ds):tab==="stats"?statsPage(s,ds):tab==="goals"?goalsPage():dailyPage()}
+  <p class="muted" style="text-align:center">🔒 Your tracker data stays on this device. Use Backup before clearing browser data.</p>
+ </main>
+ <nav class="bottom">${["home","habits","stats","goals","daily"].map((x,i)=>`<button class="${tab===x?"active":""}" data-tab="${x}"><span style="font-size:18px">${["🏠","☑️","📊","🎯","📝"][i]}</span><br>${["Home","Habits","Stats","Goals","Daily"][i]}</button>`).join("")}</nav>`;
+ bind();
+}
+function home(s,ds){
+ const td=checkedCount(today());
+ return `
+ <div class="grid stats">
+  <div class="stat"><small>Overall</small><b>${s.pct}%</b></div>
+  <div class="stat"><small>Today</small><b>${td}/${data.habits.length}</b></div>
+  <div class="stat"><small>Streak</small><b>${s.streak} 🔥</b></div>
+  <div class="stat"><small>Avg sleep</small><b>${s.avg?s.avg.toFixed(1):"—"}h</b></div>
+  <div class="stat"><small>XP / Level</small><b>${s.completed*10} / ${Math.floor(s.completed/10)+1}</b></div>
+ </div>
+ <div class="card today-box">
+  <div class="section"><h2>☀️ TODAY — ${today()}</h2><b>${td}/${data.habits.length} done</b></div>
+  <div class="progress"><i style="width:${data.habits.length?Math.round(td/data.habits.length*100):0}%"></i></div>
+  <div class="today-list" style="margin-top:12px">
+   ${data.habits.length?data.habits.map(h=>`<div class="today-row ${done(h,today())?"done":""}"><button class="bigcheck ${done(h,today())?"done":""}" data-check="${esc(h)}" data-date="${today()}">${done(h,today())?"✓":"☐"}</button><span class="habit-name"><b>${esc(h)}</b></span></div>`).join(""):`<div class="empty">Add your first habit in Habits.</div>`}
+  </div>
+ </div>
+ <div class="card">
+  <div class="section"><h2>📅 ${esc(data.month)}</h2><input id="month" type="month" value="${esc(data.month)}" style="max-width:170px"></div>
+  <div class="progress"><i style="width:${s.pct}%"></i></div><p class="muted">${s.completed} of ${s.total} monthly checks completed.</p>
+ </div>
+ <div class="card"><div class="section"><h2>🔥 Current streak</h2><b>${s.streak} days</b></div><div class="heat">${ds.map(d=>`<div class="${data.habits.length&&data.habits.every(h=>done(h,d))?"on ":""}${d===today()?"today":""}">${+d.slice(-2)}</div>`).join("")}</div></div>
+ `;
+}
+function habitPage(ds){
+ return `
+ <div class="card">
+  <div class="section"><h2>☑️ Daily Habit Tracker</h2><button class="btn primary" id="addHabit">+ Add habit</button></div>
+  <div class="form">
+   <label>Name<input id="name" value="${esc(data.name)}" placeholder="Your name"></label>
+   <label>Month<input id="month" type="month" value="${esc(data.month)}"></label>
+   <label>Weekly target<select id="target">${[3,5,7].map(n=>`<option value="${n}" ${data.target===n?"selected":""}>${n} days</option>`).join("")}</select></label>
+  </div>
+ </div>
+ <div class="card">
+  <div class="section"><h2>📋 ${esc(data.month)} — Tick your work daily</h2><span class="muted">Swipe left/right →</span></div>
+  <div class="matrix-wrap"><table class="matrix"><thead><tr><th class="habit-cell">Habit</th>${ds.map(d=>`<th>${+d.slice(-2)}</th>`).join("")}</tr></thead>
+  <tbody>${data.habits.map(h=>`<tr><td class="habit-cell">${esc(h)}</td>${ds.map(d=>`<td><button class="daycheck ${done(h,d)?"done":""} ${d===today()?"today":""}" data-check="${esc(h)}" data-date="${d}">${done(h,d)?"✓":"✓"}</button></td>`).join("")}</tr>`).join("")}</tbody></table></div>
+  <p class="muted" style="margin-bottom:0">☐ = not done &nbsp;&nbsp; ☑ = completed. Tap any box to change it.</p>
+ </div>
+ <div class="card">
+  <div class="section"><h2>🗓 Selected day</h2><input id="date" type="date" value="${selectedDate}" style="max-width:170px"></div>
+  ${data.habits.map(h=>`<div class="today-row ${done(h,selectedDate)?"done":""}"><button class="bigcheck ${done(h,selectedDate)?"done":""}" data-check="${esc(h)}" data-date="${selectedDate}">${done(h,selectedDate)?"✓":"☐"}</button><span class="habit-name">${esc(h)}</span><button class="btn danger remove" data-remove="${esc(h)}">Remove</button></div>`).join("")}
+ </div>`;
+}
+function statsPage(s,ds){
+ return `
+ <div class="card"><h2>📊 Analytics</h2><p class="muted">Last 7 days</p>
+ ${ds.slice(-7).map(d=>{const n=checkedCount(d),p=data.habits.length?Math.round(n/data.habits.length*100):0;return `<div style="margin:12px 0"><div class="section"><span>${d}</span><b>${n}/${data.habits.length} • ${p}%</b></div><div class="bar"><i style="width:${p}%"></i></div></div>`}).join("")}
+ </div>
+ <div class="card"><h2>🏆 Progress</h2><p>Best habit: <b>${esc(s.bestH)}</b> — ${s.best} days</p><p>Current streak: <b>${s.streak} days 🔥</b></p><p>Longest streak: <b>${s.longest} days</b></p><p>Monthly completion: <b>${s.pct}%</b></p></div>
+ <div class="card"><h2>🏅 Achievements</h2>${s.completed>=1?'<span class="badge">🌱 Started</span>':""}${s.completed>=10?'<span class="badge">⭐ 10 Checks</span>':""}${s.streak>=3?'<span class="badge">🔥 3 Day Streak</span>':""}${s.completed>=50?'<span class="badge">🏆 50 Checks</span>':""}${s.pct>=90?'<span class="badge">🎯 90% Month</span>':""}</div>`;
+}
+function goalsPage(){
+ return `
+ <div class="card"><div class="section"><h2>🎯 Monthly Goal</h2></div><textarea id="goal" placeholder="Is month ka main goal...">${esc(data.goal)}</textarea><textarea id="achieved" placeholder="What did you achieve?">${esc(data.achieved)}</textarea><textarea id="improve" placeholder="What will you improve?">${esc(data.improve)}</textarea></div>
+ <div class="card"><div class="section"><h2>⚙️ Data</h2><div><button class="btn" id="print">🖨️ Print</button> <button class="btn danger" id="reset">Reset</button></div></div><p class="muted">Backup your data before resetting.</p></div>`;
+}
+function dailyPage(){
+ const sl=data.sleep[selectedDate]||{};
+ return `
+ <div class="card"><div class="section"><h2>📝 Daily Journal</h2><input id="date" type="date" value="${selectedDate}" style="max-width:170px"></div><textarea id="note" placeholder="Aaj kaisa raha? Kya seekha?">${esc(data.notes[selectedDate]||"")}</textarea></div>
+ <div class="card"><div class="section"><h2>😴 Sleep — ${selectedDate}</h2></div><div class="form"><label>Bed time<input id="bed" type="time" value="${esc(sl.bed||"")}"></label><label>Wake time<input id="wake" type="time" value="${esc(sl.wake||"")}"></label><label>Hours<input id="hours" readonly value="${esc(sl.hours||"")}"></label></div></div>
+ <div class="card"><h2>📌 Today's checklist</h2>${data.habits.map(h=>`<div class="today-row ${done(h,selectedDate)?"done":""}"><button class="bigcheck ${done(h,selectedDate)?"done":""}" data-check="${esc(h)}" data-date="${selectedDate}">${done(h,selectedDate)?"✓":"☐"}</button><span class="habit-name">${esc(h)}</span></div>`).join("")}</div>`;
+}
+function calcSleep(a,b){
+ if(!a||!b)return "";
+ let [ah,am]=a.split(":").map(Number),[bh,bm]=b.split(":").map(Number),x=bh*60+bm-(ah*60+am);if(x<0)x+=1440;return (x/60).toFixed(1);
 }
 function bind(){
  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render()});
  const dark=$("#dark");if(dark)dark.onclick=()=>{data.dark=!data.dark;save();render()};
- const month=$("#month");if(month)month.onchange=()=>{data.month=month.value||ym();save();render()};
+ const month=$("#month");if(month)month.onchange=()=>{data.month=month.value;save();render()};
  const name=$("#name");if(name)name.onchange=()=>{data.name=name.value;save();render()};
- const dt=$("#date");if(dt)dt.onchange=()=>{date=dt.value||today();render()};
- document.querySelectorAll("[data-check]").forEach(b=>b.onclick=()=>{const h=b.getAttribute("data-check");data.checks[key(h,date)]=!data.checks[key(h,date)];save();render()});
- document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{data.habits=data.habits.filter(h=>h!==b.getAttribute("data-remove"));save();render()});
- const add=$("#addHabit");if(add)add.onclick=()=>{const h=prompt("Habit name?");if(h&&h.trim()){data.habits.push(h.trim());save();render()}};
- const goal=$("#goal");if(goal)goal.oninput=()=>{data.goal=goal.value;save()};
- const achieved=$("#achieved");if(achieved)achieved.oninput=()=>{data.achieved=achieved.value;save()};
- const improve=$("#improve");if(improve)improve.oninput=()=>{data.improve=improve.value;save()};
- const note=$("#note");if(note)note.oninput=()=>{data.notes[date]=note.value;save()};
- const bed=$("#bed"),wake=$("#wake"),hours=$("#hours");if(bed&&wake){const f=()=>{const h=calcSleep(bed.value,wake.value);hours.value=h;if(h)data.sleep[date]={bed:bed.value,wake:wake.value,hours:Number(h)};else delete data.sleep[date];save()};bed.onchange=f;wake.onchange=f}
+ const target=$("#target");if(target)target.onchange=()=>{data.target=Number(target.value);save()};
+ const date=$("#date");if(date)date.onchange=()=>{selectedDate=date.value;render()};
+ document.querySelectorAll("[data-check]").forEach(b=>b.onclick=()=>toggle(b.dataset.check,b.dataset.date));
+ document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{data.habits=data.habits.filter(h=>h!==b.dataset.remove);save();render()});
+ const add=$("#addHabit");if(add)add.onclick=()=>{const h=prompt("Habit name?");if(h&&h.trim()&&!data.habits.includes(h.trim())){data.habits.push(h.trim());save();render()}};
+ ["goal","achieved","improve"].forEach(k=>{const e=$("#"+k);if(e)e.oninput=()=>{data[k]=e.value;save()}});
+ const note=$("#note");if(note)note.oninput=()=>{data.notes[selectedDate]=note.value;save()};
+ const bed=$("#bed"),wake=$("#wake"),hours=$("#hours");
+ if(bed&&wake){const f=()=>{const h=calcSleep(bed.value,wake.value);hours.value=h;if(h)data.sleep[selectedDate]={bed:bed.value,wake:wake.value,hours:Number(h)};else delete data.sleep[selectedDate];save()};bed.onchange=f;wake.onchange=f}
  const print=$("#print");if(print)print.onclick=()=>window.print();
- const reset=$("#reset");if(reset)reset.onclick=()=>{if(confirm("Reset all tracker data?")){data=defaults();save();render()}};
- const notify=$("#notify");if(notify)notify.onclick=async()=>{if("Notification"in window){const p=await Notification.requestPermission();if(p==="granted")new Notification("Progress Tracker",{body:"Reminder test works ✅"});else alert("Notification permission allow karo.")}else alert("Notifications browser me supported nahi hain.")};
- const backup=$("#backup");if(backup)backup.onclick=()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="progress-tracker-backup.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)};
- const rb=$("#restoreBtn"),ri=$("#restore");if(rb&&ri)rb.onclick=()=>ri.click();
- if(ri)ri.onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{try{const x=JSON.parse(reader.result);data=Object.assign(defaults(),x);data.habits=Array.isArray(x.habits)?x.habits:defaults().habits;save();render();alert("Backup restored ✅")}catch(e){alert("Invalid backup file")}};reader.readAsText(f)}
+ const reset=$("#reset");if(reset)reset.onclick=()=>{if(confirm("Reset all tracker data?")){localStorage.removeItem(KEY);data=defaults();save();render()}};
+ const backup=$("#backup");if(backup)backup.onclick=()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="progress-tracker-v4-backup.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+ const restoreBtn=$("#restoreBtn"),restore=$("#restore");
+ if(restoreBtn&&restore)restoreBtn.onclick=()=>restore.click();
+ if(restore)restore.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{data=Object.assign(defaults(),JSON.parse(r.result));save();render();alert("Backup restored ✅")}catch(x){alert("Invalid backup file")}};r.readAsText(f)};
 }
-try{render()}catch(e){document.getElementById("app").innerHTML='<div style="padding:30px;font-family:system-ui"><h2>Tracker loading error</h2><p>Please refresh this page.</p></div>';console.error(e)}
+render();
 })();
 </script>
 </body>
