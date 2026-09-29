@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#111827">
-<title>Progress Tracker V8</title>
+<title>Progress Tracker V8.1.1</title>
 <style>
 :root{
   --bg:#f4f7fb;--card:#fff;--text:#172033;--muted:#718096;--line:#e3e8f0;
@@ -217,10 +217,13 @@ table.clean td,table.clean th{padding:9px 7px;border-bottom:1px solid var(--line
 (function(){
 "use strict";
 
-const KEY="progress_tracker_v6";
-const OLD_KEYS=["progress_tracker_v5","progress_tracker_v4","progress_tracker_v3_plain"];
+const KEY="progress_tracker_v8";
+const OLD_KEYS=["progress_tracker_v6","progress_tracker_v5","progress_tracker_v4","progress_tracker_v3_plain"];
 const $=s=>document.querySelector(s);
-const today=()=>new Date().toISOString().slice(0,10);
+const today=()=>{
+  const d=new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+};
 const currentMonth=()=>today().slice(0,7);
 const daysInMonth=m=>{const [y,mo]=m.split("-").map(Number);return new Date(y,mo,0).getDate()};
 const makeDays=m=>Array.from({length:daysInMonth(m)},(_,i)=>m+"-"+String(i+1).padStart(2,"0"));
@@ -289,6 +292,7 @@ function normalize(x){
   }).filter(h=>h.name);
   d.checks=d.checks&&typeof d.checks==="object"?d.checks:{};
   d.freezes=d.freezes&&typeof d.freezes==="object"?d.freezes:{};
+  d.freezeUsed=d.freezeUsed&&typeof d.freezeUsed==="object"?d.freezeUsed:{};
   return d;
 }
 function saveObj(obj){try{localStorage.setItem(KEY,JSON.stringify(obj))}catch(e){}}
@@ -322,21 +326,39 @@ function xpToNext(){return (data.xp||0)%100}
 
 function toggle(h,d){
   const k=key(h,d);
+  const wasDone=done(h,d);
   if(frozen(h,d)) delete data.freezes[k];
-  data.checks[k]=!done(h,d);
-  if(data.checks[k]){
+  if(!wasDone){
+    data.checks[k]=true;
     addXp(10);
     showToast("Nice! +10 XP 🔥");
     celebrate();
-  } else {save();render()}
+  }else{
+    delete data.checks[k];
+    save();
+    showToast("Check removed");
+  }
+  render();
 }
+function freezeMonthKey(){return currentMonth()}
+function freezeAvailable(){return !data.freezeUsed[freezeMonthKey()]}
+
 function useFreeze(h,d){
   const k=key(h,d);
   if(done(h,d)) return;
-  if(frozen(h,d)){delete data.freezes[k];save();render();return}
+  if(frozen(h,d)){
+    delete data.freezes[k];
+    delete data.freezeUsed[freezeMonthKey()];
+    save();render();return;
+  }
+  if(!freezeAvailable()){
+    showToast("This month's freeze is already used 🛡️");
+    return;
+  }
   data.freezes[k]=true;
+  data.freezeUsed[freezeMonthKey()]=true;
   save();
-  showToast("Streak Freeze used 🛡️");
+  showToast("Monthly Streak Freeze used 🛡️");
   render();
 }
 function days(){return makeDays(data.month)}
@@ -530,6 +552,21 @@ const DAY_MESSAGES = {
   90:["🏆 Day 90 — Three Months","90 days! 🔥 Teen months of practice. Ab next 90 days ka goal choose karo jo tumhare real life ke saath fit ho.","Celebrate progress and choose the next chapter."],
   100:["💯 Day 100 — Triple Digits","100 days! Ye ek strong consistency milestone hai. Ab tumhare paas apni journey ka real history hai.","Look back, learn, and keep building."]
 };
+function journeyStartDate(){
+  if(data.journeyStart) return data.journeyStart;
+  const candidates=[today()];
+  data.habits.forEach(h=>{if(h.created)candidates.push(h.created)});
+  Object.keys(data.checks||{}).forEach(k=>{const d=k.split("|")[1];if(d)candidates.push(d)});
+  data.journeyStart=candidates.sort()[0]||today();
+  save();
+  return data.journeyStart;
+}
+function journeyCalendarDay(){
+  const start=new Date(journeyStartDate()+"T12:00:00");
+  const now=new Date(today()+"T12:00:00");
+  return Math.max(1,Math.floor((now-start)/86400000)+1);
+}
+
 function journeyDay(h){
   return Math.max(1,streakRunFor(h));
 }
@@ -554,7 +591,6 @@ function focusHabit(){
 function todayReflection(){
   const s=stats();
   if(s.todayDone===0)return ["Start","What's the easiest win you can complete in 2 minutes?","A tiny start is enough."];
-  if(s.todayDone<s.todayDone+s.todayDone)return ["Notice","What helped you complete today's habits?","Write it down and repeat the helpful cue."];
   if(s.todayDone===data.habits.length)return ["Celebrate","What worked today that you can repeat tomorrow?","Keep the successful routine visible."];
   return ["Adjust","What got in the way of the remaining habit?","Make tomorrow's next action smaller or clearer."];
 }
@@ -596,7 +632,7 @@ function render(){
   <main class="app">
     <header class="top">
       <div class="title">
-        <h1>Progress Tracker V8</h1>
+        <h1>Progress Tracker V8.1</h1>
         <p>${esc(data.name?("Hi, "+data.name+" 👋 — one win at a time."):"Build better days, one check at a time.")}</p>
       </div>
       <div class="actions">
@@ -615,7 +651,7 @@ function render(){
     ${tab==="home"?home(s,ds):tab==="habits"?habitsPage(ds):tab==="stats"?statsPage(s,ds):tab==="goals"?goalsPage():dailyPage()}
 
     <p class="muted" style="text-align:center">
-      🔒 V8 stores your tracker on this device. Your data stays in this browser unless you export a backup. Backup before clearing browser data.
+      🔒 V8.1 stores your tracker on this device. Your data stays in this browser unless you export a backup. Backup before clearing browser data.
     </p>
   </main>
   <nav class="bottom">${["home","habits","stats","goals","daily"].map((x,i)=>`
@@ -683,11 +719,11 @@ function home(s,ds){
   </section>`:""}
 
   <section class="card day-motivation winpop">
-    <div class="section"><h2>🧭 Your Day-by-Day Journey</h2><span class="day-badge">DAY ${Math.max(1,s.fullStreak||1)}</span></div>
+    <div class="section"><h2>🧭 Your Day-by-Day Journey</h2><span class="day-badge">DAY ${journeyCalendarDay()}</span></div>
     ${data.habits.length?`
-      <div class="quote">${esc(dayMessage(Math.max(1,s.fullStreak||1))[1])}</div>
-      <div class="subquote">${esc(dayMessage(Math.max(1,s.fullStreak||1))[2])}</div>
-      <div class="milestones" style="margin-top:12px">${journeyMilestones(Math.max(1,s.fullStreak||1))}</div>
+      <div class="quote">${esc(dayMessage(journeyCalendarDay())[1])}</div>
+      <div class="subquote">${esc(dayMessage(journeyCalendarDay())[2])}</div>
+      <div class="milestones" style="margin-top:12px">${journeyMilestones(journeyCalendarDay())}</div>
     `:`<div class="quote">Your Day 1 starts when you choose your first habit. 🌱</div>`}
   </section>
 
@@ -826,9 +862,9 @@ function habitDetailOverlay(){
 
       <div class="grid two">
         <div class="card" style="box-shadow:none">
-          <div class="section"><h2>🛡️ Streak Freeze</h2><span class="badge">1 available</span></div>
-          <p class="muted">Use a freeze on a missed day to protect continuity. It counts for streak display, not as a completed habit.</p>
-          <button class="btn" data-freeze="${h.id}|${today()}">${frozen(h,today())?"Remove today's freeze":"Use freeze on today"}</button>
+          <div class="section"><h2>🛡️ Streak Freeze</h2><span class="badge">${freezeAvailable()?"1 available":"Used this month"}</span></div>
+          <p class="muted">Use one freeze per month on a missed day to protect continuity. It counts for streak display, not as a completed habit.</p>
+          <button class="btn" data-freeze="${h.id}|${today()}">${frozen(h,today())?"Remove today's freeze":freezeAvailable()?"Use freeze on today":"Freeze used"}</button>
         </div>
         <div class="card" style="box-shadow:none">
           <div class="section"><h2>📝 Habit note</h2></div>
@@ -867,7 +903,7 @@ function habitsPage(ds){
       <div class="section"><h2>🔒 Private habit</h2><span class="muted">Optional</span></div>
       ${PRESETS.filter(x=>x.private).map(p=>`
         <button class="preset" style="width:100%" data-preset="${esc(p.name)}" data-picon="${p.icon}" data-private="1">
-          <div class="line"><span style="font-size:24px">${p.icon}</span><div><b>${esc(p.name)}</b><div class="muted">Kept behind a private label in the app</div></div></div>
+          <div class="line"><span style="font-size:24px">${p.icon}</span><div><b>${esc(p.name)}</b><div class="muted">Discreet label in the app; device storage is not encrypted</div></div></div>
         </button>`).join("")}
     </div>
     <div style="margin-top:12px">
@@ -995,8 +1031,8 @@ function dailyPage(){
   return `
   <section class="card day-motivation">
     <div class="section"><h2>🌅 Today's message</h2><span class="day-badge">KEEP GOING</span></div>
-    <div class="quote">${esc(dayMessage(Math.max(1,stats().fullStreak||1))[1])}</div>
-    <div class="subquote">${esc(dayMessage(Math.max(1,stats().fullStreak||1))[2])}</div>
+    <div class="quote">${esc(dayMessage(journeyCalendarDay())[1])}</div>
+    <div class="subquote">${esc(dayMessage(journeyCalendarDay())[2])}</div>
   </section>
   <section class="card today-box">
     <div class="section"><h2>📝 Daily check-in</h2><span class="badge">${formatDay(d)}</span></div>
@@ -1096,7 +1132,7 @@ function bind(){
     const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
     const a=document.createElement("a");
     a.href=URL.createObjectURL(blob);
-    a.download="progress-tracker-v6-backup.json";
+    a.download="progress-tracker-v8.1-backup.json";
     a.click();
     setTimeout(()=>URL.revokeObjectURL(a.href),1000);
   });
@@ -1173,11 +1209,19 @@ function bind(){
     if(easiest){selectedHabit=easiest.id;render()}
   });
 
-  document.querySelectorAll("[data-onpreset]").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("[data-onpreset]").forEach(b=>{
+    b.onclick=()=>{
+      const cb=b.querySelector("input");
+      cb.checked=!cb.checked;
+      b.classList.toggle("selected",cb.checked);
+      updateSelCount();
+    };
     const cb=b.querySelector("input");
-    cb.checked=!cb.checked;
-    b.classList.toggle("selected",cb.checked);
-    updateSelCount();
+    if(cb) cb.onclick=(e)=>{
+      e.stopPropagation();
+      b.classList.toggle("selected",cb.checked);
+      updateSelCount();
+    };
   });
   $("#onAddCustom")?.addEventListener("click",()=>{
     const v=$("#onCustom").value.trim();
