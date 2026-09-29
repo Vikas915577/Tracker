@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Progress Tracker</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--text:#15171a;--muted:#70757d;--line:#d9dde3;--accent:#111827;--good:#16a34a;--soft:#eef2f7}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:var(--text)}
+.app{max-width:1200px;margin:auto;padding:18px}
+.hero{background:#fff;border:1px solid var(--line);border-radius:22px;padding:22px 24px;margin-bottom:16px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:16px}.title{font-family:Georgia,serif;font-size:30px;letter-spacing:1px}.sub{color:var(--muted);font-size:13px;margin-top:5px}
+.controls{display:flex;gap:8px;flex-wrap:wrap}.controls input,.controls select,.controls button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 12px;font-size:14px}.controls button{cursor:pointer;background:var(--accent);color:#fff;border-color:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}.stat{background:var(--soft);border-radius:14px;padding:13px}.stat b{display:block;font-size:24px}.stat span{color:var(--muted);font-size:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:16px}.card h2{font-size:16px;margin:0 0 12px}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}.tracker{border-collapse:collapse;min-width:1050px;width:100%}.tracker th,.tracker td{border:1px solid var(--line);height:31px;text-align:center;font-size:11px}.tracker th:first-child,.tracker td:first-child{position:sticky;left:0;background:#fff;z-index:2;min-width:170px;text-align:left;padding-left:10px;font-weight:600}.tracker th{background:#f4f5f7;height:34px}.day{cursor:pointer;background:#fff}.day.done{background:#111827;color:#fff;font-weight:bold}.habit-actions{display:flex;gap:5px;float:right}.mini{font-size:11px;border:0;background:transparent;color:#777;cursor:pointer}
+.addrow{display:flex;gap:8px;margin-top:10px}.addrow input{flex:1;border:1px solid var(--line);border-radius:10px;padding:10px}.addrow button{border:1px solid var(--line);border-radius:10px;background:#fff;padding:10px 14px;cursor:pointer}
+.sleep-grid{display:grid;grid-template-columns:100px repeat(31,1fr);border:1px solid var(--line);overflow-x:auto;min-width:1050px}.sleep-grid>div{min-width:32px;height:31px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px}.sleep-grid .head{background:#f4f5f7;font-weight:bold}.sleep-cell{cursor:pointer}.sleep-cell.selected{background:#111827;color:#fff;font-weight:bold}
+.notes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.notes label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}.notes textarea{width:100%;min-height:130px;border:1px solid var(--line);border-radius:12px;padding:12px;resize:vertical;font-family:inherit}
+.progressbar{height:12px;background:#e8ebef;border-radius:20px;overflow:hidden}.progressbar div{height:100%;background:#111827;width:0%;transition:.25s}.ringline{display:flex;align-items:center;gap:12px;margin-top:12px}.ring{width:60px;height:60px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#111827 var(--p),#e8ebef 0)}.ring:after{content:attr(data-v);width:44px;height:44px;background:#fff;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:bold}
+.motivation{margin-top:12px;padding:12px;border-radius:12px;background:#f7f7f8;font-size:13px}.footer{color:#888;text-align:center;font-size:11px;padding:8px}
+@media(max-width:700px){.app{padding:10px}.top{align-items:flex-start;flex-direction:column}.title{font-size:25px}.stats{grid-template-columns:repeat(2,1fr)}.notes{grid-template-columns:1fr}.hero{padding:16px}.controls{width:100%}.controls input,.controls select,.controls button{flex:1}}
+</style>
+</head>
+<body>
+<div class="app">
+<section class="hero">
+  <div class="top">
+    <div><div class="title">✦ MY PROGRESS TRACKER ✦</div><div class="sub">A simple monthly system to build better days.</div></div>
+    <div class="controls">
+      <input id="name" placeholder="Your name">
+      <input id="month" type="month">
+      <button onclick="resetMonth()">Reset</button>
+      <button onclick="exportData()">Export</button>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><b id="overall">0%</b><span>Overall progress</span></div>
+    <div class="stat"><b id="completed">0</b><span>Completed checks</span></div>
+    <div class="stat"><b id="streak">0</b><span>Current streak</span></div>
+    <div class="stat"><b id="sleepavg">0h</b><span>Average sleep</span></div>
+  </div>
+  <div class="ringline"><div class="ring" id="ring" data-v="0%"></div><div style="flex:1"><b>Monthly progress</b><div class="progressbar"><div id="bar"></div></div><div class="motivation" id="msg">Start with one small win today. Consistency beats perfection.</div></div></div>
+</section>
+
+<section class="card">
+<h2>HABITS / DAYS</h2>
+<div class="tablewrap"><table class="tracker"><thead id="habitHead"></thead><tbody id="habitBody"></tbody></table></div>
+<div class="addrow"><input id="habitInput" placeholder="Add a habit, e.g. Workout, Study, Water..."><button onclick="addHabit()">+ Add habit</button></div>
+</section>
+
+<section class="card">
+<h2>SLEEP TRACKER</h2>
+<div class="tablewrap"><div class="sleep-grid" id="sleepGrid"></div></div>
+</section>
+
+<section class="card">
+<h2>MONTHLY REFLECTION</h2>
+<div class="notes">
+<div><label>MY MONTHLY GOAL</label><textarea id="goal" placeholder="What do I want to achieve this month?"></textarea></div>
+<div><label>WHAT I HAVE ACHIEVED THIS MONTH</label><textarea id="achieved" placeholder="Write your wins..."></textarea></div>
+<div><label>WHAT SHOULD I IMPROVE</label><textarea id="improve" placeholder="What will I do better next month?"></textarea></div>
+</div>
+</section>
+<div class="footer">Your data is stored in this browser using local storage. No account required.</div>
+</div>
+<script>
+const KEY='my_progress_tracker_v1';
+let data=JSON.parse(localStorage.getItem(KEY)||'null')||{name:'',month:'',habits:['Wake up early','Exercise','Study / Work','Drink water','Read','Meditation','No junk food','Walk','Sleep on time','Personal goal'],checks:{},sleep:{},goal:'',achieved:'',improve:''};
+const $=id=>document.getElementById(id);
+function save(){localStorage.setItem(KEY,JSON.stringify(data)); renderStats();}
+function daysInMonth(){if(!data.month)return 31;let [y,m]=data.month.split('-').map(Number);return new Date(y,m,0).getDate()}
+function render(){
+$('name').value=data.name||'';$('month').value=data.month||new Date().toISOString().slice(0,7);
+if(!data.month)data.month=$('month').value;
+$('goal').value=data.goal||'';$('achieved').value=data.achieved||'';$('improve').value=data.improve||'';
+renderHabits();renderSleep();renderStats();
+}
+function renderHabits(){
+let d=daysInMonth(), head='<tr><th>HABITS / DAYS</th>';for(let i=1;i<=d;i++)head+=`<th>${i}</th>`;head+='</tr>';$('habitHead').innerHTML=head;
+let body='';data.habits.forEach((h,r)=>{body+=`<tr><td>${escapeHtml(h)} <button class="mini" onclick="removeHabit(${r})">×</button></td>`;for(let day=1;day<=d;day++){let k=r+'-'+day,done=!!data.checks[k];body+=`<td class="day ${done?'done':''}" onclick="toggle(${r},${day})">${done?'✓':''}</td>`}body+='</tr>'});$('habitBody').innerHTML=body;
+}
+function renderSleep(){
+let d=daysInMonth(), html='<div class="head">Sleep</div>';for(let i=1;i<=d;i++)html+=`<div class="head">${i}</div>`;
+for(let h=10;h>=4;h--){html+=`<div><b>${h} hrs</b></div>`;for(let day=1;day<=d;day++){let val=data.sleep[day];html+=`<div class="sleep-cell ${val==h?'selected':''}" onclick="setSleep(${day},${h})">${val==h?'✓':''}</div>`}}$('sleepGrid').innerHTML=html;
+}
+function toggle(r,day){let k=r+'-'+day;data.checks[k]=!data.checks[k];save();renderHabits()}
+function setSleep(day,h){data.sleep[day]=data.sleep[day]===h?0:h;save();renderSleep()}
+function addHabit(){let v=$('habitInput').value.trim();if(!v)return;data.habits.push(v);$('habitInput').value='';save();renderHabits()}
+function removeHabit(r){if(data.habits.length<=1)return;if(confirm('Remove this habit?')){data.habits.splice(r,1);let c={};Object.keys(data.checks).forEach(k=>{let [rr,dd]=k.split('-').map(Number);if(rr<r)c[rr+'-'+dd]=data.checks[k];else if(rr>r)c[(rr-1)+'-'+dd]=data.checks[k]});data.checks=c;save();renderHabits()}}
+function renderStats(){
+let d=daysInMonth(), total=data.habits.length*d, done=Object.values(data.checks).filter(Boolean).length, pct=total?Math.round(done/total*100):0;
+$('overall').textContent=pct+'%';$('completed').textContent=done;
+let dates=[];for(let day=1;day<=d;day++){let count=data.habits.filter((_,r)=>data.checks[r+'-'+day]).length;if(count===data.habits.length)dates.push(day)}
+let cur=0;for(let x=d;x>=1;x--){if(dates.includes(x))cur++;else if(x<d)break}
+$('streak').textContent=cur;
+let vals=Object.values(data.sleep).filter(v=>v>=4&&v<=10),avg=vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):0;$('sleepavg').textContent=avg+'h';
+$('bar').style.width=pct+'%';$('ring').style.setProperty('--p',pct+'%');$('ring').dataset.v=pct+'%';
+$('msg').textContent=pct===0?'Start with one small win today.':pct<25?'Good start — keep showing up.':pct<50?'You are building momentum.':pct<75?'Nice consistency. Keep going!':pct<100?'Excellent progress — finish strong!':'Amazing! You completed the month.';
+}
+function resetMonth(){if(confirm('Reset all checks, sleep and notes for this month?')){data.checks={};data.sleep={};data.goal='';data.achieved='';data.improve='';save();render()}}
+function exportData(){let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='progress-tracker.json';a.click();URL.revokeObjectURL(a.href)}
+function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+$('name').oninput=e=>{data.name=e.target.value;save()};$('month').onchange=e=>{data.month=e.target.value;data.checks={};data.sleep={};save();render()};
+['goal','achieved','improve'].forEach(id=>$(id).oninput=e=>{data[id]=e.target.value;save()});
+render();
+</script>
+</body>
+</html>
