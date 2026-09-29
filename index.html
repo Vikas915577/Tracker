@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>My Progress Tracker</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--ink:#17191c;--muted:#707780;--line:#cfd4da;--soft:#f0f2f5;--accent:#111827}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+.app{max-width:1250px;margin:auto;padding:14px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px #00000008}
+.header{padding:20px}.top{display:flex;align-items:center;justify-content:space-between;gap:14px}.title{font:700 30px Georgia,serif;letter-spacing:1px}.sub{color:var(--muted);font-size:13px;margin-top:5px}
+.controls{display:flex;gap:8px;flex-wrap:wrap}.controls input,.controls button,.add input,.add button{height:42px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:0 12px;font-size:14px}.controls button,.add button{background:var(--accent);color:#fff;border-color:var(--accent);cursor:pointer}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}.stat{background:var(--soft);border-radius:12px;padding:12px}.stat b{font-size:23px;display:block}.stat span{font-size:12px;color:var(--muted)}
+.progress{display:flex;align-items:center;gap:12px;margin-top:14px}.ring{width:58px;height:58px;border-radius:50%;background:conic-gradient(var(--accent) var(--p),#e3e6ea 0);display:grid;place-items:center;flex:none}.ring:after{content:attr(data-v);width:42px;height:42px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:11px;font-weight:700}.bar{height:10px;background:#e7e9ec;border-radius:20px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent);width:0;transition:.25s}.message{font-size:12px;color:var(--muted);margin-top:7px}
+h2{text-align:center;font-size:16px;margin:0 0 12px;letter-spacing:.3px}.scroll{overflow:auto;border:1px solid var(--line);border-radius:10px}.grid{border-collapse:collapse;min-width:1060px;width:100%;table-layout:fixed}.grid th,.grid td{border:1px solid var(--line);height:31px;text-align:center;font-size:11px}.grid th{background:#f3f4f6;font-weight:700}.grid th:first-child,.grid td:first-child{width:220px;min-width:220px;position:sticky;left:0;background:#fff;z-index:2;text-align:left;padding:0 8px}.grid th:first-child{background:#f3f4f6}.day{cursor:pointer}.day.done{background:var(--accent);color:#fff;font-weight:700}.habit-name{display:flex;align-items:center;justify-content:space-between;gap:5px}.x{border:0;background:transparent;color:#9aa0a6;cursor:pointer;font-size:16px}
+.add{display:flex;gap:8px;margin-top:10px}.add input{flex:1}.add button{white-space:nowrap}
+.sleep{display:grid;grid-template-columns:100px repeat(31,1fr);min-width:1060px}.sleep>div{height:31px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px}.sleep .head{background:#f3f4f6;font-weight:700}.sleep .cell{cursor:pointer}.sleep .cell.selected{background:var(--accent);color:#fff;font-weight:700}
+.notes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.notes label{display:block;text-align:center;font-size:13px;font-weight:700;margin-bottom:7px}.notes textarea{width:100%;min-height:135px;resize:vertical;border:1px solid var(--line);border-radius:10px;padding:11px;font:14px Arial}
+.actions{display:flex;justify-content:center;gap:8px;margin-top:12px}.actions button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 13px;cursor:pointer}.footer{text-align:center;color:#8a9097;font-size:11px;padding:5px}
+@media(max-width:700px){.app{padding:8px}.header{padding:14px}.top{flex-direction:column;align-items:stretch}.title{font-size:24px;text-align:center}.sub{text-align:center}.controls>*{flex:1;min-width:110px}.stats{grid-template-columns:repeat(2,1fr)}.notes{grid-template-columns:1fr}.card{padding:12px}.grid th:first-child,.grid td:first-child{width:180px;min-width:180px}}
+@media print{body{background:#fff}.controls,.add,.actions{display:none}.card{box-shadow:none;break-inside:avoid}}
+</style>
+</head>
+<body>
+<main class="app">
+<section class="card header">
+<div class="top">
+<div><div class="title">✦ MY PROGRESS TRACKER ✦</div><div class="sub">Build better days, one check at a time.</div></div>
+<div class="controls"><input id="name" placeholder="Name"><input id="month" type="month"><button id="reset">Reset Month</button></div>
+</div>
+<div class="stats">
+<div class="stat"><b id="overall">0%</b><span>Overall progress</span></div>
+<div class="stat"><b id="completed">0</b><span>Completed checks</span></div>
+<div class="stat"><b id="streak">0</b><span>Full-day streak</span></div>
+<div class="stat"><b id="sleepavg">0h</b><span>Average sleep</span></div>
+</div>
+<div class="progress"><div class="ring" id="ring" data-v="0%" style="--p:0%"></div><div style="flex:1"><b>Monthly Progress</b><div class="bar"><i id="bar"></i></div><div class="message" id="message">Start with one small win today.</div></div></div>
+</section>
+
+<section class="card"><h2>HABITS / DAYS</h2><div class="scroll"><table class="grid"><thead id="habitHead"></thead><tbody id="habitBody"></tbody></table></div><div class="add"><input id="habitInput" placeholder="Add a habit — Workout, Study, Water..."><button id="addHabit">+ Add Habit</button></div></section>
+
+<section class="card"><h2>SLEEP TRACKER</h2><div class="scroll"><div class="sleep" id="sleepGrid"></div></div></section>
+
+<section class="card"><h2>MONTHLY REFLECTION</h2><div class="notes">
+<div><label>MY MONTHLY GOAL</label><textarea id="goal" placeholder="What do I want to achieve this month?"></textarea></div>
+<div><label>WHAT I HAVE ACHIEVED THIS MONTH</label><textarea id="achieved" placeholder="Write your wins..."></textarea></div>
+<div><label>WHAT SHOULD I IMPROVE</label><textarea id="improve" placeholder="What will I improve next month?"></textarea></div>
+</div>
+<div class="actions"><button id="export">Export Backup</button><button id="print">Print</button></div>
+</section>
+<div class="footer">Your tracker is saved automatically on this device. No account required.</div>
+</main>
+<script>
+const KEY='tracker_v2';
+const defaultHabits=['Wake up early','Exercise','Study / Work','Drink water','Read','Meditation','No junk food','Walk','Sleep on time','Personal goal'];
+let db=JSON.parse(localStorage.getItem(KEY)||'null')||{name:'',months:{}};
+const el=id=>document.getElementById(id);
+const monthKey=()=>el('month').value;
+function blank(){return{habits:[...defaultHabits],checks:{},sleep:{},goal:'',achieved:'',improve:''}}
+function current(){let k=monthKey();if(!db.months[k])db.months[k]=blank();return db.months[k]}
+function save(){db.name=el('name').value;localStorage.setItem(KEY,JSON.stringify(db))}
+function days(){let [y,m]=monthKey().split('-').map(Number);return new Date(y,m,0).getDate()}
+function render(){
+let d=current(), n=days();el('name').value=db.name||'';
+let h='<tr><th>HABITS / DAYS</th>';for(let i=1;i<=n;i++)h+='<th>'+i+'</th>';h+='</tr>';el('habitHead').innerHTML=h;
+let b='';d.habits.forEach((name,r)=>{b+='<tr><td><div class="habit-name"><span>'+esc(name)+'</span><button class="x" onclick="removeHabit('+r+')">×</button></div></td>';for(let day=1;day<=n;day++){let done=!!d.checks[r+'-'+day];b+='<td class="day '+(done?'done':'')+'" onclick="toggle('+r+','+day+')">'+(done?'✓':'')+'</td>'}b+='</tr>'});el('habitBody').innerHTML=b;
+let s='<div class="head">Sleep</div>';for(let i=1;i<=n;i++)s+='<div class="head">'+i+'</div>';for(let hr=10;hr>=4;hr--){s+='<div><b>'+hr+' hrs</b></div>';for(let day=1;day<=n;day++){let on=+d.sleep[day]===hr;s+='<div class="cell '+(on?'selected':'')+'" onclick="sleepSet('+day+','+hr+')">'+(on?'✓':'')+'</div>'}}el('sleepGrid').innerHTML=s;
+el('goal').value=d.goal||'';el('achieved').value=d.achieved||'';el('improve').value=d.improve||'';stats();
+}
+function toggle(r,day){let d=current(),k=r+'-'+day;d.checks[k]=!d.checks[k];save();render()}
+function sleepSet(day,hr){let d=current();d.sleep[day]=+d.sleep[day]===hr?0:hr;save();render()}
+function addHabit(){let v=el('habitInput').value.trim();if(!v)return;current().habits.push(v);el('habitInput').value='';save();render()}
+function removeHabit(r){let d=current();if(d.habits.length<=1)return;if(!confirm('Remove this habit?'))return;d.habits.splice(r,1);let c={};Object.keys(d.checks).forEach(k=>{let [rr,dd]=k.split('-').map(Number);if(rr<r)c[rr+'-'+dd]=d.checks[k];if(rr>r)c[(rr-1)+'-'+dd]=d.checks[k]});d.checks=c;save();render()}
+function stats(){let d=current(),n=days(),total=d.habits.length*n,done=Object.values(d.checks).filter(Boolean).length,p=total?Math.round(done/total*100):0;el('overall').textContent=p+'%';el('completed').textContent=done;let full=0;for(let day=n;day>=1;day--){let ok=d.habits.every((_,r)=>d.checks[r+'-'+day]);if(ok)full++;else break}el('streak').textContent=full;let vals=Object.values(d.sleep).filter(v=>v>=4&&v<=10);el('sleepavg').textContent=(vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):0)+'h';el('bar').style.width=p+'%';el('ring').style.setProperty('--p',p+'%');el('ring').dataset.v=p+'%';el('message').textContent=p===0?'Start with one small win today.':p<25?'Good start — keep showing up.':p<50?'You are building momentum.':p<75?'Nice consistency. Keep going!':p<100?'Excellent progress — finish strong!':'Amazing! Month completed.'}
+function esc(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+el('month').value=new Date().toISOString().slice(0,7);
+el('name').oninput=save;el('month').onchange=render;el('addHabit').onclick=addHabit;
+el('reset').onclick=()=>{if(confirm('Reset this month? All checks, sleep and notes for this month will be cleared.')){db.months[monthKey()]=blank();save();render()}};
+['goal','achieved','improve'].forEach(id=>el(id).oninput=()=>{current()[id]=el(id).value;save()});
+el('export').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='tracker-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)};
+el('print').onclick=()=>window.print();render();
+</script>
+</body>
+</html>
