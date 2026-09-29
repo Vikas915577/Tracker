@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#111827">
-<title>Progress Tracker V7</title>
+<title>Progress Tracker V8</title>
 <style>
 :root{
   --bg:#f4f7fb;--card:#fff;--text:#172033;--muted:#718096;--line:#e3e8f0;
@@ -159,6 +159,56 @@ body.dark .private-pill{background:#352714!important;color:#ffd28a!important}
 .reflection .mini{min-height:75px}
 @media(max-width:760px){.reflection{grid-template-columns:1fr}}
 
+
+.v8-hero{background:linear-gradient(135deg,var(--soft),var(--card));border:2px solid var(--accent);overflow:hidden;position:relative}
+.v8-hero:before{content:"";position:absolute;width:180px;height:180px;border-radius:50%;right:-70px;top:-70px;background:var(--accent);opacity:.08}
+.score-ring{width:104px;height:104px;border-radius:50%;background:conic-gradient(var(--accent) calc(var(--score)*1%),var(--line) 0);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.score-ring span{width:82px;height:82px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;flex-direction:column;font-weight:900}
+.score-ring b{font-size:23px;line-height:1}
+.hero-flex{display:flex;align-items:center;justify-content:space-between;gap:15px;position:relative;z-index:1}
+.hero-copy{flex:1}
+.hero-copy h2{font-size:22px;margin:0 0 5px}
+.hero-copy p{margin:0;color:var(--muted);line-height:1.45}
+.quick-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
+.focus-card{border:1px solid var(--accent);background:var(--soft)}
+.focus-row{display:flex;align-items:center;gap:10px}
+.focus-icon{font-size:30px}
+.focus-check{width:50px;height:50px;border:0;border-radius:15px;background:var(--accent);color:#fff;font-size:25px}
+.focus-check.done{background:var(--good)}
+.challenge-grid{display:grid;grid-template-columns:2fr 1fr;gap:10px}
+.mission-list{display:grid;gap:8px}
+.mission-item{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:12px;padding:9px;background:var(--card)}
+.mission-item input{width:auto}
+.pulse{animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(99,91,255,.0)}50%{box-shadow:0 0 0 8px rgba(99,91,255,.08)}}
+.spark{position:fixed;pointer-events:none;z-index:130;font-size:25px;animation:spark 900ms ease-out forwards}
+@keyframes spark{0%{transform:translate(0,0) scale(.8);opacity:0}20%{opacity:1}100%{transform:translate(var(--dx),-120px) scale(1.2);opacity:0}}
+.modal-wide{max-width:900px}
+.range-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+.range-row input[type=range]{padding:0}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 9px;font-size:11px}
+.chip.active{background:var(--soft);border-color:var(--accent);color:var(--accent);font-weight:700}
+.week-bars{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end;height:120px}
+.wbar{display:flex;flex-direction:column;align-items:center;justify-content:end;gap:4px;height:100%}
+.wbar i{display:block;width:100%;max-width:34px;border-radius:8px 8px 4px 4px;background:var(--accent);min-height:4px}
+.wbar small{font-size:9px;color:var(--muted)}
+.private-toggle{display:flex;align-items:center;gap:8px}
+.private-toggle input{width:auto}
+table.clean{width:100%;border-collapse:collapse}
+table.clean td,table.clean th{padding:9px 7px;border-bottom:1px solid var(--line);text-align:left;font-size:12px}
+.recovery{border:1px dashed var(--warn);background:rgba(245,158,11,.06)}
+.success-line{color:var(--good);font-weight:700}
+.warning-line{color:var(--warn);font-weight:700}
+.v8-footer{font-size:11px;text-align:center;color:var(--muted);padding:8px}
+@media(max-width:760px){
+  .hero-flex{align-items:flex-start}
+  .score-ring{width:88px;height:88px}
+  .score-ring span{width:70px;height:70px}
+  .hero-copy h2{font-size:19px}
+  .challenge-grid{grid-template-columns:1fr}
+}
+
 </style>
 </head>
 <body>
@@ -249,6 +299,20 @@ function done(h,d){return !!data.checks[key(h,d)]}
 function frozen(h,d){return !!data.freezes[key(h,d)]}
 function active(h,d){return done(h,d)||frozen(h,d)}
 
+
+function celebrate(){
+  const emojis=["✨","🔥","🎉","💪","⭐","🚀"];
+  emojis.forEach((e,i)=>{
+    const el=document.createElement("div");
+    el.className="spark";el.textContent=e;
+    el.style.left=(42+Math.random()*16)+"%";
+    el.style.bottom=(90+Math.random()*30)+"px";
+    el.style.setProperty("--dx",((Math.random()-.5)*180)+"px");
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),950+i*30);
+  });
+}
+
 function addXp(n){
   data.xp=(data.xp||0)+n;
   save();
@@ -260,8 +324,11 @@ function toggle(h,d){
   const k=key(h,d);
   if(frozen(h,d)) delete data.freezes[k];
   data.checks[k]=!done(h,d);
-  if(data.checks[k]){addXp(10);showToast("Nice! +10 XP 🔥")}
-  else {save();render()}
+  if(data.checks[k]){
+    addXp(10);
+    showToast("Nice! +10 XP 🔥");
+    celebrate();
+  } else {save();render()}
 }
 function useFreeze(h,d){
   const k=key(h,d);
@@ -273,40 +340,78 @@ function useFreeze(h,d){
   render();
 }
 function days(){return makeDays(data.month)}
-function habitDays(h){return days().filter(d=>active(h,d))}
-function habitStats(h){
-  const ds=days();
-  let total=0;
-  ds.forEach(d=>{if(done(h,d))total++});
+function allStoredDates(){
+  const set=new Set();
+  Object.keys(data.checks||{}).forEach(k=>set.add(k.split("|")[1]));
+  Object.keys(data.freezes||{}).forEach(k=>set.add(k.split("|")[1]));
+  Object.keys(data.sleep||{}).forEach(d=>set.add(d));
+  Object.keys(data.notes||{}).filter(k=>/^\d{4}-\d{2}-\d{2}$/.test(k)).forEach(d=>set.add(d));
+  set.add(today());
+  const first=data.habits.reduce((min,h)=>h.created && h.created<min?h.created:min,today());
+  set.add(first);
+  const arr=[...set].filter(d=>/^\\d{4}-\\d{2}-\\d{2}$/.test(d)).sort();
+  // Give a useful rolling window, while still preserving all historical check dates.
+  const anchor=new Date(today()+"T12:00:00");
+  const earliest=new Date((arr[0]||today())+"T12:00:00");
+  const span=Math.max(1,Math.ceil((anchor-earliest)/86400000)+1);
+  const n=Math.min(3650,Math.max(span,365));
+  const out=[];
+  for(let i=n-1;i>=0;i--){
+    const dt=new Date(anchor);dt.setDate(anchor.getDate()-i);
+    out.push(dt.toISOString().slice(0,10));
+  }
+  return out;
+}
+function lifetimeDays(h){return allStoredDates()}
+function streakRunFor(h){
+  const ds=allStoredDates();
   let run=0;
   for(let i=ds.length-1;i>=0;i--){
-    if(active(h,ds[i])) run++;
-    else if(ds[i]<=today()) break;
+    const d=ds[i];
+    if(active(h,d)) run++;
+    else if(d===today()) continue;
+    else break;
   }
-  let longest=0,cur=0;
+  return run;
+}
+function bestStreakFor(h){
+  const ds=allStoredDates(); let longest=0,cur=0;
   ds.forEach(d=>{
     if(active(h,d)){cur++;longest=Math.max(longest,cur)}
     else cur=0;
   });
-  const last7=ds.slice(-7);
+  return longest;
+}
+function habitStats(h){
+  const md=days(), all=allStoredDates();
+  const total=all.filter(d=>done(h,d)).length;
+  const run=streakRunFor(h);
+  const longest=bestStreakFor(h);
+  const last7=md.slice(-7);
   const weekDone=last7.filter(d=>active(h,d)).length;
-  const monthPct=ds.length?Math.round(total/ds.length*100):0;
-  const weekPct=7?Math.round(weekDone/Math.min(7,last7.length)*100):0;
+  const monthDone=md.filter(d=>done(h,d)).length;
+  const monthEligible=md.filter(d=>d>=(h.created||md[0])&&d<=today()).length||md.length;
+  const monthPct=monthEligible?Math.round(monthDone/monthEligible*100):0;
+  const weekPct=last7.length?Math.round(weekDone/last7.length*100):0;
   return {total,run,longest,weekDone,monthPct,weekPct};
 }
 function stats(){
-  const ds=days();
-  const total=data.habits.length*ds.length;
+  const md=days(),all=allStoredDates();
+  const eligibleDays=md.filter(d=>d<=today()).length;
+  const total=data.habits.length*eligibleDays;
   let completed=0;
-  ds.forEach(d=>data.habits.forEach(h=>{if(done(h,d))completed++}));
+  md.forEach(d=>data.habits.forEach(h=>{if(done(h,d))completed++}));
   const todayDone=data.habits.filter(h=>done(h,today())).length;
-  let fullStreak=0;
-  for(let i=ds.length-1;i>=0;i--){
-    if(data.habits.length&&data.habits.every(h=>active(h,ds[i])))fullStreak++;
-    else if(ds[i]<=today())break;
-  }
+  const fullRun=(()=>{
+    let r=0; for(let i=all.length-1;i>=0;i--){
+      const d=all[i];
+      if(data.habits.length&&data.habits.every(h=>active(h,d)))r++;
+      else if(d===today())continue;
+      else break;
+    } return r;
+  })();
   let longest=0,run=0;
-  ds.forEach(d=>{
+  all.forEach(d=>{
     if(data.habits.length&&data.habits.every(h=>active(h,d))){run++;longest=Math.max(longest,run)}
     else run=0;
   });
@@ -315,10 +420,10 @@ function stats(){
     const n=habitStats(h).total;
     if(n>best){best=n;bestH=h}
   });
-  let sleep=ds.map(d=>Number(data.sleep[d]?.hours)).filter(Boolean);
+  let sleep=md.map(d=>Number(data.sleep[d]?.hours)).filter(Boolean);
   const avg=sleep.length?sleep.reduce((a,b)=>a+b,0)/sleep.length:0;
   const score=weeklyScore();
-  return {total,completed,pct:total?Math.round(completed/total*100):0,todayDone,fullStreak,longest,bestH,best,avg,score};
+  return {total,completed,pct:total?Math.round(completed/total*100):0,todayDone,fullStreak:fullRun,longest,bestH,best,avg,score};
 }
 function checkedCount(d){return data.habits.filter(h=>done(h,d)).length}
 function activeCount(d){return data.habits.filter(h=>active(h,d)).length}
@@ -426,15 +531,43 @@ const DAY_MESSAGES = {
   100:["💯 Day 100 — Triple Digits","100 days! Ye ek strong consistency milestone hai. Ab tumhare paas apni journey ka real history hai.","Look back, learn, and keep building."]
 };
 function journeyDay(h){
-  const ds=days(), hs=habitStats(h);
-  // Count consecutive active days ending today; this is the habit's journey day.
-  let run=0;
-  for(let i=ds.length-1;i>=0;i--){
-    if(active(h,ds[i])) run++;
-    else if(ds[i]===today()) continue;
-    else break;
-  }
-  return Math.max(1,run);
+  return Math.max(1,streakRunFor(h));
+}
+function personalScore(){
+  if(!data.habits.length)return 0;
+  const s=stats();
+  const week=s.score;
+  const todayPct=Math.round(s.todayDone/data.habits.length*100);
+  const streakBonus=Math.min(20,s.fullStreak*2);
+  return Math.min(100,Math.round(todayPct*.35+week*.45+streakBonus));
+}
+function nextMilestone(day){
+  const ms=[3,7,14,21,30,45,60,90,100,150,180,365];
+  return ms.find(x=>x>day)||Math.ceil((day+1)/100)*100;
+}
+function focusHabit(){
+  if(!data.habits.length)return null;
+  // Pick a habit that is unfinished today; prefer the smallest current streak.
+  const open=data.habits.filter(h=>!done(h,today()));
+  return (open.length?open:data.habits).slice().sort((a,b)=>streakRunFor(a)-streakRunFor(b))[0];
+}
+function todayReflection(){
+  const s=stats();
+  if(s.todayDone===0)return ["Start","What's the easiest win you can complete in 2 minutes?","A tiny start is enough."];
+  if(s.todayDone<s.todayDone+s.todayDone)return ["Notice","What helped you complete today's habits?","Write it down and repeat the helpful cue."];
+  if(s.todayDone===data.habits.length)return ["Celebrate","What worked today that you can repeat tomorrow?","Keep the successful routine visible."];
+  return ["Adjust","What got in the way of the remaining habit?","Make tomorrow's next action smaller or clearer."];
+}
+function weekDays(){
+  const all=allStoredDates();
+  return all.slice(-7);
+}
+function weeklyBarHtml(){
+  const ds=weekDays();
+  return `<div class="week-bars">${ds.map(d=>{
+    const n=activeCount(d), pct=data.habits.length?Math.max(3,Math.round(n/data.habits.length*100)):3;
+    return `<div class="wbar"><i style="height:${pct}%"></i><small>${new Date(d+"T12:00:00").toLocaleDateString(undefined,{weekday:"short"}).slice(0,2)}</small><small>${n}/${data.habits.length}</small></div>`;
+  }).join("")}</div>`;
 }
 function dayMessage(day){
   if(DAY_MESSAGES[day]) return DAY_MESSAGES[day];
@@ -463,7 +596,7 @@ function render(){
   <main class="app">
     <header class="top">
       <div class="title">
-        <h1>Progress Tracker V7</h1>
+        <h1>Progress Tracker V8</h1>
         <p>${esc(data.name?("Hi, "+data.name+" 👋 — one win at a time."):"Build better days, one check at a time.")}</p>
       </div>
       <div class="actions">
@@ -482,7 +615,7 @@ function render(){
     ${tab==="home"?home(s,ds):tab==="habits"?habitsPage(ds):tab==="stats"?statsPage(s,ds):tab==="goals"?goalsPage():dailyPage()}
 
     <p class="muted" style="text-align:center">
-      🔒 V7 stores your tracker on this device. Backup before clearing browser data.
+      🔒 V8 stores your tracker on this device. Your data stays in this browser unless you export a backup. Backup before clearing browser data.
     </p>
   </main>
   <nav class="bottom">${["home","habits","stats","goals","daily"].map((x,i)=>`
@@ -498,6 +631,24 @@ function render(){
 function home(s,ds){
   const td=checkedCount(today()),m=motivation(s);
   return `
+
+  <section class="card v8-hero">
+    <div class="hero-flex">
+      <div class="hero-copy">
+        <div class="kicker">V8 Daily Command Center</div>
+        <h2>${data.name?`Welcome back, ${esc(data.name)} 👋`:`Your next win starts here.`}</h2>
+        <p><b>Personal score: ${personalScore()}/100</b><br>
+        ${personalScore()>=80?"You're building strong momentum. Protect it with one realistic win at a time.":"Don't chase perfection. Make the next habit easier to complete."}</p>
+        <div class="quick-actions">
+          <button class="btn primary" data-tab="daily">✅ Start today's check-in</button>
+          <button class="btn" data-tab="habits">⚙️ Manage habits</button>
+          <button class="btn" id="quickBackup">💾 Backup</button>
+        </div>
+      </div>
+      <div class="score-ring" style="--score:${personalScore()}"><span><b>${personalScore()}</b><small>score</small></span></div>
+    </div>
+  </section>
+
   <section class="grid stats">
     <div class="stat"><small>Overall</small><b>${s.pct}%</b></div>
     <div class="stat"><small>Today</small><b>${td}/${data.habits.length}</b></div>
@@ -516,6 +667,20 @@ function home(s,ds){
       <div class="mini"><b>${s.bestH?esc(s.bestH.name):"—"}</b><small>Most completed habit</small></div>
     </div>
   </section>
+
+
+  ${data.habits.length&&focusHabit()?`
+  <section class="card focus-card ${!done(focusHabit(),today())?"pulse":""}">
+    <div class="section"><h2>🎯 Today's Focus Habit</h2><span class="badge">1 thing at a time</span></div>
+    <div class="focus-row">
+      <div class="focus-icon">${esc(focusHabit().icon)}</div>
+      <div style="flex:1">
+        <div class="habit-name">${esc(focusHabit().name)}</div>
+        <div class="muted">Day ${Math.max(1,streakRunFor(focusHabit()))} · ${habitStats(focusHabit()).weekPct}% this week</div>
+      </div>
+      <button class="focus-check ${done(focusHabit(),today())?"done":""}" data-toggle="${focusHabit().id}|${today()}">${done(focusHabit(),today())?"✓":"→"}</button>
+    </div>
+  </section>`:""}
 
   <section class="card day-motivation winpop">
     <div class="section"><h2>🧭 Your Day-by-Day Journey</h2><span class="day-badge">DAY ${Math.max(1,s.fullStreak||1)}</span></div>
@@ -549,6 +714,14 @@ function home(s,ds){
     </div>
   </section>
 
+
+  ${s.todayDone===0&&data.habits.length?`
+  <section class="card recovery">
+    <div class="section"><h2>🛟 Gentle Recovery Mode</h2><span class="badge">No pressure</span></div>
+    <p class="muted">A missed day doesn't erase your history. Choose the easiest habit and make today's version smaller.</p>
+    <div class="note">💡 ${esc(streakRecovery(focusHabit()))}</div>
+  </section>`:""}
+
   <section class="card">
     <div class="section"><h2>🔥 Your streaks</h2><span class="muted">Every habit has its own journey</span></div>
     <div class="habit-grid">
@@ -560,6 +733,12 @@ function home(s,ds){
     <div class="section"><h2>🎯 Today's tiny challenge</h2><span class="badge">Low pressure</span></div>
     <div class="challenge">${esc(challengeText(s))}</div>
   </section>
+
+  <section class="card">
+    <div class="section"><h2>📊 Your week at a glance</h2><span class="muted">${s.score}% active</span></div>
+    ${weeklyBarHtml()}
+  </section>
+
 
   <section class="card">
     <div class="section"><h2>📈 Last 7 days</h2><span class="muted">${formatDay(ds[Math.max(0,ds.length-7)])} → ${formatDay(ds[ds.length-1])}</span></div>
@@ -703,8 +882,16 @@ function habitsPage(ds){
 
 function statsPage(s,ds){
   return `
+
   <section class="card">
     <div class="section"><h2>📊 Analytics</h2><span class="badge">${s.score}% weekly score</span></div>
+    <div class="form">
+      <div><label>View month</label><input id="monthPicker" type="month" value="${esc(data.month)}"></div>
+      <div><label>Personal score</label><input value="${personalScore()}/100" disabled></div>
+      <div><label>Next milestone</label><input value="${nextMilestone(Math.max(1,s.fullStreak))} days" disabled></div>
+    </div>
+  </section>
+
     <div class="grid three">
       <div class="stat"><small>Completion</small><b>${s.pct}%</b></div>
       <div class="stat"><small>Longest full-day streak</small><b>${s.longest}</b></div>
@@ -780,6 +967,17 @@ function goalsPage(){
       <div><label>My If–Then plan</label><textarea id="ifThen">${esc(data.ifThen||"")}</textarea></div>
     </div>
     <button class="btn primary" id="saveReview" style="margin-top:9px">Save review</button>
+  </section>
+
+
+  <section class="card">
+    <div class="section"><h2>🔎 V8 Weekly Insight</h2><span class="badge">Use your data</span></div>
+    <div class="reflection">
+      <div class="mini"><b>${stats().score}%</b><small>Weekly score</small></div>
+      <div class="mini"><b>${stats().todayDone}/${data.habits.length}</b><small>Today</small></div>
+      <div class="mini"><b>${stats().fullStreak}</b><small>Full-day streak</small></div>
+    </div>
+    <div class="note" style="margin-top:9px">🧭 ${esc(todayReflection()[0])}: ${esc(todayReflection()[1])}<br><span class="muted">${esc(todayReflection()[2])}</span></div>
   </section>
 
   <section class="card">
@@ -891,6 +1089,9 @@ function bind(){
   });
 
   $("#dark")?.addEventListener("click",()=>{data.dark=!data.dark;save();render()});
+
+  $("#quickBackup")?.addEventListener("click",()=>$("#backup")?.click());
+
   $("#backup")?.addEventListener("click",()=>{
     const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
     const a=document.createElement("a");
@@ -943,6 +1144,9 @@ function bind(){
     if(addHabit(v,iconFor(v),false)){ $("#customHabit").value=""; showToast("Habit added ✅"); render(); }
   });
   $("#customHabit")?.addEventListener("keydown",e=>{if(e.key==="Enter")$("#addCustom")?.click()});
+
+
+  $("#monthPicker")?.addEventListener("change",e=>{data.month=e.target.value||currentMonth();save();render();});
 
   $("#saveGoal")?.addEventListener("click",()=>{
     data.goal=$("#goal").value.trim();
