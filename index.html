@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#111827">
 <title>Progress Tracker V3</title>
-<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
 :root{--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#738096;--line:#e5e9f1;--a:#635bff;--a2:#7c3aed;--good:#16a34a;--soft:#eef0ff;--danger:#ef4444;--shadow:0 8px 30px rgba(25,35,60,.08)}
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
@@ -19,81 +16,105 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.app{max-width:1
 .grid{display:grid;gap:11px}.stats{grid-template-columns:repeat(5,1fr)}.stat{padding:13px;border-radius:15px;background:var(--soft)}.stat small{color:var(--muted)}.stat b{font-size:23px;display:block;margin-top:3px}
 .tabs{display:flex;gap:7px;overflow:auto;margin-bottom:13px;padding-bottom:2px}.tab{white-space:nowrap}.tab.active{background:var(--a);color:white;border-color:var(--a)}
 .section{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:11px}.section h2{font-size:18px;margin:0}
-input,textarea,select{width:100%;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:11px;padding:10px 11px;outline:none}textarea{min-height:90px;resize:vertical}
-.form{display:grid;grid-template-columns:1.5fr .7fr auto;gap:7px}.two{grid-template-columns:1fr 1fr}
-.habit{border:1px solid var(--line);border-radius:15px;padding:11px;margin:9px 0}.habittop{display:flex;align-items:center;gap:8px}.habittop strong{flex:1}.mini{font-size:12px;color:var(--muted)}.bar{height:8px;border-radius:9px;background:var(--bg);overflow:hidden;margin:9px 0}.bar i{height:100%;display:block;background:linear-gradient(90deg,var(--a),var(--a2))}
-.days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.day{text-align:center;font-size:9px;color:var(--muted)}.day button{width:100%;aspect-ratio:1;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--muted);font-size:10px}.day button.done{background:var(--good);border-color:var(--good);color:white}
-.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.cell{min-height:48px;border:1px solid var(--line);border-radius:9px;padding:5px;font-size:10px}.cell b{display:block;font-size:12px}.l1{background:#e1f7e7}.l2{background:#b7e9c4}.l3{background:#68ce83}.l4{background:#16a34a;color:#fff}.dark .l1{background:#173523}.dark .l2{background:#205f35}.dark .l3{background:#238446}.dark .l4{background:#16a34a}
-.chart{display:flex;align-items:flex-end;height:160px;gap:4px;padding-top:15px}.col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;text-align:center;font-size:8px;color:var(--muted)}.col i{display:block;min-height:3px;background:var(--a);border-radius:5px 5px 2px 2px}.badge{display:inline-block;background:var(--soft);border-radius:20px;padding:7px 10px;margin:3px;font-size:12px}.empty{text-align:center;color:var(--muted);padding:20px}.danger{background:var(--danger);color:white;border-color:var(--danger)}
-.bottom{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;z-index:10}.bottom button{flex:1;max-width:150px;background:none;color:var(--muted);border:0;padding:9px 4px;font-size:11px}.bottom button.active{color:var(--a);font-weight:700}
-.kpi{font-size:30px;font-weight:800}.muted{color:var(--muted);font-size:13px}.check{display:flex;align-items:center;gap:8px;padding:8px 0}.check input{width:auto}
-@media(max-width:780px){.stats{grid-template-columns:repeat(2,1fr)}.stats .stat:last-child{grid-column:span 2}.top{align-items:flex-start}.actions{max-width:200px}.form{grid-template-columns:1fr 1fr}.form .full{grid-column:1/-1}}
-@media(max-width:430px){.form,.two{grid-template-columns:1fr}.form .full{grid-column:auto}.title h1{font-size:21px}.actions .btn{padding:8px}.app{padding-left:10px;padding-right:10px}}
-@media print{.bottom,.actions,.tabs,.btn{display:none!important}.card{box-shadow:none}}
+input,textarea,select{width:100%;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px}textarea{min-height:100px;resize:vertical}.form{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.form label{font-size:12px;color:var(--muted)}.form input,.form select{margin-top:4px}
+.muted{color:var(--muted)}.progress{height:10px;background:var(--line);border-radius:99px;overflow:hidden}.progress i{display:block;height:100%;background:linear-gradient(90deg,var(--a),var(--a2));border-radius:99px}
+.habit-list{display:grid;gap:9px}.habit-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:13px}
+.check{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-size:20px}.check.on{background:var(--good);border-color:var(--good);color:#fff}
+.bar{height:9px;background:var(--line);border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:var(--a)}
+.heat{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.heat div{aspect-ratio:1;border-radius:6px;background:var(--line);font-size:9px;display:flex;align-items:center;justify-content:center;color:var(--muted)}.heat .on{background:#6d63ff;color:white}.heat .today{outline:2px solid var(--a)}
+.bottom{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;gap:2px;padding:7px 5px calc(7px + env(safe-area-inset-bottom));z-index:20}.bottom button{border:0;background:transparent;color:var(--muted);padding:7px 13px;border-radius:12px;font-size:11px}.bottom button.active{background:var(--soft);color:var(--a);font-weight:700}
+.badge{display:inline-block;background:var(--soft);padding:6px 9px;border-radius:10px;margin:3px;font-size:12px}.danger{color:var(--danger)}.empty{padding:20px;text-align:center;color:var(--muted)}
+@media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}.form{grid-template-columns:1fr}.top{align-items:flex-start}.actions{max-width:170px}.title h1{font-size:21px}.bottom button{padding:7px 9px}.habit-row{grid-template-columns:1fr auto}.habit-row .remove{grid-column:1/-1;justify-self:end}}
+@media print{.bottom,.actions,.tabs{display:none!important}.app{padding-bottom:10px}.card{box-shadow:none}}
 </style>
 </head>
-<body><div id="root"></div>
-<script type="text/babel">
-const {useState,useEffect,useMemo}=React;
-const KEY="tracker_v3_data";
-const today=new Date();
-const pad=n=>String(n).padStart(2,"0");
-const key=(y,m,d)=>`${y}-${pad(m+1)}-${pad(d)}`;
-const days=(y,m)=>new Date(y,m+1,0).getDate();
-const blank=()=>({name:"",dark:false,habits:[
-{id:1,name:"Workout",target:20,done:{}},{id:2,name:"Study",target:25,done:{}},{id:3,name:"Water",target:25,done:{}}
-],sleep:{},notes:{},goal:"",achieved:"",improve:"",xp:0});
-function read(){try{return {...blank(),...JSON.parse(localStorage.getItem(KEY)||"{}")}}catch{return blank()}}
-function App(){
- const [d,setD]=useState(read); const [tab,setTab]=useState("home");
- const [y,setY]=useState(today.getFullYear()),[m,setM]=useState(today.getMonth());
- const [newH,setNewH]=useState(""),[target,setTarget]=useState(20);
- const [date,setDate]=useState(key(y,m,today.getDate()<=days(y,m)?today.getDate():1));
- useEffect(()=>{localStorage.setItem(KEY,JSON.stringify(d));document.body.classList.toggle("dark",!!d.dark)},[d]);
- const dates=Array.from({length:days(y,m)},(_,i)=>key(y,m,i+1));
- const totals=d.habits.map(h=>({h,n:dates.filter(x=>h.done?.[x]).length}));
- const total=totals.reduce((a,x)=>a+x.n,0),possible=d.habits.length*dates.length;
- const percent=possible?Math.round(total/possible*100):0;
- function streak(h){let s=0,dt=new Date();dt.setHours(0,0,0,0);for(let i=0;i<400;i++){let k=key(dt.getFullYear(),dt.getMonth(),dt.getDate());if(h.done?.[k])s++;else if(i)break;dt.setDate(dt.getDate()-1)}return s}
- const streaks=d.habits.map(h=>({h,s:streak(h)})); const current=Math.max(0,...streaks.map(x=>x.s));
- const best=Math.max(0,...streaks.map(x=>x.s));
- const sleep=dates.map(x=>+d.sleep?.[x]?.hours||0).filter(Boolean), avg=sleep.length?(sleep.reduce((a,b)=>a+b,0)/sleep.length).toFixed(1):"0.0";
- const xp=total*10+current*5,level=Math.floor(xp/100)+1,levelPct=xp%100;
- const achievements=[percent>=25&&"🚀 25% Complete",percent>=50&&"🔥 Halfway Hero",percent>=75&&"💪 75% Strong",percent===100&&"🏆 Perfect Month",current>=3&&"🔥 3 Day Streak",current>=7&&"⚡ 7 Day Streak",current>=30&&"👑 30 Day Streak"].filter(Boolean);
- const first=new Date(y,m,1).getDay(),cal=Array(first).fill(null).concat(dates);
- const weekLabels=["S","M","T","W","T","F","S"];
- function toggle(id,k){setD(x=>({...x,habits:x.habits.map(h=>h.id===id?{...h,done:{...h.done,[k]:!h.done?.[k]}}:h),xp:x.xp+(!d.habits.find(h=>h.id===id)?.done?.[k]?10:-10)}))}
- function add(){if(!newH.trim())return;setD(x=>({...x,habits:[...x.habits,{id:Date.now(),name:newH.trim(),target:+target||20,done:{}}]}));setNewH("")}
- function del(id){if(confirm("Habit delete karna hai?"))setD(x=>({...x,habits:x.habits.filter(h=>h.id!==id)}))}
- function month(v){let z=new Date(y,m+v,1);setY(z.getFullYear());setM(z.getMonth());setDate(key(z.getFullYear(),z.getMonth(),1))}
- function backup(){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:"application/json"}));a.download="tracker-v3-backup.json";a.click()}
- function restore(e){let f=e.target.files?.[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{setD(JSON.parse(r.result));alert("Restore complete ✅")}catch{alert("Invalid backup")}};r.readAsText(f)}
- function saveSleep(field,val){let s={...(d.sleep?.[date]||{}),[field]:val};if(s.bed&&s.wake){let [a,b]=s.bed.split(":").map(Number),[c,e]=s.wake.split(":").map(Number),mins=c*60+e-(a*60+b);if(mins<0)mins+=1440;s.hours=(mins/60).toFixed(1)}setD(x=>({...x,sleep:{...x.sleep,[date]:s}}))}
- function notify(){if(!("Notification"in window)){alert("Notifications supported nahi hain.");return}Notification.requestPermission().then(p=>p==="granted"&&new Notification("Progress Tracker",{body:"Aaj ke habits complete karna mat bhoolna 💪"}))}
- const sleepDay=d.sleep?.[date]||{}, note=d.notes?.[date]||"";
- const weekData=Array.from({length:7},(_,i)=>{let dt=new Date();dt.setDate(dt.getDate()-(6-i));let k=key(dt.getFullYear(),dt.getMonth(),dt.getDate());return {k,n:d.habits.filter(h=>h.done?.[k]).length}});
- return <><main className="app">
-  <header className="top"><div className="title"><h1>📈 Progress Tracker <small style={{fontSize:11,color:"var(--a)"}}>V3</small></h1><p>{d.name?`Hi ${d.name} 👋 — keep going!`:"Your daily progress, one day at a time."}</p></div><div className="actions">
-   <button className="btn" onClick={()=>setD(x=>({...x,dark:!x.dark}))}>{d.dark?"☀️":"🌙"}</button><button className="btn" onClick={backup}>💾</button><label className="btn">↩️<input hidden type="file" accept=".json" onChange={restore}/></label><button className="btn" onClick={()=>print()}>🖨️</button>
-  </div></header>
-
-  {tab==="home"&&<><div className="card"><div className="form"><input className="full" placeholder="Your name" value={d.name} onChange={e=>setD(x=>({...x,name:e.target.value}))}/><select value={m} onChange={e=>setM(+e.target.value)}>{Array.from({length:12},(_,i)=><option value={i}>{new Date(2000,i,1).toLocaleString("en",{month:"long"})}</option>)}</select><input type="number" value={y} onChange={e=>setY(+e.target.value||y)}/></div></div>
-   <div className="grid stats"><div className="stat"><small>Progress</small><b>{percent}%</b></div><div className="stat"><small>Completed</small><b>{total}</b></div><div className="stat"><small>Streak</small><b>🔥 {current}</b></div><div className="stat"><small>Sleep</small><b>😴 {avg}h</b></div><div className="stat"><small>Level</small><b>⭐ {level}</b></div></div>
-   <div className="card"><div className="section"><h2>⚡ Level Progress</h2><b>{levelPct}/100 XP</b></div><div className="bar"><i style={{width:levelPct+"%"}}/></div>
-   <div className="card"><div className="section"><h2>📅 {new Date(y,m,1).toLocaleString("en",{month:"long",year:"numeric"})}</h2><div><button className="btn" onClick={()=>month(-1)}>‹</button> <button className="btn" onClick={()=>month(1)}>›</button></div></div><div className="calendar">{weekLabels.map(x=><div className="cell" style={{minHeight:25,textAlign:"center",color:"var(--muted)"}}><b>{x}</b></div>)}{cal.map(k=>k?<div className={"cell "+(()=>{let n=d.habits.filter(h=>h.done?.[k]).length;return n>=3?"l4":n===2?"l3":n===1?"l2":""})()} onClick={()=>setDate(k)}><b>{+k.slice(-2)}</b><span>{d.habits.filter(h=>h.done?.[k]).length}/{d.habits.length} ✓</span></div>:<div/> )}</div></div>
-   <div className="card"><div className="section"><h2>📈 Last 7 Days</h2></div><div className="chart">{weekData.map(x=><div className="col"><i style={{height:Math.max(4,(x.n/Math.max(1,d.habits.length))*125)}}></i><span>{x.k.slice(-2)}</span></div>)}</div></div>
-  </>}
-
-  {tab==="habits"&&<div className="card"><div className="section"><h2>✅ Habits</h2></div><div className="form"><input className="full" placeholder="New habit" value={newH} onChange={e=>setNewH(e.target.value)}/><input type="number" min="1" max={dates.length} value={target} onChange={e=>setTarget(e.target.value)}/><button className="btn primary" onClick={add}>＋ Add</button></div>{d.habits.map(h=>{let n=totals.find(x=>x.h.id===h.id)?.n||0,p=Math.min(100,Math.round(n/h.target*100));return <div className="habit"><div className="habittop"><strong>{h.name}</strong><span className="mini">{n}/{h.target} • 🔥 {streak(h)}</span><button className="btn danger" style={{padding:"5px 8px"}} onClick={()=>del(h.id)}>×</button></div><div className="bar"><i style={{width:p+"%"}}/></div><div className="days">{dates.map(k=><div className="day"><button className={h.done?.[k]?"done":""} onClick={()=>toggle(h.id,k)}>{+k.slice(-2)}</button></div>)}</div></div>})}</div>}
-
-  {tab==="analytics"&&<><div className="grid two"><div className="card"><div className="section"><h2>📊 Habit Analytics</h2></div>{totals.map(x=><div style={{margin:"12px 0"}}><div className="section" style={{marginBottom:5}}><span>{x.h.name}</span><b>{Math.round(x.n/dates.length*100)}%</b></div><div className="bar"><i style={{width:(x.n/dates.length*100)+"%"}}/></div>)}</div><div className="card"><div className="section"><h2>🏆 Achievements</h2></div>{achievements.length?achievements.map(a=><span className="badge">{a}</span>):<div className="empty">Complete habits to unlock badges.</div>}<hr style={{border:0,borderTop:"1px solid var(--line)"}}/><p className="muted">Best current streak: <b>{best} days</b></p></div></div></>}
-
-  {tab==="goals"&&<><div className="card"><div className="section"><h2>🎯 Monthly Goal</h2></div><textarea placeholder="Main goal..." value={d.goal} onChange={e=>setD(x=>({...x,goal:e.target.value}))}/><textarea style={{marginTop:8}} placeholder="What did you achieve?" value={d.achieved} onChange={e=>setD(x=>({...x,achieved:e.target.value}))}/><textarea style={{marginTop:8}} placeholder="What will you improve?" value={d.improve} onChange={e=>setD(x=>({...x,improve:e.target.value}))}/></div><div className="card"><div className="section"><h2>🔔 Reminder</h2></div><p className="muted">Browser notification permission test.</p><button className="btn primary" onClick={notify}>🔔 Test Reminder</button></div></>}
-
-  {tab==="daily"&&<><div className="card"><div className="section"><h2>📝 Daily Journal</h2><input type="date" value={date} onChange={e=>setDate(e.target.value)}/></div><textarea placeholder="Aaj kaisa raha? Kya seekha?..." value={note} onChange={e=>setD(x=>({...x,notes:{...x.notes,[date]:e.target.value}}))}/></div><div className="card"><div className="section"><h2>😴 Sleep — {date}</h2></div><div className="form"><label>Bed<input type="time" value={sleepDay.bed||""} onChange={e=>saveSleep("bed",e.target.value)}/></label><label>Wake<input type="time" value={sleepDay.wake||""} onChange={e=>saveSleep("wake",e.target.value)}/></label><label>Hours<input readOnly value={sleepDay.hours||""}/></label></div></div></>}
-
-  <p className="muted" style={{textAlign:"center"}}>🔒 Data is stored locally on this device. Use Backup before clearing browser data.</p>
- </main><nav className="bottom">{[["home","🏠","Home"],["habits","✅","Habits"],["analytics","📊","Stats"],["goals","🎯","Goals"],["daily","📝","Daily"]].map(x=><button className={tab===x[0]?"active":""} onClick={()=>setTab(x[0])}><span style={{fontSize:18}}>{x[1]}</span><br/>{x[2]}</button>)}</nav></>
+<body>
+<div id="app"></div>
+<script>
+(function(){
+const KEY="progress_tracker_v3_plain";
+const $=s=>document.querySelector(s);
+const today=()=>new Date().toISOString().slice(0,10);
+const ym=()=>today().slice(0,7);
+const daysInMonth=m=>new Date(+m.slice(0,4),+m.slice(5,7),0).getDate();
+const defaultData=()=>({name:"",month:ym(),habits:["Wake up early","Exercise","Study / Work","Drink water","Read","Meditation","No junk food","Walk"],checks:{},sleep:{},notes:{},goal:"",achieved:"",improve:"",dark:false});
+let data=JSON.parse(localStorage.getItem(KEY)||"null")||defaultData();
+let tab="home",date=today();
+if(!data.habits.length)data.habits=defaultData().habits;
+function save(){localStorage.setItem(KEY,JSON.stringify(data))}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function key(h,d){return h+"|"+d}
+function checked(h,d){return !!data.checks[key(h,d)]}
+function monthDays(){let n=daysInMonth(data.month);return Array.from({length:n},(_,i)=>data.month+"-"+String(i+1).padStart(2,"0"))}
+function stats(){
+ const ds=monthDays(), total=data.habits.length*ds.length, done=ds.reduce((a,d)=>a+data.habits.filter(h=>checked(h,d)).length,0);
+ let streak=0; for(let i=ds.length-1;i>=0;i--){if(data.habits.length&&data.habits.every(h=>checked(h,ds[i])))streak++;else break}
+ let best=0,bestH="—"; data.habits.forEach(h=>{let n=ds.filter(d=>checked(h,d)).length;if(n>best){best=n;bestH=h}});
+ let sleeps=ds.map(d=>data.sleep[d]?.hours).filter(Boolean);let avg=sleeps.length?sleeps.reduce((a,b)=>a+b,0)/sleeps.length:0;
+ return {done,total,pct:total?Math.round(done/total*100):0,streak,bestH,best,avg};
 }
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-</script></body></html>
+function render(){
+ document.body.classList.toggle("dark",!!data.dark);
+ const s=stats(), ds=monthDays();
+ $("#app").innerHTML=`
+ <main class="app">
+  <header class="top"><div class="title"><h1>Progress Tracker V3</h1><p>${esc(data.name||"Build better days, one check at a time.")}</p></div>
+  <div class="actions"><button class="btn" id="dark">☾</button><button class="btn" id="backup">Backup</button><button class="btn" id="restoreBtn">Restore</button><input id="restore" type="file" accept=".json" hidden></div></header>
+  <div class="tabs">${["home","habits","analytics","goals","daily"].map((x,i)=>`<button class="btn tab ${tab==x?"active":""}" data-tab="${x}">${["🏠 Home","✅ Habits","📊 Stats","🎯 Goals","📝 Daily"][i]}</button>`).join("")}</div>
+  ${tab=="home"?home(s,ds):tab=="habits"?habits(ds):tab=="analytics"?analytics(s,ds):tab=="goals"?goals():daily()}
+  <p class="muted" style="text-align:center">🔒 Data is stored locally on this device. Use Backup before clearing browser data.</p>
+ </main>
+ <nav class="bottom">${["home","habits","analytics","goals","daily"].map((x,i)=>`<button class="${tab==x?"active":""}" data-tab="${x}"><span style="font-size:18px">${["🏠","✅","📊","🎯","📝"][i]}</span><br>${["Home","Habits","Stats","Goals","Daily"][i]}</button>`).join("")}</nav>`;
+ bind();
+}
+function home(s,ds){
+ return `<div class="grid stats"><div class="stat"><small>Overall</small><b>${s.pct}%</b></div><div class="stat"><small>Completed</small><b>${s.done}</b></div><div class="stat"><small>Streak</small><b>${s.streak} 🔥</b></div><div class="stat"><small>Avg sleep</small><b>${s.avg?s.avg.toFixed(1):"—"}h</b></div><div class="stat"><small>XP / Level</small><b>${s.done*10} / ${Math.floor(s.done/10)+1}</b></div></div>
+ <div class="card"><div class="section"><h2>📅 ${esc(data.month)}</h2><input id="month" type="month" value="${data.month}" style="max-width:170px"></div><div class="progress"><i style="width:${s.pct}%"></i></div><p class="muted">${s.done} of ${s.total} checks completed.</p></div>
+ <div class="card"><div class="section"><h2>🔥 Current streak</h2><b>${s.streak} days</b></div><div class="heat">${ds.map(d=>`<div class="${data.habits.length&&data.habits.every(h=>checked(h,d))?"on ":""}${d==today()?"today":""}" title="${d}">${+d.slice(-2)}</div>`).join("")}</div></div>
+ <div class="card"><div class="section"><h2>🏆 Best habit</h2><b>${esc(s.bestH)}</b></div><p class="muted">${s.best} completed days this month.</p></div>`;
+}
+function habits(ds){
+ return `<div class="card"><div class="section"><h2>✅ Habits</h2><button class="btn primary" id="addHabit">+ Add habit</button></div><div class="form"><label>Name<input id="name" value="${esc(data.name)}" placeholder="Your name"></label><label>Month<input id="month" type="month" value="${data.month}"></label><label>Target<select id="target">${[5,7,10,15,20,25].map(n=>`<option>${n}</option>`).join("")}</select></label></div></div>
+ <div class="card"><div class="habit-list">${data.habits.map(h=>`<div class="habit-row"><div><b>${esc(h)}</b><div class="muted" style="font-size:12px">${ds.filter(d=>checked(h,d)).length}/${ds.length} days</div></div><button class="check ${checked(h,date)?"on":""}" data-check="${esc(h)}">${checked(h,date)?"✓":"○"}</button><button class="btn remove" data-remove="${esc(h)}">Remove</button></div>`).join("")}</div></div>
+ <div class="card"><div class="section"><h2>📆 Selected day</h2><input id="date" type="date" value="${date}" style="max-width:170px"></div><p class="muted">Tap ○ to complete a habit for ${date}.</p></div>`;
+}
+function analytics(s,ds){
+ return `<div class="card"><h2>📊 Analytics</h2><p class="muted">Last ${Math.min(7,ds.length)} days completion</p>${ds.slice(-7).map(d=>{let n=data.habits.filter(h=>checked(h,d)).length,p=data.habits.length?Math.round(n/data.habits.length*100):0;return `<div style="margin:12px 0"><div class="section"><span>${d}</span><b>${p}%</b></div><div class="bar"><i style="width:${p}%"></i></div></div>`}).join("")}</div>
+ <div class="card"><h2>🏅 Achievements</h2><span class="badge">🌱 Started</span>${s.done>=10?'<span class="badge">⭐ 10 Checks</span>':""}${s.streak>=3?'<span class="badge">🔥 3 Day Streak</span>':""}${s.done>=50?'<span class="badge">🏆 50 Checks</span>':""}</div>`;
+}
+function goals(){
+ return `<div class="card"><div class="section"><h2>🎯 Monthly Goal</h2></div><textarea id="goal" placeholder="Is month ka main goal...">${esc(data.goal)}</textarea><textarea id="achieved" placeholder="What did you achieve?">${esc(data.achieved)}</textarea><textarea id="improve" placeholder="What will you improve?">${esc(data.improve)}</textarea></div>
+ <div class="card"><h2>⚙️ Data</h2><button class="btn" id="print">🖨️ Print</button> <button class="btn danger" id="reset">Reset all data</button></div>`;
+}
+function daily(){
+ let sl=data.sleep[date]||{}; return `<div class="card"><div class="section"><h2>📝 Daily Journal</h2><input id="date" type="date" value="${date}" style="max-width:170px"></div><textarea id="note" placeholder="Aaj kaisa raha? Kya seekha?">${esc(data.notes[date]||"")}</textarea></div>
+ <div class="card"><h2>😴 Sleep — ${date}</h2><div class="form"><label>Bed<input id="bed" type="time" value="${sl.bed||""}"></label><label>Wake<input id="wake" type="time" value="${sl.wake||""}"></label><label>Hours<input id="hours" readonly value="${sl.hours||""}"></label></div></div>
+ <div class="card"><h2>🔔 Reminder</h2><p class="muted">Browser notification test.</p><button class="btn primary" id="notify">Test Reminder</button></div>`;
+}
+function calcSleep(a,b){if(!a||!b)return "";let [ah,am]=a.split(":").map(Number),[bh,bm]=b.split(":").map(Number);let x=bh*60+bm-(ah*60+am);if(x<0)x+=1440;return (x/60).toFixed(1)}
+function bind(){
+ document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render()});
+ $("#dark").onclick=()=>{data.dark=!data.dark;save();render()};
+ const m=$("#month");if(m)m.onchange=()=>{data.month=m.value;save();render()};
+ const n=$("#name");if(n)n.onchange=()=>{data.name=n.value;save()};
+ const d=$("#date");if(d)d.onchange=()=>{date=d.value;render()};
+ document.querySelectorAll("[data-check]").forEach(b=>b.onclick=()=>{let h=b.dataset.check,dataKey=key(h,date);data.checks[dataKey]=!data.checks[dataKey];save();render()});
+ document.querySelectorAll("[data-remove]").forEach(b=>b.onclick=()=>{data.habits=data.habits.filter(h=>h!==b.dataset.remove);save();render()});
+ $("#addHabit")?.addEventListener("click",()=>{let h=prompt("Habit name?");if(h&&h.trim()){data.habits.push(h.trim());save();render()}});
+ $("#goal")?.addEventListener("input",e=>{data.goal=e.target.value;save()});
+ $("#achieved")?.addEventListener("input",e=>{data.achieved=e.target.value;save()});
+ $("#improve")?.addEventListener("input",e=>{data.improve=e.target.value;save()});
+ $("#note")?.addEventListener("input",e=>{data.notes[date]=e.target.value;save()});
+ function sleepBind(){let bed=$("#bed"),wake=$("#wake"),hours=$("#hours");if(!bed)return;let f=()=>{let h=calcSleep(bed.value,wake.value);hours.value=h;if(h)data.sleep[date]={bed:bed.value,wake:wake.value,hours:+h};else delete data.sleep[date];save()};bed.onchange=f;wake.onchange=f}
+ sleepBind();
+ $("#print")?.addEventListener("click",()=>window.print());
+ $("#reset")?.addEventListener("click",()=>{if(confirm("Reset all tracker data?")){localStorage.removeItem(KEY);data=defaultData();render()}});
+ $("#notify")?.addEventListener("click",async()=>{if("Notification"in window){let p=await Notification.requestPermission();if(p==="granted")new Notification("Progress Tracker",{body:"Reminder test works ✅"});else alert("Notification permission allow karo.")}else alert("Notifications is browser me supported nahi hain.")});
+ $("#backup")?.addEventListener("click",()=>{let blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="progress-tracker-backup.json";a.click();URL.revokeObjectURL(a.href)});
+ $("#restoreBtn")?.addEventListener("click",()=>$("#restore").click());
+ $("#restore")?.addEventListener("change",e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);data=Object.assign(defaultData(),x);save();render();alert("Backup restored ✅")}catch{alert("Invalid backup file")}};r.readAsText(f)});
+}
+render();
+})();
+</script>
+</body></html>
