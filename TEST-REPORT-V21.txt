@@ -1,0 +1,92 @@
+Winter Arc Tracker V21 — Tester Report
+Date: 1 Oct 2026
+
+STATIC / BUILD
+PASS — app.js syntax (`node --check app.js`)
+PASS — sw.js syntax (`node --check sw.js`)
+PASS — manifest JSON parses
+PASS — index.html references V21 app.js/styles.css/cloud-config.js
+PASS — V21 cache name present
+PASS — one active render function
+PASS — two delegated click handlers total (one for normal actions, one capture handler for onboarding selection)
+PASS — no V17/V18/V19/V20 UI renderer layers remain in the active app.js
+
+MIGRATION / DATA
+PASS — existing localStorage key `progress_tracker_v17` retained
+PASS — historical tracker keys are still read for migration
+PASS — legacy private-label migration retained (`Masturbation` → `Private Wellness`)
+PASS — existing habit/check history can be normalized into V21 schema
+PASS — profile with existing PIN still opens a lock screen
+
+NEW USER UX
+PASS — welcome screen is single-purpose and mobile-first
+PASS — goal selection is visual and grouped
+PASS — user is guided to exactly 3 starter habits
+PASS — custom habit can be added during onboarding
+PASS — Arc Ready screen explains Today / Week / Rank before first use
+PASS — first screen avoids advanced analytics/community/settings clutter
+
+HOME / TODAY
+PASS — greeting + Day/92 + Today progress shown together
+PASS — one Next Win is the primary action
+PASS — only first 3 habits appear on Today
+PASS — View all habits is moved to More → Manage habits
+PASS — Day Complete state appears when all visible habits are done
+PASS — Focus Sprint stays secondary
+PASS — Home does not show leaderboard, creator, analytics, journal, sleep or settings cards
+
+WEEK
+PASS — 7-day habit matrix is available
+PASS — future dates are disabled
+PASS — today is visually marked
+PASS — completion toggles use the same persistence path as Today
+
+RANK / TOP 20
+PASS — public leaderboard query requests `public_profile=eq.true`
+PASS — ordered by `rank_score.desc`
+PASS — server request limit is exactly 20
+PASS — UI renders a maximum of 20 leaderboard rows
+PASS — rank numbering remains the original Top 20 position when search filters the list
+PASS — local rank accepts both `rank_score` and legacy camelCase `rankScore`
+PASS — offline/unconfigured backend state shows a clear local-only message
+PASS — public profile remains opt-in
+
+MORE / ADVANCED TOOLS
+PASS — Manage habits
+PASS — Goals
+PASS — Achievements
+PASS — Insights
+PASS — Routines
+PASS — Check-in
+PASS — Journal
+PASS — Sleep
+PASS — Reminders
+PASS — Install help
+PASS — Creator
+PASS — Settings
+PASS — Community sync
+PASS — Backup / restore
+PASS — About
+PASS — Dark mode
+PASS — Local PIN set/change/remove
+
+BACKUP CLEANUP
+PASS — previous-version backup included only for V20 (`app-v20-backup.js`)
+PASS — old V17/V18/V19 backup files removed from the V21 package
+PASS — old version README/test clutter removed from the V21 package
+
+PACKAGE SIZE / CLEANUP
+PASS — active app.js is ~59.7 KB
+PASS — V20 active app.js was ~358.8 KB
+PASS — active app.js reduced by ~83% versus V20
+PASS — CSS moved into one clean styles.css instead of runtime-injected V18/V19/V20 style layers
+
+VM SMOKE TEST
+PASS — new-user welcome renders
+PASS — existing-profile Today renders
+PASS — completed-day state renders
+PASS — mocked Supabase Top 20 renders exactly 20 rows
+PASS — delegated click-handler count matches the clean architecture
+
+BROWSER LIMITATION
+Chromium headless launch was attempted in this environment but remained running past the execution timeout, so no physical-device visual sign-off is claimed.

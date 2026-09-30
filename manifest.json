@@ -4,8 +4,8 @@
   "icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},{"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}],
   "shortcuts":[
     {"name":"Today","short_name":"Today","url":"./?tab=today","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"}]},
+    {"name":"Top 20 Rank","short_name":"Rank","url":"./?tab=rank","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"}]},
     {"name":"Profile","short_name":"Profile","url":"./?tab=profile","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"}]},
-    {"name":"Arc League","short_name":"Top 20 Rank","url":"./?tab=rank","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"}]},
-    {"name":"Arc","short_name":"Arc","url":"./?tab=arc","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"}]}
+    {"name":"More","short_name":"More","url":"./?tab=more","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"}]}
   ]
 }
