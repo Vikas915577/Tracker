@@ -1,9 +1,9 @@
 {
-  "name":"Progress Tracker V10",
-  "short_name":"Progress Tracker",
-  "start_url":"./",
-  "display":"standalone",
-  "background_color":"#f5f7fb",
-  "theme_color":"#635bff",
-  "description":"Personal growth and habit tracker"
+  "name": "Progress Tracker V10.1",
+  "short_name": "Progress Tracker",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5f7fb",
+  "theme_color": "#635bff",
+  "description": "Personal growth and habit tracker"
 }
