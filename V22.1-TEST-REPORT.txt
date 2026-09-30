@@ -1,0 +1,29 @@
+Winter Arc Tracker V22.1 — tester report
+
+Source reviewed:
+- User-provided V21 app.js was upgraded to V22.1.
+- GitHub repo source was also inspected; the current repo had V22.0 with the rank/name and cloud-config fixes partly present, but the button guard was still missing canEdit().
+
+Critical fixes:
+1. Habit buttons: canEdit(d) added. Future dates remain locked; today/past toggle works.
+2. Login button: data-action="login" is handled.
+3. Overlay buttons/backdrop: delegated click target now supports data-action/data-nav/data-more and does not close a modal when clicking inside its content.
+4. Rank: public Top 20 uses display_name only in the UI, name-only search, and exact global-rank calculation when backend is available. Instagram handle is not displayed/searched in Rank.
+5. Home credit: creator credit is visible on Today with creator photo/name/role and opens Creator details.
+6. Daily 3: MUST DO / SHOULD DO / BONUS labels.
+7. Recovery Pass: shown after 1–2 fully missed eligible days, with “No reset needed” messaging and next-win recovery action.
+8. Arc Details: 92-day Oct/Nov/Dec timeline, milestones, recovery.
+9. Month view: October/November/December selector and habit monthly progress.
+10. More: regrouped into YOUR PROGRESS / TOOLS / APP / COMMUNITY.
+11. Cloud config: V22.1 keeps both WINTER_ARC_CLOUD and CLOUD_CFG compatibility.
+12. Service worker cache bumped to V22.1.
+
+Static tests:
+- Node syntax check: PASS
+- data-action coverage: PASS (47 declared actions, 0 unhandled)
+- duplicate function definitions: PASS (none found)
+- Rank query contains display_name and no Instagram in Rank UI: PASS
+- V22.1 version marker: PASS
+
+Runtime/device note:
+- No physical Android/iPhone device click-through was available in this environment, so this is a source-level + syntax audit, not a real-device sign-off.
