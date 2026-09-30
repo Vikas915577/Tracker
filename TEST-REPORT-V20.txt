@@ -1,0 +1,48 @@
+Winter Arc Tracker V20 — Tester Report
+Date: 1 Oct 2026
+
+BUILD / STATIC
+PASS — app.js syntax (`node --check app.js`)
+PASS — sw.js syntax (`node --check sw.js`)
+PASS — manifest JSON parses
+PASS — index.html loads app.js, styles.css and cloud-config.js
+PASS — V20 marker and cache name present
+PASS — V20 shell renderer present
+PASS — Node VM runtime smoke: V20 shell booted without ReferenceError
+PASS — V20 primary navigation has Today / Week / Rank / Profile / More
+PASS — V20 menu retains Arc and Month access
+
+HOME / UX
+PASS — Home is replaced by compact V20 Today shell
+PASS — Home contains one Next Win card
+PASS — Home shows a compact habit list instead of legacy stacked dashboards
+PASS — Creator / community / analytics are removed from the Home flow and kept in secondary areas
+PASS — Mobile bottom navigation is 5 items
+PASS — Sticky topbar + safe bottom padding included
+
+HABIT WORKFLOW
+PASS — V20 completion control uses existing toggleHabit() data path
+PASS — Existing XP/check persistence path is preserved
+PASS — Future-date protection remains in the existing logic
+PASS — Existing habit details/edit tools remain reachable from More
+
+RANK / TOP 20
+PASS — Rank tab exists in bottom navigation
+PASS — Public leaderboard request filters `public_profile=true`
+PASS — Server query can retrieve up to 100 public rows for rank-position calculation
+PASS — UI displays only the first 20 ranked rows through the visible `v20Top20()` path
+PASS — Search stays limited to the visible Top 20 list
+PASS — Current user's rank is calculated separately from the visible Top 20
+PASS — Rank shows local score when backend is unavailable
+PASS — 75/15/10 rank formula is preserved from V19
+PASS — Public profile remains opt-in
+
+PWA / DEPLOYMENT
+PASS — service-worker cache updated to winter-arc-v20.0
+PASS — manifest Rank shortcut points to `?tab=rank`
+
+KNOWN LIMITATION
+Physical Android tap-through is not available in this runtime. The package was validated with source-level checks and browser-launch attempts were blocked by the execution environment's URL policy. No physical-device visual verification is claimed.
+
+DEPLOYMENT NOTE
+The GitHub Pages deployment for the preceding V19 commit had a GitHub-side HTTP 502 during deployment creation. This package itself is ready for deployment; after upload, confirm the Pages Actions run is successful and then refresh the PWA.

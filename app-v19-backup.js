@@ -1260,29 +1260,7 @@ function v13ArcMap(){const day=v13ArcDay(),L=v13ArcLength(),ms=v13ArcMilestones(
 function communityNumber(n){n=Number(n)||0;return n? (n>=1000?Math.floor(n/1000)+'k+':n.toLocaleString()):'—';}
 let communityState={count:null,status:'Loading…',ok:false};
 function communityEndpoint(){return `https://counterapi.com/api/${encodeURIComponent(COMMUNITY_NS)}/view/${encodeURIComponent('hustlers-'+today())}?unique=true`;}
-async function communityCheckin(force=false){
-  const d=today();
-  if(!force && !data.cloudOptIn){
-    communityState={count:Number(data.communityCount)||null,status:'Community is off',ok:false};
-    return;
-  }
-  if(!force&&data.communityCheckinDate===d&&Number(data.communityCount)>0){
-    communityState={count:Number(data.communityCount),status:'You’re counted today ✓',ok:true};
-    return;
-  }
-  try{
-    communityState={count:Number(data.communityCount)||null,status:'Updating…',ok:false};
-    const r=await fetch(communityEndpoint(),{cache:'no-store'});
-    if(!r.ok)throw new Error('counter unavailable');
-    const j=await r.json(),n=Math.max(0,Number(j.value)||0);
-    data.communityCount=n;data.communityCheckinDate=d;save();
-    communityState={count:n,status:'You’re counted today ✓',ok:true};
-    render();
-  }catch(e){
-    communityState={count:Number(data.communityCount)||null,status:'Community count unavailable right now',ok:false};
-    render();
-  }
-}
+async function communityCheckin(force=false){const d=today();if(!force&&data.communityCheckinDate===d&&Number(data.communityCount)>0){communityState={count:Number(data.communityCount),status:'You’re counted today ✓',ok:true};return;}try{communityState={count:Number(data.communityCount)||null,status:'Updating…',ok:false};const r=await fetch(communityEndpoint(),{cache:'no-store'});if(!r.ok)throw new Error('counter unavailable');const j=await r.json(),n=Math.max(0,Number(j.value)||0);data.communityCount=n;data.communityCheckinDate=d;save();communityState={count:n,status:'You’re counted today ✓',ok:true};render();}catch(e){communityState={count:Number(data.communityCount)||null,status:'Community count unavailable right now',ok:false};render();}}
 function creatorName(){return (data.creatorName||data.name||'You').trim()||'You';}
 function creatorHandle(){return (data.creatorHandle||'').trim();}
 function safeHttpsUrl(v){try{const u=new URL(String(v||''));return u.protocol==='https:'?u.href:'';}catch(e){return '';}}
@@ -1613,6 +1591,7 @@ function v16GetAppPage(){
       <div class="v14-share-buttons v16-app-actions">
         <button class="v14-pill-btn primary" data-v16-install>${v16Standalone()?'App Installed ✅':installPrompt?'Install App 📱':'How to Install 📱'}</button>
         <a class="v14-pill-btn v16-link-btn" href="${V16_WEBSITE_URL}" target="_blank" rel="noopener">Open Website ↗</a>
+        <a class="v14-pill-btn v16-link-btn" href="${V16_APK_RELEASES_URL}" target="_blank" rel="noopener">APK Releases ↗</a>
       </div>
     </section>
 
@@ -1628,6 +1607,12 @@ function v16GetAppPage(){
     <section class="v14-card">
       <div class="v14-section-head"><div><span class="v14-kicker">IPHONE / SAFARI</span><h2>Home Screen</h2></div><span class="v14-counter">iOS</span></div>
       <p class="muted">Safari → Share → <b>Add to Home Screen</b>. iPhone par browser ke hisaab se install UI different ho sakta hai.</p>
+    </section>
+
+    <section class="v14-card">
+      <div class="v14-section-head"><div><span class="v14-kicker">APK</span><h2>Android download</h2></div><span class="v14-counter">GitHub</span></div>
+      <p class="muted">APK Releases button official repository ke Releases page par le jaata hai. Wahan real APK release asset available ho to download kar sakte ho. Website version ko APK ke bina bhi normally use kiya ja sakta hai.</p>
+      <a class="v14-pill-btn primary v16-wide-link" href="${V16_APK_RELEASES_URL}" target="_blank" rel="noopener">Open APK Releases ↗</a>
     </section>
 
     <section class="v16-app-note"><span>🔒</span><div><b>Website is primary.</b><small>Core tracker, habits, goals, routines, journal, sleep, mood, reminders, share and community features website par hi available rahenge.</small></div></section>
@@ -2186,593 +2171,546 @@ if(data.profileCreated||data.onboardingDone)save();
 })();
 
 
-
-/* ========================= V18.1 MOBILE UX / FULL FEATURE SHELL =========================
-   Full-feature shell over the existing V17/V18 data engine.
-   Keeps existing legacy feature pages, fixes mobile hierarchy, and avoids destructive migrations.
+/* ========================= V18 MAJOR UX =========================
+   Mobile-first entry, unified completion action, My Profile, creator credit on first screen,
+   simple sharing, and a calmer information hierarchy.
 */
 (function(){
-  const V181='V18.1';
-  let step=0;
-  let focus='fitness';
-  let selected=[];
-  let menuOpen=false;
-  let sprintOpen=false;
-  let sprintRunning=false;
-  let sprintMinutes=10;
-  let sprintEndsAt=0;
-  let sprintTimer=null;
+  const V18='V18.0';
+  let v18Step=0;
+  let v18Focus='discipline';
+  let v18Habits=[];
+  let v18CustomHabit='';
+  let v18CreatorOpen=false;
+  let v18CreatorPhoto='creator-profile.jpg';
+  let v18SprintOpen=false;
+  let v18SprintRunning=false;
+  let v18SprintMinutes=10;
+  let v18SprintEndsAt=0;
+  let v18SprintTimer=null;
 
-  const GOALS={
-    fitness:{icon:'💪',label:'Fitness',sub:'Move more and feel stronger'},
-    mind:{icon:'🧠',label:'Mind',sub:'Calmer, clearer days'},
-    work:{icon:'💼',label:'Work',sub:'Study, work and focus better'},
-    overall:{icon:'✨',label:'Overall',sub:'Build a balanced routine'}
+  const v18GoalMap={
+    discipline:{icon:'🎯',label:'Build discipline'},
+    study:{icon:'📚',label:'Study / work'},
+    fitness:{icon:'💪',label:'Get fitter'},
+    mind:{icon:'🧠',label:'Improve my mind'},
+    personal:{icon:'✨',label:'Personal growth'}
   };
 
-  const HABIT_MAP={
-    fitness:['Exercise','Walk','Healthy Food'],
-    mind:['Meditation','Read','Less Phone'],
-    work:['Study / Work','Read','Less Phone'],
-    overall:['Exercise','Study / Work','Read']
-  };
-
-  function injectStyle(){
-    if(document.getElementById('v181-style'))return;
-    const s=document.createElement('style');
-    s.id='v181-style';
+  function v18Style(){
+    if(document.getElementById('v18-style'))return;
+    const s=document.createElement('style');s.id='v18-style';
     s.textContent=`
-      :root{
-        --v181-bg:var(--bg,#f5f3ed);
-        --v181-card:var(--card,#fff);
-        --v181-ink:var(--ink,#1f2421);
-        --v181-muted:var(--muted,#747a73);
-        --v181-line:var(--line,#e6e4dc);
-        --v181-green:var(--green,#3da35d);
-        --v181-green2:var(--green2,#2d7f47);
-        --v181-soft:var(--soft,#edf7ef);
-        --v181-shadow:0 8px 24px rgba(28,35,30,.055);
-      }
-      html,body{margin:0;min-height:100%;width:100%;overflow-x:hidden;background:var(--v181-bg);color:var(--v181-ink);-webkit-text-size-adjust:100%}
-      body{touch-action:manipulation}
-      button,input,textarea,select{font:inherit;max-width:100%;-webkit-tap-highlight-color:transparent}
-      button{touch-action:manipulation}
-      a{color:inherit}
-      .v181-app{min-height:100dvh;padding-bottom:88px;background:var(--v181-bg)}
-      .v181-top{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--v181-bg) 94%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--v181-line);padding:9px 10px}
-      .v181-toprow{width:min(100%,760px);margin:auto;display:grid;grid-template-columns:42px minmax(0,1fr) 42px 42px;gap:7px;align-items:center}
-      .v181-brand{min-width:0}.v181-brand b{display:block;font-size:17px;line-height:1.1;letter-spacing:-.02em}.v181-brand span{display:block;color:var(--v181-muted);font-size:8px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;margin-top:3px}
-      .v181-icon{width:42px;height:42px;border:1px solid var(--v181-line);background:var(--v181-card);color:var(--v181-ink);border-radius:14px;display:grid;place-items:center;padding:0;font-size:18px;font-weight:900}
-      .v181-avatar{width:42px;height:42px;border:1px solid var(--v181-line);background:var(--v181-soft);color:var(--v181-green2);border-radius:14px;display:grid;place-items:center;padding:0;font-size:15px;font-weight:950}
-      .v181-main{width:min(100%,760px);margin:auto;padding:8px 10px 16px;min-width:0}
-      .v181-card{background:var(--v181-card);border:1px solid var(--v181-line);border-radius:20px;padding:13px;margin:9px 0;box-shadow:var(--v181-shadow);min-width:0}
-      .v181-hero{background:linear-gradient(145deg,#173f3a,#19392c);color:#fff;border:0;padding:17px;box-shadow:0 14px 34px rgba(24,64,45,.15)}
-      .v181-kicker{font-size:9px;font-weight:950;letter-spacing:.13em;text-transform:uppercase;color:var(--v181-green2)}.v181-hero .v181-kicker{color:#bde6ca}
-      .v181-title{margin:5px 0 2px;font-size:29px;line-height:1.03;letter-spacing:-.045em}.v181-sub{margin:0;color:var(--v181-muted);font-size:11px;line-height:1.5}.v181-hero .v181-sub{color:#d6ece0}
-      .v181-dayrow{display:flex;justify-content:space-between;gap:10px;align-items:flex-end;margin-top:14px}.v181-day{font-size:31px;font-weight:950;letter-spacing:-.05em;line-height:.95}.v181-day span{font-size:13px;opacity:.7;letter-spacing:0}.v181-pct{font-size:24px;font-weight:950;text-align:right}.v181-pct small{display:block;font-size:8px;text-transform:uppercase;letter-spacing:.1em;opacity:.72}
-      .v181-progress{height:8px;background:rgba(255,255,255,.16);border-radius:999px;overflow:hidden;margin:13px 0 9px}.v181-progress i{display:block;height:100%;background:#7bd29b;border-radius:inherit}
-      .v181-pills{display:flex;gap:6px;flex-wrap:wrap}.v181-pill{padding:6px 8px;border-radius:999px;background:rgba(255,255,255,.09);color:#d8eee2;font-size:9px;font-weight:850}
-      .v181-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:9px}.v181-head h2{font-size:16px;margin:0;letter-spacing:-.02em}.v181-muted{font-size:9px;color:var(--v181-muted)}
-      .v181-next{display:grid;grid-template-columns:42px minmax(0,1fr) 48px;gap:9px;align-items:center;background:var(--v181-soft);border:1px solid #d0e2d4;border-radius:17px;padding:10px}
-      .v181-nexticon{width:42px;height:42px;border-radius:13px;background:#fff;display:grid;place-items:center;font-size:20px}
-      .v181-nextcopy b{display:block;font-size:14px}.v181-nextcopy span{display:block;color:var(--v181-muted);font-size:9px;line-height:1.35;margin-top:2px}
-      .v181-check{width:48px;height:48px;border-radius:15px;border:1px solid #cfe2d3;background:#fff;color:var(--v181-green2);font-size:19px;font-weight:950;padding:0}.v181-check.done{background:var(--v181-green);color:#fff;border-color:var(--v181-green)}
-      .v181-priority{display:grid;gap:7px}.v181-priority-block{border:1px solid var(--v181-line);background:var(--v181-card);border-radius:17px;overflow:hidden}.v181-priority-title{display:flex;justify-content:space-between;align-items:center;padding:9px 11px;background:var(--v181-soft);border-bottom:1px solid var(--v181-line)}.v181-priority-title b{font-size:11px}.v181-priority-title span{font-size:8px;color:var(--v181-muted)}
-      .v181-habit{display:grid;grid-template-columns:38px minmax(0,1fr) 42px;gap:8px;align-items:center;padding:9px 10px}.v181-habit+.v181-habit{border-top:1px solid var(--v181-line)}.v181-hicon{width:38px;height:38px;border-radius:11px;background:#f2f6f2;border:1px solid var(--v181-line);display:grid;place-items:center;font-size:18px}.v181-hmain{min-width:0}.v181-hmain b{display:block;font-size:12px}.v181-hmain small{display:block;color:var(--v181-muted);font-size:8px;line-height:1.3;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v181-hmeta{display:flex;gap:6px;margin-top:3px;color:var(--v181-muted);font-size:8px;font-weight:800;flex-wrap:wrap}
-      .v181-tick{width:42px;height:42px;border-radius:13px;border:1px solid var(--v181-line);background:#fbfdfb;color:var(--v181-green2);font-size:18px;font-weight:950;padding:0}.v181-tick.done{background:var(--v181-green);color:#fff;border-color:var(--v181-green)}
-      .v181-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}.v181-btn{min-height:43px;border-radius:13px;border:1px solid var(--v181-line);background:var(--v181-card);color:var(--v181-ink);font-size:10px;font-weight:900;padding:9px 10px}.v181-btn.primary{background:var(--v181-green);border-color:var(--v181-green);color:#fff}.v181-btn:disabled{opacity:.5}
-      .v181-recovery{display:flex;gap:10px;align-items:flex-start;background:#fff7e9;border:1px solid #ead9ac;border-radius:17px;padding:11px}.v181-recovery b{display:block;font-size:11px}.v181-recovery span{display:block;color:#786433;font-size:9px;line-height:1.45;margin-top:3px}
-      .v181-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.v181-tile{border:1px solid var(--v181-line);background:var(--v181-card);border-radius:16px;text-align:left;padding:11px;min-height:83px}.v181-tile b{display:block;font-size:11px;margin-top:3px}.v181-tile small{display:block;color:var(--v181-muted);font-size:8px;line-height:1.35;margin-top:2px}.v181-tile span{font-size:19px}
-      .v181-group{margin-top:12px}.v181-group h3{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--v181-green2);margin:0 0 7px}
-      .v181-statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.v181-stat{background:#f5f8f4;border:1px solid var(--v181-line);border-radius:15px;padding:10px}.v181-stat b{display:block;font-size:20px;letter-spacing:-.03em}.v181-stat span{display:block;color:var(--v181-muted);font-size:8px;margin-top:2px}
-      .v181-ach{display:grid;grid-template-columns:1fr 1fr;gap:7px}.v181-achitem{padding:10px;border:1px solid var(--v181-line);border-radius:15px;background:var(--v181-card)}.v181-achitem b{display:block;font-size:10px}.v181-achitem span{display:block;font-size:8px;color:var(--v181-muted);margin-top:2px}
-      .v181-legacy{max-width:680px;margin:auto}.v181-legacy .v14-page{max-width:680px}
-      .v181-profile{display:grid;grid-template-columns:58px minmax(0,1fr);gap:10px;align-items:center}.v181-profilepic{width:58px;height:58px;border-radius:17px;background:var(--v181-soft);color:var(--v181-green2);display:grid;place-items:center;font-size:22px;font-weight:950}.v181-profile h1{margin:0;font-size:21px;letter-spacing:-.04em}.v181-profile p{margin:2px 0 0;font-size:9px;color:var(--v181-muted)}
-      .v181-sheetwrap{position:fixed;inset:0;z-index:100;background:rgba(8,14,10,.5);display:flex;align-items:flex-start;justify-content:flex-start;padding:8px}.v181-menu{width:min(330px,92vw);max-height:calc(100dvh - 16px);overflow:auto;background:var(--v181-card);border-radius:22px;padding:13px;box-shadow:0 22px 70px rgba(0,0,0,.24)}.v181-menuhead{display:flex;justify-content:space-between;gap:8px;align-items:start}.v181-menuhead h2{margin:2px 0;font-size:20px}.v181-menuhead p{margin:0;color:var(--v181-muted);font-size:9px;line-height:1.45}.v181-menu-links{display:grid;gap:5px;margin-top:10px}.v181-menu-links button{border:1px solid var(--v181-line);background:var(--v181-card);border-radius:13px;padding:10px;text-align:left;color:var(--v181-ink);font-size:10px;font-weight:900}
-      .v181-entry{min-height:100dvh;display:grid;place-items:center;padding:12px;background:radial-gradient(circle at 50% -12%,rgba(61,163,93,.15),transparent 40%),var(--v181-bg)}.v181-entrycard{width:min(100%,500px);background:var(--v181-card);border:1px solid var(--v181-line);border-radius:24px;padding:18px;box-shadow:0 18px 60px rgba(20,30,24,.09)}.v181-entryhero{text-align:center;padding:7px 4px 11px}.v181-logo{width:58px;height:58px;border-radius:18px;background:var(--v181-green);color:#fff;display:grid;place-items:center;font-size:28px;margin:0 auto 10px}.v181-entryhero h1{font-size:28px;line-height:1.02;letter-spacing:-.045em;margin:7px 0}.v181-entryhero p{font-size:10px;line-height:1.45;color:var(--v181-muted);margin:0}.v181-steps{display:flex;justify-content:center;gap:5px;margin:3px 0 10px}.v181-stepdot{width:7px;height:7px;border-radius:50%;background:#dce4de}.v181-stepdot.on{background:var(--v181-green);transform:scale(1.15)}
-      .v181-label{font-size:9px;color:var(--v181-muted);font-weight:900;text-transform:uppercase;letter-spacing:.07em}.v181-input{width:100%;height:45px;margin-top:5px;border:1px solid var(--v181-line);border-radius:13px;background:var(--v181-card);color:var(--v181-ink);padding:10px;outline:0}.v181-choice{border:1px solid var(--v181-line);background:var(--v181-card);border-radius:15px;text-align:left;padding:10px;min-height:72px}.v181-choice.selected{background:var(--v181-soft);border-color:#9fc7a8}.v181-choice span{display:block;font-size:20px}.v181-choice b{display:block;font-size:10px;margin-top:4px}.v181-choice small{display:block;font-size:8px;color:var(--v181-muted);margin-top:2px}.v181-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0}.v181-pick{display:flex;gap:8px;align-items:center;border:1px solid var(--v181-line);background:var(--v181-card);border-radius:14px;padding:9px;text-align:left}.v181-pick.selected{background:var(--v181-soft);border-color:#9fc7a8}.v181-pickicon{width:35px;height:35px;border-radius:10px;background:#f2f6f2;display:grid;place-items:center;flex:none}.v181-pickcopy{min-width:0;flex:1}.v181-pickcopy b{display:block;font-size:9px}.v181-pickcopy small{display:block;color:var(--v181-muted);font-size:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}.v181-checkmark{font-size:17px;color:var(--v181-green2);font-weight:950}
-      .v181-creator{display:flex;align-items:center;gap:9px;border:1px solid var(--v181-line);background:#f8faf7;border-radius:15px;padding:8px;margin:8px 0 10px;text-align:left;width:100%}.v181-creator img{width:43px;height:43px;border-radius:13px;object-fit:cover}.v181-creator div{min-width:0}.v181-creator b{display:block;font-size:10px}.v181-creator span{display:block;font-size:8px;color:var(--v181-muted);margin-top:2px}.v181-creator strong{margin-left:auto;color:var(--v181-green2);font-size:18px}
-      .v181-about p{font-size:10px;line-height:1.55;color:var(--v181-muted)}
-      .v181-bottom{position:fixed;left:0;right:0;bottom:0;z-index:60;padding:6px 9px calc(6px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--v181-card) 95%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--v181-line)}.v181-bottom-inner{width:min(100%,760px);margin:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:4px}.v181-bottom button{border:0;background:transparent;color:var(--v181-muted);border-radius:14px;min-height:52px;font-size:8px;font-weight:900;display:grid;place-items:center;gap:1px}.v181-bottom button b{font-size:17px}.v181-bottom button.active{background:var(--v181-soft);color:var(--v181-green2)}
-      .v181-back{display:flex;justify-content:space-between;align-items:center;gap:8px}.v181-back h2{margin:0;font-size:17px}.v181-mini{font-size:8px;color:var(--v181-muted)}
-      .v181-install{display:grid;gap:8px}
-      /* Important Week-board repair: legacy v14WeekHabit markup needs these selectors. */
-      .v14-week-head{display:grid;grid-template-columns:42px minmax(0,1fr) 42px;align-items:center;gap:10px}
-      .v14-week-head .v14-habit-body{min-width:0}.v14-week-head .v14-habit-body>b{display:block;font-size:15px;line-height:1.2}.v14-week-head .v14-habit-body>span{display:block;color:var(--muted);font-size:10px;margin-top:3px}
-      .v14-dot-row{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-top:11px}
-      .v14-day-dot-wrap{min-height:0;display:grid;justify-items:center;align-content:start;gap:4px}
-      .v14-day-dot-wrap small{display:block;color:var(--muted);font-size:8px;line-height:1;font-weight:850}
-      .v14-day-dot{width:30px;height:30px;padding:0;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--muted);display:grid;place-items:center;font-size:13px;font-weight:950}
-      .v14-day-dot.done{background:var(--green);border-color:var(--green);color:#fff}
-      .v14-day-dot.freeze{background:#d7e9da;border-color:#b9d5be;color:#2e6b40}.v14-day-dot.today{outline:2px solid #9fc7aa;outline-offset:1px}.v14-day-dot:disabled{opacity:.45;cursor:not-allowed}
-      @media(max-width:540px){.v181-main{padding-left:8px;padding-right:8px}.v181-toprow{grid-template-columns:40px minmax(0,1fr) 40px 40px;gap:5px}.v181-icon,.v181-avatar{width:40px;height:40px}.v181-title{font-size:27px}.v181-grid{grid-template-columns:1fr}.v181-entrycard{padding:16px 14px}.v181-entry-grid{grid-template-columns:1fr}.v181-day{font-size:29px}.v181-next{grid-template-columns:39px minmax(0,1fr) 46px}.v181-nexticon{width:39px;height:39px}.v181-check{width:46px;height:46px}.v181-statgrid{grid-template-columns:repeat(3,1fr)}.v181-stat b{font-size:18px}}
-      @media(max-width:380px){.v181-entrycard{padding:14px 11px}.v181-entryhero h1{font-size:25px}.v181-grid{grid-template-columns:1fr}.v181-habit{grid-template-columns:35px minmax(0,1fr) 40px}.v181-hicon{width:35px;height:35px}.v181-tick{width:40px;height:40px}.v181-bottom button{min-height:49px}}
-      body.dark .v181-choice,body.dark .v181-pick,body.dark .v181-creator{background:#151a16}
-      body.dark .v181-nexticon,body.dark .v181-hicon{background:#202a22}
-      body.dark .v181-recovery{background:#2b2516;border-color:#5a4a20}.v181-recovery span{color:var(--v181-muted)}
+      :root{--v18-green:#3da35d;--v18-green2:#2e7d49;--v18-soft:#eef7ef;--v18-bg:var(--bg,#f5f3ed);--v18-card:var(--card,#fff);--v18-line:var(--line,#e5e6df);--v18-muted:var(--muted,#727972);}
+      html,body{margin:0;min-height:100%;width:100%;overflow-x:hidden;-webkit-text-size-adjust:100%;}
+      body{background:var(--v18-bg);color:var(--ink,#202522);touch-action:manipulation;}
+      button,a,input{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+      .v18-app{min-height:100dvh;padding-bottom:92px;background:var(--v18-bg)}
+      .v18-wrap{width:min(100%,760px);margin:0 auto;padding:0 14px}
+      .v18-top{position:sticky;top:0;z-index:25;background:color-mix(in srgb,var(--v18-bg) 90%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid color-mix(in srgb,var(--v18-line) 75%,transparent);padding:10px 12px}
+      .v18-toprow{width:min(100%,760px);margin:auto;display:flex;align-items:center;gap:8px}.v18-brand{flex:1;min-width:0}.v18-brand b{display:block;font-size:17px;line-height:1.1;letter-spacing:-.02em}.v18-brand span{display:block;color:var(--v18-muted);font-size:9px;margin-top:3px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+      .v18-iconbtn{width:42px;height:42px;border:1px solid var(--v18-line);background:var(--v18-card);color:inherit;border-radius:14px;display:grid;place-items:center;font-size:18px}
+      .v18-avatarbtn{width:42px;height:42px;border:1px solid var(--v18-line);background:var(--v18-card);color:#2d7d47;border-radius:14px;display:grid;place-items:center;font-size:15px;font-weight:950;overflow:hidden;padding:0}
+      .v18-main{padding-top:12px}.v18-card{background:var(--v18-card);border:1px solid var(--v18-line);border-radius:21px;padding:15px;margin:10px 0;box-shadow:0 8px 24px rgba(30,44,34,.045)}
+      .v18-hero{background:linear-gradient(145deg,#153f3a,#183b2c);color:#fff;border:0;padding:19px;box-shadow:0 18px 38px rgba(24,64,45,.16)}
+      .v18-kicker{font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:950;color:#3b7e50}.v18-hero .v18-kicker{color:#b9e7c6}.v18-title{font-size:30px;line-height:1.02;letter-spacing:-.045em;margin:7px 0}.v18-sub{font-size:12px;line-height:1.5;color:var(--v18-muted);margin:0}.v18-hero .v18-sub{color:#d9ece1}
+      .v18-bigday{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;margin-top:16px}.v18-day{font-weight:950;font-size:34px;letter-spacing:-.05em;line-height:.95}.v18-day span{font-size:14px;opacity:.7;letter-spacing:0}.v18-pct{font-size:27px;font-weight:950}.v18-pct small{display:block;font-size:9px;opacity:.7;text-transform:uppercase;letter-spacing:.1em;text-align:right}
+      .v18-progress{height:9px;background:rgba(255,255,255,.14);border-radius:999px;overflow:hidden;margin:15px 0 10px}.v18-progress i{display:block;height:100%;border-radius:inherit;background:#7bd29a}
+      .v18-pillrow{display:flex;gap:6px;flex-wrap:wrap}.v18-pill{padding:7px 9px;border-radius:999px;background:rgba(255,255,255,.08);font-size:10px;font-weight:800;color:#d8eee4}
+      .v18-sectionhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.v18-sectionhead h2{margin:0;font-size:17px;letter-spacing:-.02em}.v18-muted{color:var(--v18-muted);font-size:10px}
+      .v18-next{display:grid;grid-template-columns:46px 1fr 52px;gap:10px;align-items:center;background:var(--v18-soft);border:1px solid #d6e5d8;border-radius:18px;padding:12px}.v18-nexticon{width:46px;height:46px;border-radius:14px;background:#fff;display:grid;place-items:center;font-size:22px}.v18-nextcopy b{display:block;font-size:15px}.v18-nextcopy span{display:block;margin-top:3px;color:var(--v18-muted);font-size:10px;line-height:1.35}.v18-complete{width:52px;height:52px;border-radius:16px;border:1px solid #cfe1d2;background:#fff;color:#2f7f49;font-weight:950;font-size:21px}.v18-complete.done{background:var(--v18-green);border-color:var(--v18-green);color:#fff}
+      .v18-habits{display:grid;gap:8px}.v18-habit{display:grid;grid-template-columns:40px 1fr 44px;gap:9px;align-items:center;padding:10px;border:1px solid var(--v18-line);border-radius:16px;background:var(--v18-card)}.v18-hicon{width:40px;height:40px;border-radius:12px;background:#f3f6f2;display:grid;place-items:center;font-size:19px}.v18-hmain{min-width:0}.v18-hmain b{display:block;font-size:13px}.v18-hmain small{display:block;margin-top:3px;color:var(--v18-muted);font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v18-hstats{display:flex;gap:7px;flex-wrap:wrap;margin-top:4px;color:var(--v18-muted);font-size:8px;font-weight:800}.v18-tick{width:44px;height:44px;border-radius:13px;border:1px solid #d9e4db;background:#fbfdfb;color:#2e7d49;font-size:19px;font-weight:950}.v18-tick.done{background:var(--v18-green);border-color:var(--v18-green);color:#fff}
+      .v18-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.v18-btn{min-height:44px;border-radius:14px;border:1px solid var(--v18-line);background:var(--v18-card);color:inherit;font-size:11px;font-weight:900;padding:10px}.v18-btn.primary{background:var(--v18-green);border-color:var(--v18-green);color:#fff}.v18-btn:active,.v18-tick:active,.v18-complete:active{transform:scale(.97)}
+      .v18-nav{position:fixed;left:0;right:0;bottom:0;z-index:35;padding:7px 10px calc(7px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--v18-card) 94%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--v18-line)}.v18-navinner{width:min(100%,760px);margin:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.v18-nav button{min-height:56px;border:0;background:transparent;border-radius:15px;color:var(--v18-muted);font-size:9px;font-weight:900;display:grid;place-items:center;gap:2px}.v18-nav button b{font-size:18px}.v18-nav button.active{background:var(--v18-soft);color:#2d7d47}
+      .v18-statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.v18-stat{background:#f6f8f5;border:1px solid var(--v18-line);border-radius:16px;padding:12px}.v18-stat b{display:block;font-size:21px}.v18-stat span{display:block;color:var(--v18-muted);font-size:9px;margin-top:3px}.v18-profilehero{display:grid;grid-template-columns:70px 1fr;gap:12px;align-items:center}.v18-profilephoto{width:70px;height:70px;border-radius:20px;background:#eef5ef;color:#2d7d47;display:grid;place-items:center;font-size:25px;font-weight:950}.v18-profilehero h1{margin:0;font-size:23px;letter-spacing:-.04em}.v18-profilehero p{margin:4px 0 0;color:var(--v18-muted);font-size:10px}
+      .v18-sharecard{background:linear-gradient(145deg,#234f57,#183a2a);color:#fff;border-radius:22px;padding:17px;min-height:205px;display:flex;flex-direction:column;justify-content:space-between}.v18-sharecard small{letter-spacing:.12em;color:#bfe8ca;font-weight:900;font-size:8px}.v18-sharecard strong{display:block;font-size:38px;letter-spacing:-.05em;line-height:1}.v18-sharecard span{font-size:10px;color:#d5e9dd}.v18-sharestats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.v18-sharestats div{background:rgba(255,255,255,.08);border-radius:12px;padding:8px}.v18-sharestats b{display:block;font-size:15px}.v18-sharestats small{display:block;color:#cfe4d6;letter-spacing:0;margin-top:2px;font-size:8px}
+      .v18-achievements{display:grid;grid-template-columns:1fr 1fr;gap:8px}.v18-ach{padding:11px;border:1px solid var(--v18-line);border-radius:15px;background:var(--v18-card)}.v18-ach b{display:block;font-size:11px}.v18-ach span{display:block;color:var(--v18-muted);font-size:9px;margin-top:3px}
+      .v18-creator{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--v18-line);background:var(--v18-card);border-radius:17px;width:100%;text-align:left}.v18-creator img{width:49px;height:49px;border-radius:15px;object-fit:cover;flex:none}.v18-creatorcopy{flex:1;min-width:0}.v18-creatorcopy small{display:block;color:var(--v18-muted);font-size:8px;font-weight:900;letter-spacing:.08em}.v18-creatorcopy b{display:block;font-size:12px;margin-top:2px}.v18-creatorcopy span{display:block;color:#2d7d47;font-size:9px;font-weight:850;margin-top:2px}.v18-arrow{font-size:20px;color:var(--v18-muted)}
+      .v18-overlay{position:fixed;inset:0;z-index:80;background:rgba(8,14,10,.5);display:flex;align-items:flex-end;justify-content:center;padding:10px}.v18-sheet{width:min(100%,700px);max-height:92dvh;overflow:auto;background:var(--v18-card);color:var(--ink,#202522);border-radius:25px 25px 16px 16px;padding:15px;box-shadow:0 24px 80px rgba(0,0,0,.25)}.v18-sheethead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.v18-close{width:40px;height:40px;border:1px solid var(--v18-line);background:var(--v18-card);border-radius:13px;font-size:20px}.v18-mainphoto{width:100%;aspect-ratio:1/1;border-radius:20px;object-fit:cover;background:#eef2ed}.v18-thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:8px}.v18-thumb{padding:0;aspect-ratio:1;border:2px solid transparent;border-radius:13px;overflow:hidden;background:#eef2ed}.v18-thumb.active{border-color:var(--v18-green)}.v18-thumb img{width:100%;height:100%;object-fit:cover}.v18-formgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.v18-label{font-size:10px;color:var(--v18-muted);font-weight:850}.v18-input{width:100%;height:46px;margin-top:5px;border:1px solid var(--v18-line);border-radius:13px;background:var(--v18-card);color:inherit;padding:10px;outline:none}.v18-goals{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0}.v18-choice{min-height:74px;text-align:left;border:1px solid var(--v18-line);background:var(--v18-card);border-radius:16px;padding:12px}.v18-choice.selected{background:var(--v18-soft);border-color:#9fc7a8}.v18-choice span{display:block;font-size:21px}.v18-choice b{display:block;margin-top:5px;font-size:11px}.v18-choice small{display:block;color:var(--v18-muted);font-size:8px;margin-top:2px}
+      .v18-entry{min-height:100dvh;display:grid;place-items:center;padding:14px;background:radial-gradient(circle at 50% -10%,rgba(61,163,93,.14),transparent 38%),var(--v18-bg)}.v18-entrycard{width:min(100%,520px);background:var(--v18-card);border:1px solid var(--v18-line);border-radius:27px;padding:21px;box-shadow:0 18px 60px rgba(20,30,24,.10)}.v18-entryhero{text-align:center;padding:9px 6px 14px}.v18-logo{width:64px;height:64px;border-radius:20px;background:var(--v18-green);color:#fff;display:grid;place-items:center;font-size:30px;margin:0 auto 13px;box-shadow:0 12px 30px rgba(61,163,93,.25)}.v18-entryhero h1{font-size:31px;line-height:1.02;letter-spacing:-.05em;margin:8px 0}.v18-entryhero p{margin:0;color:var(--v18-muted);font-size:12px;line-height:1.5}.v18-entrycredit{margin:15px 0 12px}.v18-entrycredit label{display:block;color:var(--v18-muted);font-size:8px;letter-spacing:.1em;font-weight:900;margin-bottom:6px}.v18-entrycredit button{width:100%;border:1px solid var(--v18-line);background:#f8faf7;border-radius:16px;padding:9px;display:flex;align-items:center;gap:9px;text-align:left}.v18-entrycredit img{width:43px;height:43px;border-radius:14px;object-fit:cover}.v18-entrycredit b{display:block;font-size:11px}.v18-entrycredit span{display:block;color:var(--v18-muted);font-size:9px;margin-top:2px}.v18-entrycredit strong{margin-left:auto;color:#2d7d47;font-size:18px}.v18-steps{display:flex;justify-content:center;gap:5px;margin:5px 0 13px}.v18-dot{width:7px;height:7px;border-radius:50%;background:#dfe5df}.v18-dot.on{background:var(--v18-green);transform:scale(1.15)}.v18-setuphead h1{margin:0;font-size:27px;letter-spacing:-.045em}.v18-setuphead p{margin:5px 0;color:var(--v18-muted);font-size:11px;line-height:1.45}.v18-habitpicks{display:grid;gap:7px;margin:12px 0}.v18-pick{display:flex;align-items:center;gap:9px;border:1px solid var(--v18-line);background:var(--v18-card);border-radius:15px;padding:10px;text-align:left}.v18-pick.selected{background:var(--v18-soft);border-color:#9fc7a8}.v18-pickicon{width:38px;height:38px;border-radius:11px;background:#f3f6f2;display:grid;place-items:center;font-size:18px;flex:none}.v18-pickcopy{flex:1;min-width:0}.v18-pickcopy b{display:block;font-size:11px}.v18-pickcopy small{display:block;color:var(--v18-muted);font-size:8px;margin-top:2px}.v18-pickmark{font-size:19px;color:#2d7d47;font-weight:950}
+      @media(max-width:540px){.v18-wrap{padding:0 9px}.v18-top{padding-left:8px;padding-right:8px}.v18-title{font-size:28px}.v18-entrycard{padding:18px 15px}.v18-goals{grid-template-columns:1fr 1fr}.v18-formgrid{grid-template-columns:1fr}}
+      @media(min-width:900px){.v18-wrap{width:min(100%,900px)}.v18-main{display:grid;grid-template-columns:1.15fr .85fr;gap:10px;align-items:start}.v18-main>.v18-card{margin:0}.v18-wide{grid-column:1/-1}.v18-navinner{width:min(100%,900px)}.v18-toprow{width:min(100%,900px)}}
+      body.dark .v18-choice,body.dark .v18-pick,body.dark .v18-entrycredit button,body.dark .v18-stat,body.dark .v18-habit{background:#151a16}body.dark .v18-pickicon,body.dark .v18-nexticon{background:#202a22}
     `;
     document.head.appendChild(s);
   }
 
-  function creatorHtml(){
-    const n='Vashu Sharmaa',handle='@pandatvikas1';
-    const photo='creator-profile.jpg';
-    return `<button class="v181-creator" type="button" data-v181-creator><img src="${photo}" alt="${n}"><div><b>${n}</b><span>Data Engineer • Creator · ${handle}</span></div><strong>›</strong></button>`;
+  function v18CreatorCard(){
+    const n=creatorName(),h=creatorHandle(),photo=data.creatorPhoto||'creator-profile.jpg';
+    return `<div class="v18-entrycredit"><label>BUILT BY</label><button type="button" data-v18-creator-open><img src="${escapeHtml(photo)}" alt="${escapeHtml(n)}"><span><b>${escapeHtml(n)}</b>${h?`<span>${escapeHtml(h)}</span>`:''}<span>Creator of Winter Arc Tracker</span></span><strong>›</strong></button></div>`;
   }
 
-  function dots(){
-    return `<div class="v181-steps">${[0,1,2,3,4].map(i=>`<i class="v181-stepdot ${i===step?'on':''}"></i>`).join('')}</div>`;
+  function v18Welcome(){
+    return `<div class="v18-entry"><div class="v18-entrycard"><div class="v18-entryhero"><div class="v18-logo">❄️</div><div class="v18-kicker">WINTER ARC · 2026</div><h1>Your next 92 days.</h1><p>One simple place for your habits, streaks and small wins.</p></div><div class="v18-steps"><i class="v18-dot on"></i><i class="v18-dot"></i><i class="v18-dot"></i></div>${v18CreatorCard()}<button class="v18-btn primary" style="width:100%;min-height:50px" data-v18-next>🚀 Start my Arc</button><button class="v18-btn" style="width:100%;margin-top:7px" data-v18-existing>↪ I already have an Arc</button><p class="v18-muted" style="text-align:center;margin:11px 0 0">Start simple. Change anything later.</p></div></div>`;
   }
 
-  function welcome(){
-    return `<div class="v181-entry"><div class="v181-entrycard"><div class="v181-entryhero"><div class="v181-logo">❄️</div><div class="v181-kicker">WINTER ARC · 2026</div><h1>Your next 92 days.</h1><p>Make daily progress simple, visible and personal.</p></div>${dots()}${creatorHtml()}<button class="v181-btn primary" style="width:100%;min-height:49px" data-v181-next>🚀 Start My Arc</button><button class="v181-btn" style="width:100%;margin-top:7px" data-v181-existing>↪ I already have an Arc</button><p class="v181-muted" style="text-align:center;margin:9px 0 0">Your data stays on this device unless you choose an optional sync.</p></div></div>`;
+  function v18Setup(){
+    const goals=Object.entries(v18GoalMap);
+    return `<div class="v18-entry"><div class="v18-entrycard"><div class="v18-steps"><i class="v18-dot on"></i><i class="v18-dot on"></i><i class="v18-dot"></i></div><div class="v18-setuphead"><div class="v18-kicker">QUICK SETUP</div><h1>Let’s make this your Arc.</h1><p>Just two things. You can customize the rest after you start.</p></div><div style="margin-top:13px"><label class="v18-label">YOUR NAME<input id="v18Name" class="v18-input" autocomplete="name" placeholder="Your name" value="${escapeHtml(data.name||'')}"></label></div><div style="margin-top:13px"><label class="v18-label">WHAT DO YOU WANT TO IMPROVE?</label><div class="v18-goals">${goals.map(([id,g])=>`<button type="button" class="v18-choice ${v18Focus===id?'selected':''}" data-v18-goal="${id}"><span>${g.icon}</span><b>${escapeHtml(g.label)}</b><small>${id==='discipline'?'Build a consistent routine':id==='study'?'Study or work better':id==='fitness'?'Move more and feel stronger':id==='mind'?'Calmer, clearer days':'Choose your own direction'}</small></button>`).join('')}</div></div><div class="v18-actions" style="margin-top:13px"><button class="v18-btn" data-v18-back>Back</button><button class="v18-btn primary" data-v18-next>Choose habits →</button></div></div></div>`;
   }
 
-  function nameStep(){
-    return `<div class="v181-entry"><div class="v181-entrycard">${dots()}<div class="v181-entryhero"><div class="v181-kicker">STEP 1 OF 4</div><h1>What should we call you?</h1><p>Just your name. You can change it later.</p></div><label class="v181-label">YOUR NAME<input id="v181Name" class="v181-input" autocomplete="name" placeholder="Your name" value="${escapeHtml(data.name||'')}"></label><div class="v181-actions" style="margin-top:12px"><button class="v181-btn" data-v181-back>Back</button><button class="v181-btn primary" data-v181-next>Continue →</button></div></div></div>`;
+  function v18HabitList(){
+    const map={
+      discipline:['Study / Work','Exercise','Less Phone'],
+      study:['Study / Work','Read','Less Phone'],
+      fitness:['Exercise','Walk','Healthy Food'],
+      mind:['Meditation','Read','Less Phone'],
+      personal:['Read','Exercise','Meditation']
+    };
+    const names=[...(map[v18Focus]||map.discipline),...PRESETS.filter(x=>!x.private).map(x=>x.name)].filter((x,i,a)=>a.indexOf(x)===i).slice(0,7);
+    if(!v18Habits.length)v18Habits=map[v18Focus]||map.discipline;
+    return names.map(name=>{const p=preset(name);const sel=v18Habits.includes(name);return `<button type="button" class="v18-pick ${sel?'selected':''}" data-v18-habit="${escapeHtml(name)}"><span class="v18-pickicon">${escapeHtml(p?.icon||'✅')}</span><span class="v18-pickcopy"><b>${escapeHtml(name)}</b><small>${escapeHtml(p?.action||'Do the smallest useful version')}</small></span><strong class="v18-pickmark">${sel?'✓':'+'}</strong></button>`}).join('');
   }
 
-  function improveStep(){
-    return `<div class="v181-entry"><div class="v181-entrycard">${dots()}<div class="v181-entryhero"><div class="v181-kicker">STEP 2 OF 4</div><h1>What do you want to improve?</h1><p>Choose one direction. Your habits can stay balanced.</p></div><div class="v181-entry-grid">${Object.entries(GOALS).map(([id,g])=>`<button type="button" class="v181-choice ${focus===id?'selected':''}" data-v181-goal="${id}"><span>${g.icon}</span><b>${g.label}</b><small>${g.sub}</small></button>`).join('')}</div><div class="v181-actions"><button class="v181-btn" data-v181-back>Back</button><button class="v181-btn primary" data-v181-next>Choose habits →</button></div></div></div>`;
+  function v18HabitsStep(){
+    return `<div class="v18-entry"><div class="v18-entrycard"><div class="v18-steps"><i class="v18-dot on"></i><i class="v18-dot on"></i><i class="v18-dot on"></i></div><div class="v18-setuphead"><div class="v18-kicker">FIRST WINS</div><h1>We picked a simple start.</h1><p>Start with <b>3 habits</b>. You can add more anytime.</p></div><div class="v18-habitpicks">${v18HabitList()}</div><div class="v18-actions"><button class="v18-btn" data-v18-back>Back</button><button class="v18-btn primary" data-v18-finish ${v18Habits.length?'':'disabled'}>Start my Arc 🚀</button></div></div></div>`;
   }
 
-  function habitCandidates(){
-    const seed=HABIT_MAP[focus]||HABIT_MAP.overall;
-    const all=[...seed,...PRESETS.filter(p=>!p.private).map(p=>p.name),'Private Wellness'];
-    return [...new Set(all)].slice(0,10);
+  function v18Ready(){
+    const h=data.habits[0];
+    return `<div class="v18-entry"><div class="v18-entrycard"><div class="v18-entryhero"><div class="v18-logo" style="font-size:28px">✓</div><div class="v18-kicker">YOUR ARC IS READY</div><h1>Let’s make today count.</h1><p>${escapeHtml(data.name||'You')}, your first action is ready. No perfect plan needed.</p></div><div class="v18-statgrid"><div class="v18-stat"><b>92</b><span>days</span></div><div class="v18-stat"><b>${data.habits.length}</b><span>habits</span></div><div class="v18-stat"><b>1</b><span>focus</span></div></div><div class="v18-next" style="margin-top:12px"><div class="v18-nexticon">${escapeHtml(h?.icon||'🎯')}</div><div class="v18-nextcopy"><b>${escapeHtml(h?.name||'First win')}</b><span>${escapeHtml(h?.action||'Do the smallest useful version')}</span></div><span style="font-size:24px">→</span></div><button class="v18-btn primary" style="width:100%;margin-top:13px;min-height:50px" data-v18-enter>Start Today →</button><button class="v18-btn" style="width:100%;margin-top:7px" data-v18-community>🌍 Join the community</button><p class="v18-muted" style="text-align:center;margin:10px 0 0">Community is optional. Your tracker works without it.</p></div></div>`;
   }
 
-  function habitsStep(){
-    if(!selected.length)selected=[...(HABIT_MAP[focus]||HABIT_MAP.overall)];
-    return `<div class="v181-entry"><div class="v181-entrycard">${dots()}<div class="v181-entryhero"><div class="v181-kicker">STEP 3 OF 4</div><h1>Pick your daily habits.</h1><p>Pick up to <b>6 habits</b>. Keep the list realistic — you can add more later.</p></div><div class="v181-entry-grid">${habitCandidates().map(name=>{const p=preset(name),sel=selected.includes(name);return `<button type="button" class="v181-pick ${sel?'selected':''}" data-v181-habit="${escapeHtml(name)}"><span class="v181-pickicon">${escapeHtml(p?.icon||'✅')}</span><span class="v181-pickcopy"><b>${escapeHtml(name)}</b><small>${escapeHtml(p?.action||'Do the smallest useful version')}</small></span><strong class="v181-checkmark">${sel?'✓':'+'}</strong></button>`}).join('')}</div><div class="v181-actions"><button class="v181-btn" data-v181-back>Back</button><button class="v181-btn primary" ${selected.length?'':'disabled'} data-v181-finish>Save habits →</button></div></div></div>`;
-  }
+  function v18Entry(){if(v18Step===0)return v18Welcome();if(v18Step===1)return v18Setup();if(v18Step===2)return v18HabitsStep();return v18Ready();}
 
-  function readyStep(){
-    const f=data.habits[0];
-    return `<div class="v181-entry"><div class="v181-entrycard"><div class="v181-entryhero"><div class="v181-logo">✓</div><div class="v181-kicker">READY</div><h1>Your Arc is set.</h1><p>${escapeHtml(data.name||'You')}, your first day is ready. The goal is consistency, not perfection.</p></div><div class="v181-statgrid"><div class="v181-stat"><b>92</b><span>Arc days</span></div><div class="v181-stat"><b>${data.habits.length}</b><span>habits</span></div><div class="v181-stat"><b>1</b><span>focus</span></div></div><div class="v181-next" style="margin-top:10px"><div class="v181-nexticon">${escapeHtml(f?.icon||'🎯')}</div><div class="v181-nextcopy"><b>${escapeHtml(f?.name||'First win')}</b><span>${escapeHtml(f?.action||'Do the smallest useful version')}</span></div><span style="font-size:22px">→</span></div><button class="v181-btn primary" style="width:100%;min-height:49px;margin-top:11px" data-v181-enter>Start Today →</button><p class="v181-muted" style="text-align:center;margin:9px 0 0">Community is optional. Your tracker works without it.</p></div></div>`;
-  }
-
-  function entry(){
-    if(step===0)return welcome();
-    if(step===1)return nameStep();
-    if(step===2)return improveStep();
-    if(step===3)return habitsStep();
-    return readyStep();
-  }
-
-  function priority(h,index){
-    const p=String(h.priority||'').toLowerCase();
-    if(['must','should','bonus'].includes(p))return p;
-    if(index===0)return 'must';
-    if(index<=2)return 'should';
-    return 'bonus';
-  }
-
-  function priorityBlock(label,sub,items){
-    if(!items.length)return '';
-    return `<div class="v181-priority-block"><div class="v181-priority-title"><b>${label}</b><span>${sub}</span></div>${items.map(h=>{
-      const is=done(h,today()),hs=habitStats(h);
-      return `<article class="v181-habit"><div class="v181-hicon">${escapeHtml(h.icon||'✅')}</div><div class="v181-hmain"><b>${escapeHtml(h.name)}${h.private?' 🔒':''}</b><small>${escapeHtml(h.smallWin||h.action||'Smallest useful version')}</small><div class="v181-hmeta"><span>🔥 ${hs.run}</span><span>${hs.weekPct}% week</span></div></div><button class="v181-tick ${is?'done':''}" data-v181-complete="${escapeHtml(h.id)}" aria-label="${is?'Undo':'Complete'} ${escapeHtml(h.name)}">${is?'✓':'+'}</button></article>`;
-    }).join('')}</div>`;
-  }
-
-  function recentMiss(){
-    if(!data.habits.length)return false;
-    const y=addDays(today(),-1);
-    return data.habits.some(h=>canUseHabitOn(h,y)&&!active(h,y));
-  }
-
-  function todayPage(){
-    const s=stats(),day=v13ArcDay(),L=v13ArcLength(),pct=data.habits.length?Math.round(s.todayDone/data.habits.length*100):0,f=focusHabit();
-    const grouped={must:[],should:[],bonus:[]};
-    data.habits.forEach((h,i)=>grouped[priority(h,i)].push(h));
-    return `<div>
-      <section class="v181-card v181-hero"><div class="v181-kicker">${day?`WINTER ARC · DAY ${day}`:'WINTER ARC · STARTS SOON'}</div><div class="v181-dayrow"><div class="v181-day">DAY ${day||0} <span>/ ${L}</span></div><div class="v181-pct">${pct}%<small>today</small></div></div><div class="v181-progress"><i style="width:${pct}%"></i></div><div class="v181-pills"><span class="v181-pill">${s.todayDone}/${data.habits.length} complete</span><span class="v181-pill">🔥 ${Math.max(0,...data.habits.map(h=>habitStats(h).longest))} best</span></div></section>
-      <section class="v181-card"><div class="v181-head"><div><h2>YOUR NEXT WIN</h2><span class="v181-muted">Do one thing. Then the next action updates.</span></div></div>${f?`<div class="v181-next"><div class="v181-nexticon">${escapeHtml(f.icon||'✅')}</div><div class="v181-nextcopy"><b>${escapeHtml(f.name)}</b><span>${escapeHtml(f.smallWin||f.action||'Smallest useful version')}</span></div><button class="v181-check ${done(f,today())?'done':''}" data-v181-complete="${escapeHtml(f.id)}">${done(f,today())?'✓':'→'}</button></div>`:'<p class="v181-sub">Add a habit to create your next win.</p>'}<div class="v181-actions" style="margin-top:8px"><button class="v181-btn primary" data-v181-sprint>⏱️ Focus Sprint</button><button class="v181-btn" data-v181-nav="profile">👤 My Profile</button></div></section>
-      ${recentMiss()?`<section class="v181-recovery"><div style="font-size:22px">🛟</div><div><b>No reset needed.</b><span>Start again with the smallest version. A missed day does not erase your Arc.</span></div></section>`:''}
-      <section class="v181-card"><div class="v181-head"><div><h2>Today</h2><span class="v181-muted">Top priorities first</span></div><span class="v181-muted">${s.todayDone}/${data.habits.length}</span></div><div class="v181-priority">${priorityBlock('MUST DO','Your first win',grouped.must)}${priorityBlock('SHOULD DO','Useful today',grouped.should)}${priorityBlock('BONUS','Only when you have room',grouped.bonus)}</div></section>
-      ${s.todayDone===data.habits.length&&data.habits.length?`<section class="v181-card"><div class="v181-head"><div><h2>🔥 Day complete</h2><span class="v181-muted">Nice. You are done for today.</span></div></div><button class="v181-btn primary" style="width:100%" data-v181-share>Share the win ↗</button></section>`:''}
-    </div>`;
-  }
-
-  function profilePage(){
+  function v18ProfilePage(){
     const s=stats(),day=v13ArcDay(),L=v13ArcLength(),pct=v13ArcProgress(),best=Math.max(0,...data.habits.map(h=>habitStats(h).longest)),wins=v13TotalWins();
-    const focusLabel=GOALS[data.goal]?.label||data.goal||'Overall';
-    let ach=[];
-    try{ach=(typeof achievements==='function'?achievements():[]).filter(x=>x&&x[1]).slice(0,8)}catch(e){}
-    return `<div>
-      <section class="v181-card"><div class="v181-profile"><div class="v181-profilepic">${escapeHtml((data.name||'A').slice(0,1).toUpperCase())}</div><div><div class="v181-kicker">MY PROFILE</div><h1>${escapeHtml(data.name||'Your Arc')}</h1><p>${escapeHtml(focusLabel)} · Winter Arc 2026</p></div></div><div class="v181-dayrow" style="color:var(--v181-ink);margin-top:14px"><div class="v181-day" style="font-size:27px">DAY ${day||0} <span>/ ${L}</span></div><div class="v181-pct" style="font-size:24px">${pct}%<small>Arc</small></div></div><div style="height:8px;background:#e5ece6;border-radius:999px;overflow:hidden;margin-top:10px"><i style="display:block;height:100%;width:${pct}%;background:var(--v181-green);border-radius:999px"></i></div><div class="v181-actions" style="margin-top:10px"><button class="v181-btn primary" data-v181-share>↗ Share My Arc</button><button class="v181-btn" data-v181-nav="today">Today →</button></div></section>
-      <section class="v181-card"><div class="v181-head"><h2>Your progress</h2><span class="v181-muted">All time</span></div><div class="v181-statgrid"><div class="v181-stat"><b>${s.todayDone}/${data.habits.length}</b><span>Today</span></div><div class="v181-stat"><b>${best}🔥</b><span>Best streak</span></div><div class="v181-stat"><b>${wins}</b><span>Arc wins</span></div></div></section>
-      <section class="v181-card"><div class="v181-head"><h2>🏆 Achievements</h2><button class="v181-btn" data-v181-more="achievements" style="min-height:31px;padding:6px 9px">View all</button></div><div class="v181-ach">${(ach.length?ach:[['First win',s.completed>0],['3-day streak',best>=3],['One week',best>=7]]).slice(0,6).map(x=>`<div class="v181-achitem"><b>🏆 ${escapeHtml(x[0])}</b><span>${x[1]?'Unlocked':'Keep going'}</span></div>`).join('')}</div></section>
-      <section class="v181-card"><div class="v181-head"><h2>❄️ Arc snapshot</h2><button class="v181-btn" data-v181-nav="arc" style="min-height:31px;padding:6px 9px">Arc →</button></div><div class="v181-statgrid"><div class="v181-stat"><b>${day||0}</b><span>Arc days</span></div><div class="v181-stat"><b>${pct}%</b><span>Arc progress</span></div><div class="v181-stat"><b>${wins}</b><span>Wins</span></div></div></section>
-    </div>`;
+    const goal=v18GoalMap[data.goal]?.label||data.goal||'Your focus'; const initial=escapeHtml((data.name||'A').slice(0,1).toUpperCase());
+    const ach=achievements().filter(x=>x[1]).slice(0,6);
+    return `<div class="v18-wrap v18-main"><section class="v18-card v18-wide"><div class="v18-profilehero"><div class="v18-profilephoto" aria-hidden="true">${initial}</div><div><div class="v18-kicker">MY PROFILE</div><h1>${escapeHtml(data.name||'Your Arc')}</h1><p>${escapeHtml(goal)} · Winter Arc 2026</p></div></div><div class="v18-bigday" style="margin-top:15px;color:var(--ink,#202522)"><div class="v18-day" style="font-size:28px">DAY ${day||0} <span>/ ${L}</span></div><div class="v18-pct" style="font-size:25px">${pct}%<small>Arc</small></div></div><div class="v18-progress" style="background:#e4ebe5"><i style="width:${Math.min(100,pct)}%"></i></div><div class="v18-actions" style="margin-top:12px"><button class="v18-btn primary" data-v18-share-profile>↗ Share My Arc</button><button class="v18-btn" data-v18-nav="today">Today →</button></div></section><section class="v18-card"><div class="v18-sectionhead"><h2>Your numbers</h2><span class="v18-muted">All time</span></div><div class="v18-statgrid"><div class="v18-stat"><b>${s.todayDone}/${data.habits.length}</b><span>Today</span></div><div class="v18-stat"><b>${best}🔥</b><span>Best streak</span></div><div class="v18-stat"><b>${wins}</b><span>Arc wins</span></div></div></section><section class="v18-card"><div class="v18-sectionhead"><h2>🏆 Achievements</h2><span class="v18-muted">${ach.length} unlocked</span></div><div class="v18-achievements">${(ach.length?ach:[['First win',s.completed>0],['3-day streak',best>=3]]).map(([name,on])=>`<div class="v18-ach"><b>🏆 ${escapeHtml(name)}</b><span>Unlocked on your journey</span></div>`).join('')}</div></section><section class="v18-card"><div class="v18-sectionhead"><h2>❄️ My Journey</h2><span class="v18-muted">Day ${journeyDay()}</span></div><div class="v18-sharecard"><small>WINTER ARC 2026 · ${escapeHtml((data.name||'MY ARC').toUpperCase())}</small><strong>DAY ${day||0}/${L}</strong><span>Keep your next small win moving.</span><div class="v18-sharestats"><div><b>${pct}%</b><small>Arc</small></div><div><b>${best}</b><small>Best streak</small></div><div><b>${wins}</b><small>Wins</small></div></div></div><button class="v18-btn primary" style="width:100%;margin-top:9px" data-v18-share-profile>Share this card ↗</button></section></div>`;
   }
 
-  function insightsPage(){
-    const s=stats(),bw=typeof v13BestWeek==='function'?v13BestWeek():null,bh=typeof v13BestHabit==='function'?v13BestHabit():null;
-    return `<section class="v181-card"><div class="v181-back"><div><div class="v181-kicker">INSIGHTS</div><h2>See the useful signal.</h2><span class="v181-mini">Keep the numbers that help you act.</span></div><button class="v181-icon" data-v181-close>×</button></div><div class="v181-statgrid" style="margin-top:12px"><div class="v181-stat"><b>${s.score}%</b><span>This week</span></div><div class="v181-stat"><b>${s.longest}</b><span>Best full-day streak</span></div><div class="v181-stat"><b>${s.completed}</b><span>Total checks</span></div></div><div class="v181-card" style="margin:9px 0 0;padding:10px;background:var(--v181-soft)"><b style="font-size:11px">${bh?'Strongest habit: '+escapeHtml(bh.name):'Strongest habit: waiting for data'}</b><p class="v181-sub">${bw?`Best week: ${bw.score}% · ${formatDay(bw.start)} → ${formatDay(bw.end)}`:'Your first full week will create a baseline.'}</p></div></section>`;
+  function v18Today(){
+    const s=stats(),day=v13ArcDay(),L=v13ArcLength(),pct=s.todayDone&&data.habits.length?Math.round(s.todayDone/data.habits.length*100):0,f=focusHabit();
+    return `<div class="v18-wrap v18-main"><section class="v18-card v18-hero v18-wide"><div class="v18-kicker">${day?`WINTER ARC · DAY ${day}`:'WINTER ARC · STARTING SOON'}</div><div class="v18-bigday"><div class="v18-day">DAY ${day||0} <span>/ ${L}</span></div><div class="v18-pct">${pct}%<small>today</small></div></div><div class="v18-progress"><i style="width:${pct}%"></i></div><div class="v18-pillrow"><span class="v18-pill">${s.todayDone}/${data.habits.length} complete</span><span class="v18-pill">🔥 ${Math.max(0,...data.habits.map(h=>habitStats(h).run))} best</span></div></section><section class="v18-card"><div class="v18-sectionhead"><div><h2>🎯 Next up</h2><span class="v18-muted">One action. Then the next.</span></div></div>${f?`<div class="v18-next"><div class="v18-nexticon">${escapeHtml(f.icon)}</div><div class="v18-nextcopy"><b>${escapeHtml(f.name)}</b><span>${escapeHtml(f.smallWin||f.action||'Smallest useful version')}</span></div><button class="v18-complete ${done(f,today())?'done':''}" data-v18-complete="${escapeHtml(f.id)}">${done(f,today())?'✓':'→'}</button></div>`:'<div class="v18-sub">Add a habit to get your first action.</div>'}<div class="v18-actions" style="margin-top:10px"><button class="v18-btn primary" data-v18-sprint>⏱️ Focus Sprint</button><button class="v18-btn" data-v18-nav="profile">👤 My Profile</button></div></section><section class="v18-card"><div class="v18-sectionhead"><h2>✅ Today</h2><span class="v18-muted">Tap once</span></div><div class="v18-habits">${data.habits.length?data.habits.map(h=>{const d=today(),is=done(h,d),hs=habitStats(h);return `<article class="v18-habit"><div class="v18-hicon">${escapeHtml(h.icon||'✅')}</div><div class="v18-hmain"><b>${escapeHtml(h.name)}</b><small>${escapeHtml(h.action||'Smallest useful version')}</small><div class="v18-hstats"><span>🔥 ${hs.run}</span><span>${hs.weekPct}% week</span></div></div><button class="v18-tick ${is?'done':''}" data-v18-complete="${escapeHtml(h.id)}" aria-label="${is?'Undo':'Complete'} ${escapeHtml(h.name)}">${is?'✓':'+'}</button></article>`}).join(''):'<div class="v18-sub">Your first habit can be added in one tap.</div>'}</div></section>${s.todayDone===data.habits.length&&data.habits.length?`<section class="v18-card"><div class="v18-sectionhead"><div><h2>🔥 Day complete</h2><span class="v18-muted">Nice work. Save the moment.</span></div></div><div class="v18-actions"><button class="v18-btn primary" data-v18-share-profile>Share win ↗</button><button class="v18-btn" data-v18-sprint>Focus again</button></div></section>`:''}</div>`;
   }
 
-  function achievementsPage(){
-    let ach=[];try{ach=typeof achievements==='function'?achievements():[]}catch(e){}
-    return `<section class="v181-card"><div class="v181-back"><div><div class="v181-kicker">ACHIEVEMENTS</div><h2>Your milestones</h2></div><button class="v181-icon" data-v181-close>×</button></div><div class="v181-ach" style="margin-top:10px">${(ach.length?ach:[['First win',stats().completed>0],['3-day streak',Math.max(0,...data.habits.map(h=>habitStats(h).longest))>=3],['7-day streak',Math.max(0,...data.habits.map(h=>habitStats(h).longest))>=7]]).map(x=>`<div class="v181-achitem"><b>🏆 ${escapeHtml(x[0])}</b><span>${x[1]?'Unlocked':'Not yet'}</span></div>`).join('')}</div></section>`;
-  }
-
-  function getAppPage(){
-    const installed=window.matchMedia?.('(display-mode: standalone)').matches||window.navigator.standalone;
-    return `<section class="v181-card v181-hero"><div class="v181-kicker">APP</div><h2 style="margin:4px 0 6px;font-size:24px">Install Winter Arc.</h2><p class="v181-sub">Use this website like an app on your phone. No APK is required.</p><div class="v181-install"><button class="v181-btn primary" data-v181-install>${installed?'App already installed ✅':installPrompt?'Install Winter Arc 📱':'Show install steps 📱'}</button></div></section><section class="v181-card"><div class="v181-head"><h2>Android / Chrome</h2><span class="v181-muted">PWA</span></div><p class="v181-sub">${installPrompt?'Tap Install Winter Arc above.':'Open Chrome ⋮ → Install app / Add to Home screen.'}</p></section><section class="v181-card"><div class="v181-head"><h2>iPhone / Safari</h2><span class="v181-muted">iOS</span></div><p class="v181-sub">Safari → Share → Add to Home Screen.</p></section>`;
-  }
-
-  function backupPage(){
-    return `<section class="v181-card"><div class="v181-back"><div><div class="v181-kicker">BACKUP</div><h2>Protect your progress.</h2><span class="v181-mini">Everything stays local unless you explicitly sync.</span></div><button class="v181-icon" data-v181-close>×</button></div><div class="v181-actions" style="margin-top:12px"><button class="v181-btn primary" data-v181-backup>💾 JSON backup</button><button class="v181-btn" data-v181-restore>📥 Restore</button></div><button class="v181-btn" style="width:100%;margin-top:7px" data-v181-csv>📊 Export CSV</button><input id="v181Restore" type="file" accept=".json" hidden></section>`;
-  }
-
-  function aboutPage(){
-    return `<section class="v181-card v181-about"><div class="v181-back"><div><div class="v181-kicker">ABOUT WINTER ARC</div><h2>Simple outside. Powerful inside.</h2></div><button class="v181-icon" data-v181-close>×</button></div><p>Winter Arc Tracker is built for people who want to make daily progress simple, visible and personal. The main tracker is offline-first, and advanced tools stay available without crowding Today.</p><p><b>Vashu Sharmaa</b><br>Data Engineer • Creator<br>@pandatvikas1</p><p>I created Winter Arc Tracker for people who want to make daily progress simple, visible and personal.</p></section>`;
-  }
-
-  function creatorPage(){
-    return `<section class="v181-card v181-about"><div class="v181-back"><div><div class="v181-kicker">CREATOR</div><h2>Vashu Sharmaa</h2></div><button class="v181-icon" data-v181-close>×</button></div><img src="creator-profile.jpg" alt="Vashu Sharmaa" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:17px;background:#eef2ed"><p><b>Data Engineer • Creator</b><br>@pandatvikas1</p><p>I created Winter Arc Tracker for people who want to make daily progress simple, visible and personal.</p><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">${['creator-photo-1.jpg','creator-photo-2.jpg','creator-photo-3.jpg'].map(x=>`<img src="${x}" alt="Creator photo" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:12px">`).join('')}</div><a class="v181-btn primary" href="https://instagram.com/pandatvikas1" target="_blank" rel="noopener" style="display:flex;text-decoration:none;margin-top:8px">Open Instagram ↗</a></section>`;
-  }
-
-  function morePage(){
+  function v18More(){
     if(morePanel){
-      let inner='';
-      switch(morePanel){
-        case 'insights':inner=insightsPage();break;
-        case 'achievements':inner=achievementsPage();break;
-        case 'getapp':inner=getAppPage();break;
-        case 'backup':inner=backupPage();break;
-        case 'about':inner=aboutPage();break;
-        case 'creator':inner=creatorPage();break;
-        case 'private':inner=`<section class="v181-card"><div class="v181-back"><div><div class="v181-kicker">PRIVATE WELLNESS</div><h2>Private on this device.</h2></div><button class="v181-icon" data-v181-close>×</button></div><p class="v181-sub">Your Private Wellness habit is treated like local tracker data. Journal, sleep, mood, PIN and detailed history are not part of the aggregate community snapshot.</p><button class="v181-btn primary" style="width:100%;margin-top:8px" data-v181-more="manage">Open habit manager →</button></section>`;break;
-        default:
-          try{inner=morePanel==='manage'?manageHabitsHtml():panelHtml();}catch(e){inner='<p class="v181-sub">This tool is unavailable.</p>';}
-      }
-      return `<div class="v181-main"><section class="v181-card v181-wide"><div class="v181-back"><div><div class="v181-kicker">MORE</div><h2>${escapeHtml(morePanel.replace(/^./,c=>c.toUpperCase()))}</h2></div><button class="v181-icon" data-v181-close>×</button></div></section>${inner}</div>`;
+      return `<div class="v18-wrap v18-main"><section class="v18-card v18-wide"><div class="v18-sectionhead"><div><div class="v18-kicker">TOOLS</div><h2>${escapeHtml(morePanel[0].toUpperCase()+morePanel.slice(1))}</h2></div><button class="v18-iconbtn" data-v18-more-close>×</button></div>${morePanel==='credits'?v18CreatorPanel():panelHtml()}</section></div>`;
     }
-    const tile=(icon,title,sub,id)=>`<button class="v181-tile" data-v181-more="${id}"><span>${icon}</span><b>${title}</b><small>${sub}</small></button>`;
-    return `<div class="v181-main">
-      <section class="v181-card"><div class="v181-head"><div><div class="v181-kicker">MORE</div><h2>Everything else, kept simple.</h2></div></div><div class="v181-actions"><button class="v181-btn primary" data-v181-sprint>⏱️ Focus Sprint</button><button class="v181-btn" data-v181-share>↗ Share My Arc</button></div></section>
-      <section class="v181-card"><div class="v181-group"><h3>YOUR PROGRESS</h3><div class="v181-grid">${tile('📈','Insights','Useful patterns from your data','insights')}${tile('🏆','Achievements','Milestones and streak wins','achievements')}${tile('🗓️','Month','Calendar view of your habits','month')}${tile('❄️','Arc Details','92-day Arc journey and milestones','arc')}</div></div></section>
-      <section class="v181-card"><div class="v181-group"><h3>TOOLS</h3><div class="v181-grid">${tile('✅','Habits','Add or edit habits','manage')}${tile('🎯','Goals','Goals and weekly reflection','goals')}${tile('🔁','Routines','Run habits in order','routine')}${tile('🗓️','Day Planner','Preferred times and planning','planner')}${tile('😴','Sleep','Local sleep log','sleep')}${tile('🌤️','Mood & Energy','Local check-in history','checkin')}${tile('✍️','Journal','Private one-line reflections','journal')}${tile('🔒','Private Wellness','Private local habit','private')}${tile('⏰','Reminders','Local reminders','reminders')}</div></div></section>
-      <section class="v181-card"><div class="v181-group"><h3>APP</h3><div class="v181-grid">${tile('📱','Get the App','PWA install and phone steps','getapp')}${tile('💾','Backup & Restore','JSON + CSV data tools','backup')}${tile('⚙️','Settings','Theme, data and advanced settings','settings')}${tile('ℹ️','About Winter Arc','How the tracker works','about')}</div></div></section>
-      <section class="v181-card"><div class="v181-head"><div><h2>🌍 Community</h2><span class="v181-muted">Optional</span></div></div><p class="v181-sub">Community is opt-in. Private habit names, journal, sleep, mood, PIN and detailed local history stay out of the aggregate snapshot.</p><button class="v181-btn primary" style="width:100%;margin-top:8px" data-v181-community>Join / manage community ↗</button></section>
-      ${creatorHtml()}
-    </div>`;
+    return `<div class="v18-wrap v18-main"><section class="v18-card v18-wide"><div class="v18-sectionhead"><div><div class="v18-kicker">MORE</div><h2>Everything else, kept simple.</h2></div></div><div class="v18-actions"><button class="v18-btn primary" data-v18-sprint>⏱️ Focus Sprint</button><button class="v18-btn" data-v18-share-profile>↗ Share My Arc</button></div></section><section class="v18-card"><div class="v18-sectionhead"><h2>Tools</h2><span class="v18-muted">Open when needed</span></div><div class="v18-goals"><button class="v18-choice" data-v18-more="manage"><span>✅</span><b>Habits</b><small>Add or edit habits</small></button><button class="v18-choice" data-v18-more="goals"><span>🎯</span><b>Goals</b><small>Set your direction</small></button><button class="v18-choice" data-v18-more="routine"><span>🔁</span><b>Routines</b><small>Run steps in order</small></button><button class="v18-choice" data-v18-more="checkin"><span>🌤️</span><b>Check-in</b><small>Mood & energy</small></button><button class="v18-choice" data-v18-more="journal"><span>✍️</span><b>Journal</b><small>One-line reflection</small></button><button class="v18-choice" data-v18-more="settings"><span>⚙️</span><b>Settings</b><small>Data, theme & install</small></button></div></section><section class="v18-card"><div class="v18-sectionhead"><h2>🌍 Community</h2><span class="v18-muted">Optional</span></div><p class="v18-sub">Share only what you choose. Core tracking remains local.</p><button class="v18-btn primary" style="width:100%;margin-top:9px" data-open-cloud>Join / manage community ↗</button></section>${v18CreatorCard()}</div>`;
   }
 
-  function shellBody(){
-    if(tab==='today')return todayPage();
-    if(tab==='week')return `<div class="v181-legacy">${v14WeekPage()}</div>`;
-    if(tab==='month')return `<div class="v181-legacy">${v14MonthPage()}</div>`;
-    if(tab==='arc')return `<div class="v181-legacy">${v14ArcPage()}</div>`;
-    if(tab==='profile')return profilePage();
-    return morePage();
+  function v18CreatorPanel(){
+    const n=creatorName(),h=creatorHandle(),link=safeHttpsUrl(data.creatorLink),bio=data.creatorBio||'Creator of Winter Arc Tracker';
+    return `<div><img class="v18-mainphoto" style="aspect-ratio:1.25/1;object-position:center" src="${escapeHtml(v18CreatorPhoto)}" alt="${escapeHtml(n)}"><div style="padding:12px 2px 5px"><div class="v18-kicker">CREDITS</div><h2 style="margin:4px 0;font-size:23px">${escapeHtml(n)}</h2>${h?`<div class="v18-muted" style="color:#2d7d47;font-weight:900">${escapeHtml(h)}</div>`:''}<p class="v18-sub" style="margin-top:6px">${escapeHtml(bio)}</p></div><div class="v18-thumbs">${['creator-profile.jpg','creator-photo-1.jpg','creator-photo-2.jpg','creator-photo-3.jpg'].map(x=>`<button type="button" class="v18-thumb ${v18CreatorPhoto===x?'active':''}" data-v18-creator-photo="${escapeHtml(x)}"><img src="${escapeHtml(x)}" alt="Creator photo"></button>`).join('')}</div><div class="v18-actions" style="margin-top:10px">${link?`<a class="v18-btn primary" href="${escapeHtml(link)}" target="_blank" rel="noopener" style="display:grid;place-items:center;text-decoration:none">Instagram ↗</a>`:''}<button class="v18-btn ${link?'':'primary'}" data-v18-share-profile>Share Tracker ↗</button></div></div>`;
   }
 
-  function menu(){
-    return `<div class="v181-sheetwrap" data-v181-menu-close><aside class="v181-menu" role="dialog" aria-modal="true"><div class="v181-menuhead"><div><div class="v181-kicker">NAVIGATION</div><h2>Winter Arc</h2><p>${escapeHtml(data.name||'Your Arc')} · Day ${v13ArcDay()||0}/92</p></div><button class="v181-icon" data-v181-menu-close>×</button></div><div class="v181-menu-links">${[['today','🏠 Today'],['week','📅 Week'],['month','🗓️ Month'],['arc','❄️ Arc'],['profile','👤 Profile'],['more','••• More']].map(([id,l])=>`<button data-v181-nav="${id}">${l}</button>`).join('')}</div></aside></div>`;
+  function v18CreatorModal(){
+    const n=creatorName(),h=creatorHandle(),link=safeHttpsUrl(data.creatorLink),bio=data.creatorBio||'Creator of Winter Arc Tracker';
+    return `<div class="v18-overlay" data-v18-creator-close><div class="v18-sheet" role="dialog" aria-modal="true"><div class="v18-sheethead"><div><div class="v18-kicker">CREATOR PROFILE</div><h2 style="margin:3px 0">Meet ${escapeHtml(n)}</h2></div><button class="v18-close" data-v18-creator-close>×</button></div><img class="v18-mainphoto" src="${escapeHtml(v18CreatorPhoto)}" alt="${escapeHtml(n)}"><div style="padding:11px 2px 3px"><h2 style="margin:0;font-size:21px">${escapeHtml(n)}</h2>${h?`<div style="margin-top:4px;color:#2d7d47;font-size:11px;font-weight:900">${escapeHtml(h)}</div>`:''}<p class="v18-sub" style="margin-top:6px">${escapeHtml(bio)}</p></div><div class="v18-thumbs">${['creator-profile.jpg','creator-photo-1.jpg','creator-photo-2.jpg','creator-photo-3.jpg'].map(x=>`<button type="button" class="v18-thumb ${v18CreatorPhoto===x?'active':''}" data-v18-creator-photo="${escapeHtml(x)}"><img src="${escapeHtml(x)}" alt="Creator photo"></button>`).join('')}</div><div class="v18-actions" style="margin-top:10px">${link?`<a class="v18-btn primary" href="${escapeHtml(link)}" target="_blank" rel="noopener" style="display:grid;place-items:center;text-decoration:none">Instagram ↗</a>`:''}<button class="v18-btn ${link?'':'primary'}" data-v18-share-profile>Share Winter Arc ↗</button></div></div></div>`;
   }
 
-  function sprintModal(){
-    const left=sprintRunning?Math.max(0,sprintEndsAt-Date.now()):sprintMinutes*60000;
-    const sec=Math.ceil(left/1000),mm=String(Math.floor(sec/60)).padStart(2,'0'),ss=String(sec%60).padStart(2,'0');
-    return `<div class="v181-sheetwrap" data-v181-sprint-close><aside class="v181-menu" style="margin-top:auto;width:min(100%,520px)"><div class="v181-back"><div><div class="v181-kicker">FOCUS SPRINT</div><h2>One focused block.</h2></div><button class="v181-icon" data-v181-sprint-close>×</button></div><div id="v181Timer" style="font-size:50px;font-weight:950;text-align:center;margin:17px 0">${mm}:${ss}</div>${sprintRunning?`<button class="v181-btn primary" style="width:100%" data-v181-sprint-stop>Finish sprint ✓</button>`:`<div class="v181-actions"><button class="v181-btn primary" data-v181-sprint-start>Start ${sprintMinutes}-min →</button><button class="v181-btn" data-v181-sprint-close>Not now</button></div>`}<p class="v181-sub" style="text-align:center;margin-top:8px">Temporary timer. It does not change tracker history.</p></aside></div>`;
+  function v18SprintModal(){ const left=v18SprintRunning?Math.max(0,v18SprintEndsAt-Date.now()):v18SprintMinutes*60000; const sec=Math.ceil(left/1000),mm=String(Math.floor(sec/60)).padStart(2,'0'),ss=String(sec%60).padStart(2,'0'); return `<div class="v18-overlay" data-v18-sprint-close><div class="v18-sheet" style="text-align:center"><div class="v18-sheethead"><div><div class="v18-kicker">FOCUS SPRINT</div><h2 style="margin:3px 0">One focused block.</h2></div><button class="v18-close" data-v18-sprint-close>×</button></div><div id="v18SprintTimer" style="font-size:52px;font-weight:950;letter-spacing:-.05em;margin:12px 0">${mm}:${ss}</div>${v18SprintRunning?'':`<div class="v18-actions"><button class="v18-btn primary" data-v18-sprint-start>Start ${v18SprintMinutes}-min sprint →</button><button class="v18-btn" data-v18-sprint-close>Not now</button></div>`}<div style="margin-top:8px">${v18SprintRunning?`<button class="v18-btn primary" style="width:100%" data-v18-sprint-stop>Finish sprint ✓</button>`:''}</div><p class="v18-sub" style="margin-top:10px">A temporary timer for one task. It does not change tracker history.</p></div></div>`;}
+  function v18SprintStop(){v18SprintRunning=false;if(v18SprintTimer)clearInterval(v18SprintTimer);v18SprintTimer=null;v18SprintOpen=false;render();showToast('Sprint finished 🎯');}
+  function v18SprintStart(){v18SprintRunning=true;v18SprintEndsAt=Date.now()+v18SprintMinutes*60000;v18SprintOpen=true;if(v18SprintTimer)clearInterval(v18SprintTimer);v18SprintTimer=setInterval(()=>{const left=Math.max(0,v18SprintEndsAt-Date.now());const el=document.getElementById('v18SprintTimer');if(el){const sec=Math.ceil(left/1000);el.textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');}if(left<=0){v18SprintRunning=false;clearInterval(v18SprintTimer);v18SprintTimer=null;v18SprintOpen=false;render();showToast('Focus sprint complete 🎯');}},250);render();}
+
+  async function v18ShareProfile(){
+    try{
+      const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1350;const ctx=canvas.getContext('2d');
+      const s=stats(),day=v13ArcDay(),L=v13ArcLength(),pct=v13ArcProgress(),best=Math.max(0,...data.habits.map(h=>habitStats(h).longest)),wins=v13TotalWins();
+      ctx.fillStyle='#f5f3ed';ctx.fillRect(0,0,1080,1350);
+      const g=ctx.createLinearGradient(0,0,0,700);g.addColorStop(0,'#234f57');g.addColorStop(1,'#183a2a');ctx.fillStyle=g;ctx.fillRect(48,48,984,700);
+      const text=(t,x,y,size,weight='700',fill='#fff')=>{ctx.fillStyle=fill;ctx.font=`${weight} ${size}px Arial,sans-serif`;ctx.fillText(t,x,y)};
+      text('WINTER ARC 2026',92,125,30,'800','#bfe8ca');text((data.name||'MY ARC').toUpperCase(),92,245,46,'900','#fff');text(`DAY ${day||0} / ${L}`,92,325,74,'900','#fff');text(`${pct}% OF THE ARC`,92,370,28,'700','#d7e9df');
+      ctx.fillStyle='rgba(255,255,255,.16)';ctx.fillRect(92,425,896,24);ctx.fillStyle='#79d29b';ctx.fillRect(92,425,896*Math.min(1,pct/100),24);
+      text('YOUR PROGRESS',92,560,22,'800','#bfe8ca');text(`${s.todayDone}/${data.habits.length} today`,92,615,44,'900','#fff');text(`🔥 ${best} day best streak`,92,660,28,'700','#d7e9df');
+      ctx.fillStyle='#fff';ctx.roundRect?.(48,800,984,420,36);if(ctx.roundRect)ctx.fill();else{ctx.fillRect(48,800,984,420)}
+      text('MY ARC',92,870,18,'900','#3a7f50');text('Small wins become your story.',92,930,42,'900','#1f2421');
+      ctx.fillStyle='#f2f6f2';ctx.fillRect(92,1000,276,120);ctx.fillRect(402,1000,276,120);ctx.fillRect(712,1000,276,120);
+      text(`${pct}%`,120,1065,34,'900','#202522');text('Arc',120,1095,16,'700','#70766f');text(`${best}`,430,1065,34,'900','#202522');text('Best streak',430,1095,16,'700','#70766f');text(`${wins}`,740,1065,34,'900','#202522');text('Wins',740,1095,16,'700','#70766f');
+      text('Winter Arc Tracker',92,1175,22,'800','#3a7f50');text('Share your next small win.',988,1175,22,'700','#70766f');
+      const blob=await new Promise(r=>canvas.toBlob(r,'image/png',.95));const file=new File([blob],'winter-arc-profile-v18.png',{type:'image/png'});
+      const msg=`I’m on Winter Arc 2026 ❄️ Day ${day||0}/${L} · ${pct}% complete · 🔥 ${best} day best streak\n\nJoin my Arc: ${location.href}`;
+      if(navigator.share){if(navigator.canShare?.({files:[file]})){try{await navigator.share({title:'My Winter Arc',text:msg,files:[file]});return;}catch(e){}}try{await navigator.share({title:'My Winter Arc',text:msg});return;}catch(e){}}
+      const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='winter-arc-profile-v18.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);showToast('Profile card saved ↗');
+    }catch(e){showToast('Could not create profile card');}
   }
 
-  function locked(){
-    return `<div class="v181-entry"><div class="v181-entrycard"><div class="v181-entryhero"><div class="v181-logo">🔒</div><div class="v181-kicker">WELCOME BACK</div><h1>Continue your Arc.</h1><p>Your local profile is locked.</p></div><input id="loginPin" class="v181-input" type="password" inputmode="numeric" maxlength="6" placeholder="4–6 digit PIN" style="text-align:center;letter-spacing:.28em"><button class="v181-btn primary" style="width:100%;margin-top:8px;min-height:48px" data-login>Unlock</button><button class="v181-btn" style="width:100%;margin-top:7px" data-forgot-pin>Reset this profile</button></div></div>`;
+  function v18Locked(){
+    return `<div class="v18-entry"><div class="v18-entrycard"><div class="v18-entryhero"><div class="v18-logo">❄️</div><div class="v18-kicker">WELCOME BACK</div><h1>Continue your Arc.</h1><p>Your progress is ready on this device.</p></div><div style="width:62px;height:62px;border-radius:18px;background:var(--v18-soft);color:#2d7d47;display:grid;place-items:center;font-weight:950;font-size:25px;margin:0 auto 9px">${escapeHtml((data.name||'A').slice(0,1).toUpperCase())}</div><div style="text-align:center;font-weight:900;font-size:12px;margin-bottom:12px">${escapeHtml(data.name||'Your profile')}</div><input id="loginPin" class="v18-input" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password" placeholder="4–6 digit PIN" style="text-align:center;letter-spacing:.3em"><button class="v18-btn primary" style="width:100%;margin-top:8px;min-height:50px" data-login>Unlock 🔓</button><button class="v18-btn" style="width:100%;margin-top:7px" data-forgot-pin>Reset this profile</button><p class="v18-muted" style="text-align:center;margin:10px 0 0">Your local profile stays on this device.</p></div></div>`;
   }
 
-  function renderV181(){
-    injectStyle();
-    document.body.classList.toggle('dark',!!data.dark);
-    // Preserve all existing data while bringing old profiles into the V18 shell.
-    if(data.habits?.length || data.name || data.onboardingDone)data.profileCreated=true;
-    // Winter Arc is one fixed 92-day experience.
-    data.arcStart=WINTER_ARC_START;
-    data.arcLength=WINTER_ARC_LENGTH;
-    if(!data.creatorName)data.creatorName='Vashu Sharmaa';
-    if(!data.creatorHandle)data.creatorHandle='@pandatvikas1';
-    data.creatorBio='I created Winter Arc Tracker for people who want to make daily progress simple, visible and personal.';
-    data.creatorRole='Data Engineer • Creator';
-    data.creatorLink='https://instagram.com/pandatvikas1';
-    data.creatorPhoto='creator-profile.jpg';
-    save();
-
-    if(isLocked()){document.body.innerHTML=locked();return;}
-    if(!data.profileCreated||!data.onboardingDone){document.body.innerHTML=entry();return;}
-    const initial=escapeHtml((data.name||'A').slice(0,1).toUpperCase());
-    document.body.innerHTML=`<div class="v181-app"><header class="v181-top"><div class="v181-toprow"><button class="v181-icon" data-v181-menu>☰</button><div class="v181-brand"><b>Winter Arc</b><span>V18.1 · ${escapeHtml(data.name||'Your Arc')}</span></div><button class="v181-icon" data-v181-share aria-label="Share">↗</button><button class="v181-avatar" data-v181-nav="profile" aria-label="Profile">${initial}</button></div></header><main class="v181-main">${shellBody()}</main><nav class="v181-bottom"><div class="v181-bottom-inner"><button class="${tab==='today'?'active':''}" data-v181-nav="today"><b>🏠</b>Today</button><button class="${tab==='week'?'active':''}" data-v181-nav="week"><b>📅</b>Week</button><button class="${tab==='profile'?'active':''}" data-v181-nav="profile"><b>👤</b>Profile</button><button class="${tab==='more'?'active':''}" data-v181-nav="more"><b>•••</b>More</button></div></nav>${menuOpen?menu():''}${sprintOpen?sprintModal():''}</div>`;
+  function v18Render(){
+    v18Style();document.body.classList.toggle('dark',!!data.dark);
+    if(isLocked()){
+      document.body.innerHTML=v18Locked();
+      return;
+    }
+    if(!data.profileCreated||!data.onboardingDone){document.body.innerHTML=v18Entry();return;}
+    let body=tab==='today'?v18Today():tab==='profile'?v18ProfilePage():tab==='week'?`<div class="v18-wrap v18-main"><div class="v18-card v18-wide">${v14WeekPage()}</div></div>`:tab==='arc'?`<div class="v18-wrap v18-main"><div class="v18-card v18-wide">${v14ArcPage()}</div></div>`:v18More();
+    document.body.innerHTML=`<div class="v18-app"><header class="v18-top"><div class="v18-toprow"><button class="v18-iconbtn" data-v18-menu>☰</button><div class="v18-brand"><b>Winter Arc</b><span>V18 · ${data.name?escapeHtml(data.name):'Your Arc'}</span></div><button class="v18-iconbtn" data-v18-share aria-label="Share">↗</button><button class="v18-avatarbtn" data-v18-nav="profile" aria-label="My Profile">${escapeHtml((data.name||'A').slice(0,1).toUpperCase())}</button></div></header><main class="v18-main">${body}</main><nav class="v18-nav"><div class="v18-navinner"><button data-v18-nav="today" class="${tab==='today'?'active':''}"><b>🏠</b>Today</button><button data-v18-nav="week" class="${tab==='week'?'active':''}"><b>📅</b>Week</button><button data-v18-nav="profile" class="${tab==='profile'?'active':''}"><b>👤</b>Profile</button><button data-v18-nav="more" class="${tab==='more'?'active':''}"><b>•••</b>More</button></div></nav>${v18CreatorOpen?v18CreatorModal():''}${v18SprintOpen?v18SprintModal():''}</div>`;
     bindDomState();
   }
 
-  function go(n){tab=n;morePanel='';menuOpen=false;selectedHabit=null;quickOpen=false;render();}
-  function openMore(id){tab='more';morePanel=id;menuOpen=false;render();}
-  function startSprint(){sprintRunning=true;sprintEndsAt=Date.now()+sprintMinutes*60000;sprintOpen=true;if(sprintTimer)clearInterval(sprintTimer);sprintTimer=setInterval(()=>{const left=Math.max(0,sprintEndsAt-Date.now()),el=document.getElementById('v181Timer');if(el){const sec=Math.ceil(left/1000);el.textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')}if(left<=0){clearInterval(sprintTimer);sprintTimer=null;sprintRunning=false;sprintOpen=false;render();showToast('Focus sprint complete 🎯')}},250);render();}
-  function stopSprint(){if(sprintTimer)clearInterval(sprintTimer);sprintTimer=null;sprintRunning=false;sprintOpen=false;render();showToast('Sprint finished 🎯');}
+  /* V18 completion engine: window-level capture guarantees the check action is handled once. */
+  window.addEventListener('click',e=>{
+    const b=e.target.closest('[data-v18-complete]');if(!b)return;
+    e.preventDefault();e.stopImmediatePropagation();
+    const h=data.habits.find(x=>x.id===b.dataset.v18Complete);if(h)toggleHabit(h,today());
+  },{capture:true});
 
   window.addEventListener('click',async e=>{
-    const b=e.target.closest('button,a');
-    if(!b)return;
-
-    if(b.dataset.v181Complete!==undefined){e.preventDefault();e.stopImmediatePropagation();const h=data.habits.find(x=>x.id===b.dataset.v181Complete);if(h)toggleHabit(h,today());return;}
-    if(b.dataset.v181Menu!==undefined){e.preventDefault();e.stopImmediatePropagation();menuOpen=true;render();return;}
-    if(b.dataset.v181MenuClose!==undefined || (e.target.closest('[data-v181-menu-close]')&&e.target===e.target.closest('[data-v181-menu-close]'))){e.preventDefault();e.stopImmediatePropagation();menuOpen=false;render();return;}
-    if(b.dataset.v181Next!==undefined){
-      e.preventDefault();e.stopImmediatePropagation();
-      if(step===0){step=1;render();return}
-      if(step===1){const n=$('#v181Name')?.value.trim()||'';if(!n){alert('Please enter your name.');return}data.name=n;save();step=2;render();return}
-      if(step===2){if(!GOALS[focus]){alert('Choose one goal.');return}step=3;selected=[];render();return}
-    }
-    if(b.dataset.v181Back!==undefined){e.preventDefault();e.stopImmediatePropagation();step=Math.max(0,step-1);render();return;}
-    if(b.dataset.v181Goal!==undefined){e.preventDefault();e.stopImmediatePropagation();focus=b.dataset.v181Goal;selected=[];render();return;}
-    if(b.dataset.v181Habit!==undefined){e.preventDefault();e.stopImmediatePropagation();const n=b.dataset.v181Habit,idx=selected.indexOf(n);if(idx>=0)selected.splice(idx,1);else if(selected.length<6)selected.push(n);render();return;}
-    if(b.dataset.v181Finish!==undefined){e.preventDefault();e.stopImmediatePropagation();if(!selected.length){alert('Pick at least one habit.');return}
-      const hasExisting=Array.isArray(data.habits)&&data.habits.length>0;
-      if(!hasExisting){
-        data.habits=selected.slice(0,6).map((name,i)=>{const p=preset(name);return {id:uid(),name,icon:p?.icon||'✅',private:!!p?.private,created:WINTER_ARC_START,difficulty:p?.difficulty||'Medium',action:p?.action||'Do the smallest useful version',smallWin:p?.action||'Do the smallest useful version',why:'',priority:i===0?'must':i<=2?'should':'bonus'}});
-      }
-      data.goal=focus;data.onboardingDone=true;data.profileCreated=true;data.journeyStart=data.journeyStart||WINTER_ARC_START;data.lastLogin=today();save();step=4;render();return;
-    }
-    if(b.dataset.v181Enter!==undefined){e.preventDefault();e.stopImmediatePropagation();tab='today';morePanel='';step=4;render();showToast('Your Arc is live 🚀');return;}
-    if(b.dataset.v181Existing!==undefined){e.preventDefault();e.stopImmediatePropagation();if(data.habits?.length||data.name||data.profileCreated){data.profileCreated=true;tab='today';morePanel='';render();}else showToast('Start My Arc first 🚀');return;}
-    if(b.dataset.v181Nav!==undefined){e.preventDefault();e.stopImmediatePropagation();go(b.dataset.v181Nav);return;}
-    if(b.dataset.v181More!==undefined){e.preventDefault();e.stopImmediatePropagation();const id=b.dataset.v181More; if(id==='month'||id==='arc'){go(id)}else openMore(id);return;}
-    if(b.dataset.v181Close!==undefined){e.preventDefault();e.stopImmediatePropagation();morePanel='';render();return;}
-    if(b.dataset.v181Share!==undefined||b.dataset.v181ShareProfile!==undefined||b.dataset.v181Share===undefined&&b.dataset.v181ShareProfile!==undefined){e.preventDefault();e.stopImmediatePropagation();if(typeof v133ShareProgress==='function')await v133ShareProgress();else if(typeof v133InviteFriends==='function')await v133InviteFriends();return;}
-    if(b.dataset.v181Community!==undefined){e.preventDefault();e.stopImmediatePropagation();window.__v14Cloud=true;render();return;}
-    if(b.dataset.v181Creator!==undefined){e.preventDefault();e.stopImmediatePropagation();openMore('creator');return;}
-    if(b.dataset.v181Install!==undefined){e.preventDefault();e.stopImmediatePropagation();if(installPrompt){try{installPrompt.prompt();const c=await installPrompt.userChoice;installPrompt=null;showToast(c?.outcome==='accepted'?'App installed ✅':'Install cancelled');render();}catch(err){showToast('Install prompt could not open');}}else showToast('Chrome menu → Install app / Add to Home screen 📱');return;}
-    if(b.dataset.v181Backup!==undefined){e.preventDefault();e.stopImmediatePropagation();if(typeof downloadBackup==='function')downloadBackup();return;}
-    if(b.dataset.v181Csv!==undefined){e.preventDefault();e.stopImmediatePropagation();if(typeof csvBackup==='function')csvBackup();return;}
-    if(b.dataset.v181Restore!==undefined){e.preventDefault();e.stopImmediatePropagation();$('#v181Restore')?.click();return;}
-    if(b.dataset.v181Sprint!==undefined){e.preventDefault();e.stopImmediatePropagation();sprintMinutes=10;sprintOpen=true;render();return;}
-    if(b.dataset.v181SprintStart!==undefined){e.preventDefault();e.stopImmediatePropagation();startSprint();return;}
-    if(b.dataset.v181SprintStop!==undefined){e.preventDefault();e.stopImmediatePropagation();stopSprint();return;}
-    if(b.dataset.v181SprintClose!==undefined){e.preventDefault();e.stopImmediatePropagation();if(sprintTimer)clearInterval(sprintTimer);sprintTimer=null;sprintOpen=false;sprintRunning=false;render();return;}
+    const b=e.target.closest('button,a');if(!b)return;
+    if(b.dataset.v18Next!==undefined){e.preventDefault();e.stopImmediatePropagation();if(v18Step===0){v18Step=1;v18Habits=[];render();return}if(v18Step===1){const n=$('#v18Name')?.value.trim()||'';if(!n){alert('Please enter your name.');return}data.name=n;v18Step=2;render();return}}
+    if(b.dataset.v18Back!==undefined){e.preventDefault();e.stopImmediatePropagation();v18Step=Math.max(0,v18Step-1);render();return}
+    if(b.dataset.v18Goal!==undefined){e.preventDefault();e.stopImmediatePropagation();v18Focus=b.dataset.v18Goal;v18Habits=[];render();return}
+    if(b.dataset.v18Habit!==undefined){e.preventDefault();e.stopImmediatePropagation();const n=b.dataset.v18Habit;const i=v18Habits.indexOf(n);if(i>=0)v18Habits.splice(i,1);else if(v18Habits.length<6)v18Habits.push(n);render();return}
+    if(b.dataset.v18Finish!==undefined){e.preventDefault();e.stopImmediatePropagation();if(!v18Habits.length){alert('Pick at least one habit.');return}data.habits=v18Habits.slice(0,6).map(name=>{const p=preset(name);return {id:uid(),name,icon:p?.icon||'✅',private:!!p?.private,created:today(),difficulty:p?.difficulty||'Medium',action:p?.action||'Do the smallest useful version',smallWin:p?.action||'Do the smallest useful version',why:''}});data.goal=v18Focus;data.onboardingDone=true;data.profileCreated=true;data.journeyStart=today();data.lastLogin=today();save();v18Step=3;render();return}
+    if(b.dataset.v18Enter!==undefined){e.preventDefault();e.stopImmediatePropagation();tab='today';morePanel='';render();showToast('Your Arc is live 🚀');return}
+    if(b.dataset.v18Community!==undefined){e.preventDefault();e.stopImmediatePropagation();window.__v14Cloud=true;render();return}
+    if(b.dataset.v18Existing!==undefined){e.preventDefault();e.stopImmediatePropagation();if(data.profileCreated){if(data.pinHash){sessionUnlocked=false;render()}else{tab='today';render()}}else showToast('Start your Arc first 🚀');return}
+    if(b.dataset.v18CreatorOpen!==undefined){e.preventDefault();e.stopImmediatePropagation();v18CreatorPhoto=data.creatorPhoto||'creator-profile.jpg';v18CreatorOpen=true;render();return}
+    if(b.dataset.v18CreatorClose!==undefined || (e.target.closest('.v18-overlay')&&e.target===e.target.closest('.v18-overlay'))){e.preventDefault();e.stopImmediatePropagation();v18CreatorOpen=false;render();return}
+    if(b.dataset.v18CreatorPhoto!==undefined){e.preventDefault();e.stopImmediatePropagation();v18CreatorPhoto=b.dataset.v18CreatorPhoto;render();return}
+    if(b.dataset.v18Nav!==undefined){e.preventDefault();e.stopImmediatePropagation();tab=b.dataset.v18Nav;morePanel='';render();return}
+    if(b.dataset.v18More!==undefined){e.preventDefault();e.stopImmediatePropagation();tab='more';morePanel=b.dataset.v18More;render();return}
+    if(b.dataset.v18MoreClose!==undefined){e.preventDefault();e.stopImmediatePropagation();morePanel='';render();return}
+    if(b.dataset.v18Share!==undefined||b.dataset.v18ShareProfile!==undefined){e.preventDefault();e.stopImmediatePropagation();await v18ShareProfile();return}
+    if(b.dataset.v18Sprint!==undefined){e.preventDefault();e.stopImmediatePropagation();v18SprintMinutes=10;v18SprintOpen=true;render();return}
+    if(b.dataset.v18SprintStart!==undefined){e.preventDefault();e.stopImmediatePropagation();v18SprintStart();return}
+    if(b.dataset.v18SprintStop!==undefined){e.preventDefault();e.stopImmediatePropagation();v18SprintStop();return}
+    if(b.dataset.v18SprintClose!==undefined){e.preventDefault();e.stopImmediatePropagation();v18SprintOpen=false;if(v18SprintTimer)clearInterval(v18SprintTimer);v18SprintTimer=null;v18SprintRunning=false;render();return}
+    if(b.dataset.v18Menu!==undefined){e.preventDefault();e.stopImmediatePropagation();tab='more';morePanel='';render();return}
   },{capture:true});
 
-  window.addEventListener('change',e=>{
-    if(e.target?.id==='v181Restore'){if(typeof restoreFile==='function')restoreFile(e.target);return;}
-  },{capture:true});
-
-  // Legacy controls inside feature pages should continue to re-render through the new shell.
-  window.addEventListener('click',e=>{
-    const b=e.target.closest('button');
-    if(!b)return;
-    if(b.dataset.v14BackMore!==undefined || b.dataset.closeMore!==undefined || b.dataset.closeMorePanel!==undefined){morePanel='';render();}
-  },{capture:false});
-
-  // Parse PWA shortcuts/query navigation once before first render.
-  try{
-    const q=new URL(location.href).searchParams.get('tab');
-    if(['today','week','month','arc','profile','more'].includes(q))tab=q;
-  }catch(e){}
-
-  // Migrate existing saved profiles safely into the new shell.
-  if(Array.isArray(data.habits)&&data.habits.length||data.name||data.onboardingDone)data.profileCreated=true;
-  data.arcStart=WINTER_ARC_START;data.arcLength=WINTER_ARC_LENGTH;data.schema=18;save();
-
-  render=function(){renderV181();};
+  render=function(){v18Render();};
+  data.schema=18;
+  save();
 })();
 
 
-
-
-/* ========================= V19 WINTER ARC LEAGUE =========================
-   Public community ranking + public Arc profiles.
-   Private data stays local; only explicitly public aggregate fields are exposed.
+/* ========================= V18.1 PATCH =========================
+   Mobile week cleanup + interaction stability.
+   Important: this patch lives beside the V18 IIFE, so it only uses outer-scope APIs.
 */
 (function(){
-  const V19='V19.0';
+  'use strict';
+
+  function v181Style(){
+    if(document.getElementById('v181-style')) return;
+    const s=document.createElement('style'); s.id='v181-style';
+    s.textContent=`
+      html,body{width:100%;max-width:100%;overflow-x:hidden}
+      .v181-week-hero{background:linear-gradient(145deg,#153f3a,#183b2d);color:#fff;border-radius:21px;padding:18px;margin:10px 0;box-shadow:0 16px 34px rgba(24,64,45,.14)}
+      .v181-week-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-end}
+      .v181-week-top h1{margin:4px 0 5px;font-size:30px;letter-spacing:-.05em;line-height:1}
+      .v181-week-top p{margin:0;color:#d8ebe0;font-size:11px}
+      .v181-week-score{text-align:right;font-weight:950;font-size:28px}.v181-week-score span{display:block;font-size:9px;color:#bfe2cb;letter-spacing:.08em;text-transform:uppercase}
+      .v181-week-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:10px 0}
+      .v181-week-day{min-width:0;border:1px solid var(--line,#e5e6df);background:var(--card,#fff);border-radius:14px;padding:8px 4px;text-align:center}
+      .v181-week-day.today{border:2px solid #8fc19d;padding:7px 3px;background:var(--soft,#eef7ef)}
+      .v181-week-day small{display:block;color:var(--muted,#70766f);font-size:8px;font-weight:900}
+      .v181-week-day b{display:grid;place-items:center;width:34px;height:34px;margin:5px auto;border-radius:50%;font-size:10px;background:conic-gradient(var(--green,#3da35d) var(--p),#e7ece7 0);position:relative}
+      .v181-week-day b::after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--card,#fff)}
+      .v181-week-day b span{position:relative;z-index:1}.v181-week-day em{display:block;font-size:8px;color:var(--muted,#70766f);font-style:normal;font-weight:800}
+      .v181-habit-card{background:var(--card,#fff);border:1px solid var(--line,#e5e6df);border-radius:19px;padding:13px;margin:9px 0;box-shadow:0 6px 18px rgba(30,44,34,.035)}
+      .v181-habit-head{display:flex;align-items:center;gap:9px}.v181-habit-icon{width:40px;height:40px;border-radius:12px;background:var(--soft2,#f6faf6);display:grid;place-items:center;font-size:19px;border:1px solid var(--line,#e5e6df);flex:none}
+      .v181-habit-copy{flex:1;min-width:0}.v181-habit-copy b{display:block;font-size:14px;line-height:1.15}.v181-habit-copy span{display:block;margin-top:3px;color:var(--muted,#70766f);font-size:9px}
+      .v181-habit-total{font-size:11px;font-weight:950;color:#2d7d47}
+      .v181-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-top:11px}
+      .v181-day-btn{width:100%;min-width:0;appearance:none;-webkit-appearance:none;border:1px solid var(--line,#e5e6df);background:var(--soft2,#f6faf6);color:var(--ink,#202522);border-radius:12px;padding:6px 2px;display:grid;gap:4px;place-items:center;font-size:8px;font-weight:900;outline:none;box-shadow:none}
+      .v181-day-btn .dlabel{color:var(--muted,#70766f);font-size:8px}.v181-day-btn .check{width:27px;height:27px;border-radius:50%;display:grid;place-items:center;border:2px solid #d8e2da;font-size:12px;line-height:1}
+      .v181-day-btn.done{background:var(--soft,#eef7ef);border-color:#acd1b5}.v181-day-btn.done .check{background:var(--green,#3da35d);border-color:var(--green,#3da35d);color:#fff}
+      .v181-day-btn.freeze{background:#f1f7f1}.v181-day-btn.freeze .check{border-color:#9fc6a8;color:#2d7d47}.v181-day-btn.future{opacity:.42;cursor:not-allowed}.v181-day-btn.today{outline:2px solid #a5cfaf;outline-offset:1px}
+      .v181-note{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:9px;color:var(--muted,#70766f);font-size:9px}.v181-note b{color:#2d7d47}
+      .v181-menu-overlay{position:fixed;inset:0;z-index:140;background:rgba(9,14,11,.5);display:flex;align-items:flex-end;justify-content:center;padding:10px}
+      .v181-menu-sheet{width:min(760px,100%);background:var(--card,#fff);color:var(--ink,#202522);border-radius:24px 24px 0 0;padding:15px;box-shadow:0 22px 80px rgba(0,0,0,.28)}
+      .v181-menu-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.v181-menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:11px}.v181-menu-grid button{appearance:none;border:1px solid var(--line,#e5e6df);background:var(--card,#fff);color:inherit;border-radius:16px;padding:13px;text-align:left;display:grid;gap:4px;min-height:76px}.v181-menu-grid b{font-size:13px}.v181-menu-grid small{font-size:9px;color:var(--muted,#70766f)}
+      .v181-sprint-options{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:6px 0 10px}.v181-sprint-options button{min-height:40px}.v181-sprint-options button.selected{background:var(--green,#3da35d);border-color:var(--green,#3da35d);color:#fff}
+      .v181-sprint-overlay{position:fixed;inset:0;z-index:145;background:rgba(9,14,11,.52);display:flex;align-items:flex-end;justify-content:center;padding:10px}.v181-sprint-sheet{width:min(760px,100%);background:var(--card,#fff);color:var(--ink,#202522);border-radius:24px 24px 0 0;padding:15px;box-shadow:0 22px 80px rgba(0,0,0,.28)}
+      .v181-sprint-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.v181-sprint-timer{text-align:center;font-size:54px;font-weight:950;letter-spacing:-.05em;padding:10px 0}.v181-sprint-mins{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.v181-sprint-mins button{min-height:42px}.v181-sprint-mins button.selected{background:var(--green,#3da35d);border-color:var(--green,#3da35d);color:#fff}
+      @media(max-width:430px){.v181-week-strip{gap:4px}.v181-week-day{padding:7px 2px}.v181-week-day.today{padding:6px 1px}.v181-days{gap:4px}.v181-day-btn{padding:5px 1px}.v181-day-btn .check{width:25px;height:25px}.v181-week-top h1{font-size:27px}}
+      @media(min-width:900px){.v181-habits-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.v181-habit-card{margin:0}}
+      body.dark .v181-week-day b::after{background:var(--card,#171d18)}
+      body.dark .v181-habit-icon,body.dark .v181-day-btn{background:#151a16}
+    `;
+    document.head.appendChild(s);
+  }
+
+  function v181WeeklyPct(h,ds){
+    let eligible=0,doneN=0;
+    ds.forEach(d=>{if(canUseHabitOn(h,d)){eligible++;if(active(h,d))doneN++;}});
+    return eligible?Math.round(doneN/eligible*100):0;
+  }
+
+  function v181WeekHabit(h,ds){
+    const hs=habitStats(h),p=v181WeeklyPct(h,ds);
+    return `<article class="v181-habit-card"><div class="v181-habit-head"><div class="v181-habit-icon">${escapeHtml(h.icon||'✅')}</div><div class="v181-habit-copy"><b>${escapeHtml(h.name)}</b><span>🔥 ${hs.run} day${hs.run===1?'':'s'} · ${p}% this week</span></div><div class="v181-habit-total">${hs.total} wins</div></div><div class="v181-days">${ds.map(d=>{const future=d>today(),is=done(h,d),fr=frozen(h,d);return `<button type="button" class="v181-day-btn ${is?'done':''} ${fr?'freeze':''} ${future?'future':''} ${d===today()?'today':''}" data-v181-toggle="${escapeHtml(h.id)}|${d}" ${future?'disabled':''} aria-label="${escapeHtml(h.name)} ${formatDay(d)}"><span class="dlabel">${v12DayLabel(d)}</span><span class="check">${is?'✓':fr?'🛡':'○'}</span></button>`;}).join('')}</div><div class="v181-note"><span>${formatDay(ds[0])} → ${formatDay(ds[ds.length-1])}</span><b>${p}% complete</b></div></article>`;
+  }
+
+  v14WeekPage=function(){
+    v181Style();
+    const s=stats(),ds=v12MiniDays();
+    return `<div class="v14-page"><section class="v181-week-hero"><div class="v181-week-top"><div><span class="v14-kicker" style="color:#bfe8ca">THIS WEEK</span><h1>${s.score}% complete</h1><p>Seven days. Small actions. One clear view.</p></div><div class="v181-week-score">${s.todayDone}<span>today</span></div></div></section><section class="v181-week-strip">${ds.map(d=>{const eligible=data.habits.filter(h=>canUseHabitOn(h,d)).length,n=data.habits.filter(h=>active(h,d)).length,p=eligible?Math.round(n/eligible*100):0;return `<div class="v181-week-day ${d===today()?'today':''}"><small>${v12DayLabel(d)}</small><b style="--p:${p}%"><span>${p}</span></b><em>${n}/${eligible}</em></div>`;}).join('')}</section><section class="v14-section"><div class="v14-section-head"><div><span class="v14-kicker">HABITS</span><h2>Your week</h2></div><button class="v14-pill-btn" data-share-progress>Share ↗</button></div><div class="v181-habits-grid">${data.habits.map(h=>v181WeekHabit(h,ds)).join('')||'<div class="v14-empty-card"><b>Add a habit to see your week.</b></div>'}</div></section><section class="v14-card v14-insight"><span>💡</span><div><b>Weekly insight</b><p>${v13BestWeek()?`Your best week so far reached ${v13BestWeek().score}%. Keep the next action easy.`:'Your first full week will create a useful baseline here.'}</p></div></section></div>`;
+  };
+
+  /* New-user setup date: 30 Sep is setup day, 1 Oct is Day 1. */
+  if(today()<WINTER_ARC_START && (data.profileCreated||data.onboardingDone)){
+    data.arcStart=WINTER_ARC_START;data.arcLength=WINTER_ARC_LENGTH;
+    if(!data.journeyStart || data.journeyStart===today())data.journeyStart=WINTER_ARC_START;
+    save();
+  }
+
+  /* PWA shortcuts / shared links. */
+  try{const requested=new URL(location.href).searchParams.get('tab');if(['today','week','profile','arc','more'].includes(requested))tab=requested;}catch(e){}
+
+  /* Outer-scope render is the stable integration point. Never access sibling-IIFE internals. */
   const baseRender=render;
-  let rankLoaded=false;
-  let rankLoading=false;
-  let rankRows=[];
-  let rankError='';
-  let rankSearch='';
-  let rankProfile=null;
-  let communityOpen=false;
+  let v181MenuOpen=false;
+  let v181SprintOpen=false,v181SprintRunning=false,v181SprintMinutes=10,v181SprintEndsAt=0,v181SprintTimer=null;
+
+  const v181Menu=()=>`<div class="v181-menu-overlay" data-v181-menu-close><div class="v181-menu-sheet" role="dialog" aria-modal="true"><div class="v181-menu-head"><div><div class="v18-kicker">WINTER ARC</div><h2 style="margin:3px 0">Go somewhere</h2></div><button class="v18-iconbtn" data-v181-menu-close>×</button></div><div class="v181-menu-grid"><button data-v181-nav="today">🏠 <b>Today</b><small>Your next action.</small></button><button data-v181-nav="week">📅 <b>Week</b><small>This week's pattern.</small></button><button data-v181-nav="profile">👤 <b>Profile</b><small>Your Arc identity.</small></button><button data-v181-nav="arc">❄️ <b>Arc</b><small>The full 92-day journey.</small></button><button data-v181-nav="more">••• <b>More</b><small>Tools & settings.</small></button></div></div></div>`;
+
+  function v181SprintModal(){
+    const left=v181SprintRunning?Math.max(0,v181SprintEndsAt-Date.now()):v181SprintMinutes*60000;
+    const sec=Math.ceil(left/1000),mm=String(Math.floor(sec/60)).padStart(2,'0'),ss=String(sec%60).padStart(2,'0');
+    return `<div class="v181-sprint-overlay" data-v181-sprint-close><div class="v181-sprint-sheet" role="dialog" aria-modal="true"><div class="v181-sprint-head"><div><div class="v18-kicker">FOCUS SPRINT</div><h2 style="margin:3px 0">One focused block.</h2></div><button class="v18-iconbtn" data-v181-sprint-close>×</button></div><div class="v181-sprint-timer" id="v181SprintTimer">${mm}:${ss}</div>${v181SprintRunning?'':`<div class="v181-sprint-mins">${[5,10,25].map(m=>`<button class="v18-btn ${v181SprintMinutes===m?'selected':''}" data-v181-sprint-min="${m}">${m} min</button>`).join('')}</div>`}<div class="v18-actions" style="margin-top:10px">${v181SprintRunning?`<button class="v18-btn primary" data-v181-sprint-stop>Finish sprint ✓</button>`:`<button class="v18-btn primary" data-v181-sprint-start>Start ${v181SprintMinutes}-min sprint →</button>`}<button class="v18-btn" data-v181-sprint-close>Not now</button></div><p class="v18-sub" style="margin-top:10px">A temporary timer for one task. It does not change tracker history.</p></div></div>`;
+  }
+
+  function v181OpenSprint(){v181SprintRunning=false;if(v181SprintTimer)clearInterval(v181SprintTimer);v181SprintTimer=null;v181SprintOpen=true;render();}
+  function v181StartSprint(){v181SprintRunning=true;v181SprintEndsAt=Date.now()+v181SprintMinutes*60000;v181SprintOpen=true;if(v181SprintTimer)clearInterval(v181SprintTimer);v181SprintTimer=setInterval(()=>{const left=Math.max(0,v181SprintEndsAt-Date.now());const el=document.getElementById('v181SprintTimer');if(el){const sec=Math.ceil(left/1000);el.textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')}if(left<=0){clearInterval(v181SprintTimer);v181SprintTimer=null;v181SprintRunning=false;v181SprintOpen=false;render();showToast('Focus sprint complete 🎯');}},250);render();}
+  function v181StopSprint(){if(v181SprintTimer)clearInterval(v181SprintTimer);v181SprintTimer=null;v181SprintRunning=false;v181SprintOpen=false;render();showToast('Sprint finished 🎯');}
+
+  render=function(){
+    baseRender();
+    v181Style();
+    const menuBtn=document.querySelector('[data-v18-menu]');
+    if(menuBtn){menuBtn.removeAttribute('data-v18-menu');menuBtn.setAttribute('data-v181-menu','1');}
+    const sprintBtns=document.querySelectorAll('[data-v18-sprint]');
+    sprintBtns.forEach(b=>{b.removeAttribute('data-v18-sprint');b.setAttribute('data-v181-sprint','1');});
+    if(window.__v14Cloud){const holder=document.createElement('div');holder.innerHTML=v14CloudModal();const el=holder.firstElementChild;if(el)document.body.appendChild(el);}
+    if(v181MenuOpen){const holder=document.createElement('div');holder.innerHTML=v181Menu();const el=holder.firstElementChild;if(el)document.body.appendChild(el);}
+    if(v181SprintOpen){const holder=document.createElement('div');holder.innerHTML=v181SprintModal();const el=holder.firstElementChild;if(el)document.body.appendChild(el);}
+    bindDomState();
+  };
+
+  /* New controls use unique attributes, so the older V18 click handler will ignore them. */
+  window.addEventListener('click',e=>{
+    const b=e.target.closest('button,a');if(!b)return;
+    if(b.dataset.v181Toggle!==undefined){e.preventDefault();e.stopImmediatePropagation();const [id,d]=String(b.dataset.v181Toggle).split('|');const h=data.habits.find(x=>x.id===id);if(h)toggleHabit(h,d);return;}
+    if(b.dataset.v181Menu!==undefined){e.preventDefault();e.stopImmediatePropagation();v181MenuOpen=true;render();return;}
+    if(b.dataset.v181MenuClose!==undefined || (v181MenuOpen&&e.target.closest('.v181-menu-overlay')===e.target)){e.preventDefault();e.stopImmediatePropagation();v181MenuOpen=false;render();return;}
+    if(b.dataset.v181Nav!==undefined){e.preventDefault();e.stopImmediatePropagation();tab=b.dataset.v181Nav;morePanel='';v181MenuOpen=false;render();return;}
+    if(b.dataset.v181Sprint!==undefined){e.preventDefault();e.stopImmediatePropagation();v181OpenSprint();return;}
+    if(b.dataset.v181SprintMin!==undefined){e.preventDefault();e.stopImmediatePropagation();if(!v181SprintRunning){v181SprintMinutes=Number(b.dataset.v181SprintMin)||10;render();}return;}
+    if(b.dataset.v181SprintStart!==undefined){e.preventDefault();e.stopImmediatePropagation();v181StartSprint();return;}
+    if(b.dataset.v181SprintStop!==undefined){e.preventDefault();e.stopImmediatePropagation();v181StopSprint();return;}
+    if(b.dataset.v181SprintClose!==undefined || (v181SprintOpen&&e.target.closest('.v181-sprint-overlay')===e.target)){e.preventDefault();e.stopImmediatePropagation();if(v181SprintTimer)clearInterval(v181SprintTimer);v181SprintTimer=null;v181SprintRunning=false;v181SprintOpen=false;render();return;}
+  },{capture:true});
+
+  v181Style();
+  data.schema=181;
+  save();
+})();
+
+
+/* ========================= V19 — ARC LEAGUE =========================
+   Social progression layer: global rank, fair weekly score, leagues,
+   rank history, shareable rank card, personal-best rank and challenge links.
+   Community remains opt-in; local tracking works without it.
+*/
+(function(){
+  'use strict';
+
+  if(!Array.isArray(data.v19RankHistory))data.v19RankHistory=[];
+  if(!Array.isArray(data.v19Challenges))data.v19Challenges=[];
+  if(!data.v19LeaderboardTab)data.v19LeaderboardTab='global';
+
+  let v19BoardState={status:'idle',rows:[],error:'',updatedAt:0};
+  let v19MenuOpen=false;
 
   function v19Style(){
     if(document.getElementById('v19-style'))return;
-    const st=document.createElement('style');st.id='v19-style';
-    st.textContent=`
-      .v19-rank-hero{background:linear-gradient(145deg,#173f3a,#19392c);color:#fff;border-radius:21px;padding:16px;box-shadow:0 14px 32px rgba(24,64,45,.14)}
-      .v19-rank-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.v19-rank-kicker{font-size:8px;letter-spacing:.14em;font-weight:950;text-transform:uppercase;color:#bde6ca}.v19-rank-num{font-size:39px;font-weight:950;letter-spacing:-.05em;line-height:1}.v19-rank-score{font-size:24px;font-weight:950;text-align:right}.v19-rank-score small{display:block;font-size:8px;letter-spacing:.1em;text-transform:uppercase;opacity:.72}.v19-rank-bar{height:8px;background:rgba(255,255,255,.14);border-radius:999px;overflow:hidden;margin:13px 0 9px}.v19-rank-bar i{display:block;height:100%;background:#7bd29b;border-radius:inherit}.v19-rank-meta{display:flex;gap:6px;flex-wrap:wrap}.v19-rank-pill{padding:6px 8px;border-radius:999px;background:rgba(255,255,255,.09);color:#d8eee2;font-size:8px;font-weight:850}.v19-league{display:inline-flex;align-items:center;padding:4px 7px;border-radius:999px;background:var(--v181-soft);color:var(--v181-green2);font-size:8px;font-weight:950}.v19-league.diamond{background:#e7f0f8;color:#315c80}.v19-league.platinum{background:#eef0f2;color:#56616d}.v19-league.gold{background:#fff4d6;color:#7a5a00}.v19-league.silver{background:#eef2f4;color:#5b6670}.v19-league.bronze{background:#f7ece5;color:#87553b}
-      .v19-top3{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:6px;align-items:end}.v19-podium{border:1px solid var(--v181-line);background:var(--v181-soft);border-radius:16px;padding:10px;text-align:center}.v19-podium.main{background:var(--v181-card);box-shadow:0 8px 22px rgba(30,44,34,.06);padding-top:13px}.v19-podium-rank{font-size:18px;font-weight:950}.v19-podium-name{font-size:10px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px}.v19-podium-score{font-size:15px;font-weight:950;color:var(--v181-green2);margin-top:3px}.v19-podium small{display:block;color:var(--v181-muted);font-size:7px;margin-top:3px}
-      .v19-filter{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px}.v19-search{height:42px;border:1px solid var(--v181-line);border-radius:13px;background:var(--v181-card);color:var(--v181-ink);padding:10px;outline:none;font-size:10px}.v19-refresh{min-width:42px}
-      .v19-user-list{display:grid;gap:7px}.v19-user{border:1px solid var(--v181-line);background:var(--v181-card);border-radius:17px;padding:10px;text-align:left}.v19-user.me{border-color:#8fbe9d;background:var(--v181-soft)}.v19-user-top{display:grid;grid-template-columns:30px 40px minmax(0,1fr) auto;gap:8px;align-items:center}.v19-user-rank{font-size:11px;font-weight:950;color:var(--v181-muted);text-align:center}.v19-user-avatar{width:40px;height:40px;border-radius:13px;background:#edf5ee;color:var(--v181-green2);display:grid;place-items:center;font-weight:950;font-size:14px}.v19-user-main{min-width:0}.v19-user-name{font-size:11px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v19-user-handle{font-size:8px;color:var(--v181-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v19-user-score{font-size:15px;font-weight:950;color:var(--v181-green2);text-align:right}.v19-user-score small{display:block;font-size:7px;color:var(--v181-muted);font-weight:800}.v19-user-stats{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 0 38px;color:var(--v181-muted);font-size:8px;font-weight:850}.v19-habitchips{display:flex;gap:4px;flex-wrap:wrap;margin:7px 0 0 38px}.v19-habit-chip{padding:4px 6px;border-radius:999px;background:#f4f7f4;border:1px solid var(--v181-line);font-size:7px;font-weight:850;color:var(--v181-ink)}
-      .v19-measure{display:flex;justify-content:space-between;gap:8px;color:var(--v181-muted);font-size:8px;margin-top:7px}.v19-measure b{color:var(--v181-ink)}
-      .v19-community-note{display:flex;gap:9px;align-items:flex-start;background:var(--v181-soft);border:1px solid #c8decc;border-radius:16px;padding:10px}.v19-community-note b{display:block;font-size:10px}.v19-community-note span{display:block;color:var(--v181-muted);font-size:8px;line-height:1.4;margin-top:2px}.v19-modal-bg{position:fixed;inset:0;z-index:120;background:rgba(8,14,10,.52);display:flex;align-items:flex-end;justify-content:center;padding:9px}.v19-modal{width:min(100%,540px);max-height:92dvh;overflow:auto;background:var(--v181-card);border-radius:24px 24px 14px 14px;padding:14px;box-shadow:0 22px 80px rgba(0,0,0,.3)}.v19-modal-head{display:flex;justify-content:space-between;gap:8px;align-items:center}.v19-modal-head h2{margin:3px 0;font-size:19px}.v19-close{width:40px;height:40px;border:1px solid var(--v181-line);background:var(--v181-card);border-radius:13px;color:var(--v181-ink);font-size:20px}.v19-check-row{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--v181-line);border-radius:15px;padding:10px;margin-top:8px}.v19-check-row input{width:auto;margin:2px 0 0}.v19-check-row span{flex:1}.v19-check-row b{display:block;font-size:10px}.v19-check-row small{display:block;color:var(--v181-muted);font-size:8px;line-height:1.4;margin-top:2px}.v19-public-list{display:grid;gap:5px;margin-top:8px}.v19-public-item{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 9px;border:1px solid var(--v181-line);border-radius:12px;background:#f7f9f7;font-size:9px}.v19-profile-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.v19-profile-stat{background:var(--v181-soft);border:1px solid var(--v181-line);border-radius:14px;padding:10px}.v19-profile-stat b{display:block;font-size:18px}.v19-profile-stat span{display:block;color:var(--v181-muted);font-size:7px;margin-top:2px}.v19-movement{font-size:9px;font-weight:900;color:var(--v181-green2)}.v19-empty{padding:20px;text-align:center;border:1px dashed var(--v181-line);border-radius:16px;color:var(--v181-muted);font-size:10px}.v19-challenge{border:1px solid #d8e7db;background:linear-gradient(145deg,#f4fbf5,#fff);border-radius:17px;padding:11px}.v19-challenge b{font-size:11px}.v19-challenge span{display:block;color:var(--v181-muted);font-size:8px;line-height:1.4;margin-top:2px}.v19-challenge strong{display:block;color:var(--v181-green2);font-size:9px;margin-top:5px}
-      @media(max-width:430px){.v19-user-top{grid-template-columns:26px 36px minmax(0,1fr) auto}.v19-user-avatar{width:36px;height:36px}.v19-user-stats,.v19-habitchips{margin-left:34px}.v19-podium{padding:8px}.v19-profile-grid{gap:5px}}
+    const s=document.createElement('style');s.id='v19-style';
+    s.textContent=`
+      .v19-rank-hero{background:linear-gradient(145deg,#153f3a,#183b2d);color:#fff;border-radius:22px;padding:18px;box-shadow:0 18px 38px rgba(24,64,45,.14);margin:10px 0}
+      .v19-rank-kicker{font-size:9px;letter-spacing:.14em;font-weight:950;color:#bfe8ca}.v19-rank-hero h1{margin:5px 0;font-size:29px;letter-spacing:-.045em}.v19-rank-hero p{margin:0;color:#d8ece1;font-size:11px;line-height:1.45}
+      .v19-my-rank{margin-top:13px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:12px}.v19-my-rank strong{display:block;font-size:39px;line-height:.95}.v19-my-rank small{display:block;margin-top:4px;color:#c8e4d4;font-size:9px}.v19-rank-score{text-align:right}.v19-rank-score b{display:block;font-size:25px}.v19-rank-score span{font-size:9px;color:#c8e4d4;text-transform:uppercase;letter-spacing:.08em}
+      .v19-filter{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0}.v19-filter button{min-height:38px;border:1px solid var(--line,#e5e6df);background:var(--card,#fff);color:inherit;border-radius:12px;font-size:9px;font-weight:900}.v19-filter button.active{background:var(--soft,#eef7ef);border-color:#a8cfb1;color:#2d7d47}
+      .v19-top3{display:grid;grid-template-columns:1fr 1.1fr 1fr;gap:7px;align-items:end;margin:10px 0}.v19-top3 .place{background:var(--card,#fff);border:1px solid var(--line,#e5e6df);border-radius:16px;padding:11px 7px;text-align:center}.v19-top3 .place.first{padding-top:15px}.v19-crown{font-size:19px}.v19-avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--soft,#eef7ef);color:#2d7d47;font-weight:950;margin:5px auto}.v19-place{font-size:9px;color:var(--muted,#70766f);font-weight:900}.v19-place-name{font-size:10px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v19-place-score{font-size:15px;font-weight:950;margin-top:4px}.v19-place-meta{font-size:8px;color:var(--muted,#70766f);margin-top:3px}
+      .v19-list{display:grid;gap:7px}.v19-row{display:grid;grid-template-columns:34px 38px 1fr auto;gap:8px;align-items:center;background:var(--card,#fff);border:1px solid var(--line,#e5e6df);border-radius:16px;padding:10px}.v19-row.me{background:var(--soft,#eef7ef);border-color:#9fc9aa}.v19-row-rank{font-size:11px;font-weight:950;color:var(--muted,#70766f);text-align:center}.v19-row-avatar{width:36px;height:36px;border-radius:12px;background:var(--soft2,#f6faf6);color:#2d7d47;display:grid;place-items:center;font-size:13px;font-weight:950}.v19-row-main{min-width:0}.v19-row-main b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v19-row-main span{display:block;font-size:8px;color:var(--muted,#70766f);margin-top:3px}.v19-row-score{text-align:right}.v19-row-score b{display:block;font-size:13px}.v19-row-score small{display:block;font-size:8px;color:#2d7d47;font-weight:900;margin-top:2px}
+      .v19-league{display:inline-flex;align-items:center;gap:4px;padding:4px 7px;border-radius:999px;font-size:8px;font-weight:950;background:var(--soft,#eef7ef);color:#2d7d47;margin-top:4px}
+      .v19-info{background:var(--soft2,#f6faf6);border:1px solid var(--line,#e5e6df);border-radius:17px;padding:12px;margin:9px 0}.v19-info b{font-size:11px}.v19-info p{margin:4px 0 0;font-size:9px;line-height:1.5;color:var(--muted,#70766f)}
+      .v19-rank-history{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;align-items:end;height:100px}.v19-history-bar{display:grid;gap:4px;justify-items:center;align-items:end;height:100%;font-size:7px;color:var(--muted,#70766f)}.v19-history-bar i{display:block;width:100%;max-width:28px;background:#6fb483;border-radius:7px 7px 3px 3px;min-height:8px}.v19-history-bar b{font-size:8px;color:#2d7d47}.v19-history-bar span{font-size:7px}
+      .v19-challenge{display:grid;gap:9px}.v19-challenge-card{background:var(--soft,#eef7ef);border:1px solid #cfe1d2;border-radius:17px;padding:12px}.v19-challenge-head{display:flex;justify-content:space-between;gap:8px}.v19-challenge-head b{font-size:13px}.v19-challenge-head span{font-size:9px;color:#2d7d47;font-weight:900}.v19-challenge-progress{height:8px;background:#dce8de;border-radius:999px;overflow:hidden;margin-top:8px}.v19-challenge-progress i{display:block;height:100%;background:#3da35d;border-radius:inherit}.v19-challenge-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+      .v19-empty{padding:18px;text-align:center;background:var(--soft2,#f6faf6);border:1px dashed var(--line,#e5e6df);border-radius:17px;color:var(--muted,#70766f);font-size:10px}.v19-empty b{display:block;color:var(--ink,#202522);margin-bottom:4px}
+      .v19-share-preview{background:linear-gradient(145deg,#153f3a,#183b2d);border-radius:20px;padding:15px;color:#fff;min-height:210px;display:flex;flex-direction:column;justify-content:space-between}.v19-share-preview small{color:#bfe8ca;font-size:9px;letter-spacing:.12em}.v19-share-preview strong{font-size:42px;letter-spacing:-.05em}.v19-share-preview span{font-size:11px;color:#d8ece1}.v19-share-preview b{font-size:16px}
+      .v19-menu-overlay{position:fixed;inset:0;z-index:150;background:rgba(7,12,9,.5);display:flex;align-items:flex-end;justify-content:center;padding:10px}.v19-menu-sheet{width:min(760px,100%);background:var(--card,#fff);color:var(--ink,#202522);border-radius:24px 24px 0 0;padding:15px;box-shadow:0 22px 80px rgba(0,0,0,.28)}.v19-menu-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:11px}.v19-menu-grid button{min-height:70px;border:1px solid var(--line,#e5e6df);background:var(--card,#fff);color:inherit;border-radius:15px;padding:11px;text-align:left;display:grid;gap:3px}.v19-menu-grid b{font-size:12px}.v19-menu-grid small{font-size:8px;color:var(--muted,#70766f)}
+      @media(max-width:430px){.v19-top3{gap:5px}.v19-top3 .place{padding:9px 5px}.v19-share-preview strong{font-size:36px}}
     `;
-    document.head.appendChild(st);
+    document.head.appendChild(s);
   }
 
-  function goalLabel(g){
-    return ({fitness:'Fitness',mind:'Mind',work:'Work',overall:'Overall'})[String(g||'').toLowerCase()]||String(g||'Overall');
+  function v19WeekInfo(){
+    const ds=v12MiniDays();
+    let eligible=0,doneN=0;
+    ds.forEach(d=>data.habits.forEach(h=>{if(canUseHabitOn(h,d)){eligible++;if(active(h,d))doneN++;}}));
+    const completion=eligible?Math.round(doneN/eligible*100):0;
+    const best=Math.max(0,...data.habits.map(h=>habitStats(h).longest));
+    const wins=ds.reduce((n,d)=>n+data.habits.filter(h=>canUseHabitOn(h,d)&&done(h,d)).length,0);
+    const streakPts=Math.min(15,Math.round(Math.min(best,30)/30*15));
+    const winPts=Math.min(10,Math.round(Math.min(wins,21)/21*10));
+    const rank=Math.min(100,Math.round(completion*.75+streakPts+winPts));
+    const league=rank>=90?'Diamond':rank>=75?'Gold':rank>=60?'Silver':rank>=40?'Bronze':'Starter';
+    const wkStart=ds[0]||today();
+    return {completion,best,wins,rank,league,weekKey:wkStart};
   }
-  function consistencyPct(){const p=typeof v13ArcEligiblePairs==='function'?v13ArcEligiblePairs():{eligible:0,activeN:0};return p.eligible?Math.round(p.activeN/p.eligible*100):0;}
-  function recoveryCount(){
-    const ds=typeof v13ArcDates==='function'?v13ArcDates():[];
-    let n=0;
-    for(const h of (data.habits||[])){
-      for(let i=0;i<ds.length-1;i++){
-        const d=ds[i];
-        if(!canUseHabitOn(h,d)||active(h,d))continue;
-        const later=ds.slice(i+1).some(x=>canUseHabitOn(h,x)&&active(h,x));
-        if(later)n++;
-      }
+
+  const v19BaseCloudSnapshot=cloudSnapshot;
+  cloudSnapshot=function(){const s=v19BaseCloudSnapshot();const w=v19WeekInfo();return Object.assign({},s,{week_score:w.completion,rank_score:w.rank,league:w.league,week_key:w.weekKey});};
+
+  async function v19LoadLeaderboard(){
+    v19BoardState={status:'loading',rows:[],error:'',updatedAt:Date.now()};render();
+    if(!cloudReady()){
+      v19BoardState={status:'offline',rows:[],error:'Community is not connected yet.',updatedAt:Date.now()};render();return;
     }
-    return Math.min(20,n);
+    try{
+      const q='select=id,display_name,instagram_handle,arc_day,total_arc_days,arc_progress,total_wins,best_streak,last_seen,public_profile,week_score,rank_score,league,week_key&public_profile=eq.true&order=rank_score.desc,best_streak.desc,total_wins.desc&limit=100';
+      const r=await fetch(CLOUD_CFG.url+'/rest/v1/arc_users?'+q,{headers:cloudHeaders()});
+      if(!r.ok)throw new Error('leaderboard '+r.status);
+      const rows=(await r.json()).filter(x=>x&&x.public_profile).map(x=>Object.assign({},x,{rankScore:Number(x.rank_score??x.arc_progress??0)}));
+      v19BoardState={status:'ready',rows,error:'',updatedAt:Date.now()};
+      const meId=data.cloudUserId||'';
+      const me=rows.find(x=>x.id===meId);
+      if(me){const rank=rows.indexOf(me)+1;const entry={date:today(),rank};data.v19RankHistory=data.v19RankHistory.filter(x=>x.date!==today()).concat(entry).slice(-30);save();}
+      render();
+    }catch(e){v19BoardState={status:'error',rows:[],error:'Could not load the community leaderboard.',updatedAt:Date.now()};render();}
   }
-  function v19ScoreFromRow(r){
-    const consistency=Math.max(0,Math.min(100,Number(r.consistency_pct)||0));
-    const streak=Math.min(20,(Number(r.best_streak)||0)*2);
-    const eligible=Math.max(0,Number(r.eligible_checks)||0);
-    const wins=Math.max(0,Number(r.total_wins)||0);
-    const winPoints=eligible?Math.min(20,Math.round(wins/eligible*20)):0;
-    const recovery=Math.min(10,(Number(r.recovery_count)||0)*2);
-    return Math.max(0,Math.min(100,Math.round(consistency*.5+streak+winPoints+recovery)));
+
+  function v19LeagueBadge(league){const icon={Starter:'🌱',Bronze:'🥉',Silver:'🥈',Gold:'🥇',Diamond:'💎'}[league]||'🌱';return icon+' '+(league||'Starter');}
+  function v19MyRow(rows){const id=data.cloudUserId||'';const idx=rows.findIndex(x=>x.id===id);if(idx<0)return {rank:null,row:null};return {rank:idx+1,row:rows[idx]};}
+  function v19Top3(rows){
+    const top=rows.slice(0,3),order=[top[1],top[0],top[2]],out=[];
+    order.forEach((x,i)=>{
+      if(!x){out.push('<div class="place"><div class="v19-avatar">—</div><div class="v19-place">—</div><div class="v19-place-name">Waiting</div></div>');return;}
+      const name=escapeHtml(x.display_name||'Anonymous'),initial=escapeHtml(name.slice(0,1).toUpperCase()),rank=rows.indexOf(x)+1,score=Number(x.rankScore)||0,league=v19LeagueBadge(x.league);
+      out.push('<div class="place '+(i===1?'first':'')+'">'+(i===1?'<div class="v19-crown">👑</div>':'')+'<div class="v19-avatar">'+initial+'</div><div class="v19-place">#'+rank+'</div><div class="v19-place-name">'+name+'</div><div class="v19-place-score">'+score+'</div><div class="v19-place-meta">'+league+'</div></div>');
+    });
+    return '<div class="v19-top3">'+out.join('')+'</div>';
   }
-  function v19League(score){return score>=90?'Diamond':score>=75?'Platinum':score>=60?'Gold':score>=40?'Silver':'Bronze';}
-  function v19LocalRow(){
-    const s=stats(),p=typeof v13ArcEligiblePairs==='function'?v13ArcEligiblePairs():{eligible:0,activeN:0};
-    const best=Math.max(0,...(data.habits||[]).map(h=>habitStats(h).longest));
-    const row={
-      id:data.cloudUserId||'local',display_name:data.name||'You',instagram_handle:data.profileInstagram||'',goal:goalLabel(data.goal),
-      arc_day:typeof v13ArcDay==='function'?v13ArcDay():0,total_arc_days:typeof v13ArcLength==='function'?v13ArcLength():92,arc_progress:typeof v13ArcProgress==='function'?v13ArcProgress():0,
-      today_completed:s.todayDone,total_habits:(data.habits||[]).length,total_wins:typeof v13TotalWins==='function'?v13TotalWins():s.completed,best_streak:best,
-      consistency_pct:p.eligible?Math.round(p.activeN/p.eligible*100):0,eligible_checks:p.eligible,recovery_count:recoveryCount(),arc_started_at:data.journeyStart||WINTER_ARC_START,
-      public_profile:!!data.publicProfile,public_habits:(data.habits||[]).filter(h=>!h.private).map(h=>h.name)
-    };
-    row.arc_score=v19ScoreFromRow(row);row.league=v19League(row.arc_score);return row;
+
+  function v19Rows(rows){
+    const limit=rows.slice(0,50);return `<div class="v19-list">${limit.map((x,i)=>{const me=data.cloudUserId&&x.id===data.cloudUserId;return `<div class="v19-row ${me?'me':''}"><div class="v19-row-rank">#${i+1}</div><div class="v19-row-avatar">${escapeHtml((x.display_name||'?').slice(0,1).toUpperCase())}</div><div class="v19-row-main"><b>${escapeHtml(x.display_name||'Anonymous')}${me?' · You':''}</b><span>${v19LeagueBadge(x.league)} · 🔥 ${Number(x.best_streak)||0} streak · ${Number(x.week_score)||0}% week</span></div><div class="v19-row-score"><b>${Number(x.rankScore)||0}</b><small>score</small></div></div>`}).join('')||'<div class="v19-empty"><b>No public users yet.</b>Join the community to appear here.</div>'}</div>`;
   }
-  function v19Snapshot(){
-    const r=v19LocalRow();
-    return {
-      display_name:r.display_name,instagram_handle:r.instagram_handle,goal:r.goal,arc_day:r.arc_day,total_arc_days:r.total_arc_days,
-      arc_progress:r.arc_progress,today_completed:r.today_completed,total_habits:r.total_habits,total_wins:r.total_wins,best_streak:r.best_streak,
-      consistency_pct:r.consistency_pct,eligible_checks:r.eligible_checks,recovery_count:r.recovery_count,arc_score:r.arc_score,league:r.league,
-      arc_started_at:r.arc_started_at,public_profile:!!data.publicProfile,public_habits:(data.publicProfile?r.public_habits:[]),last_seen:new Date().toISOString()
-    };
+  function v19History(){
+    const h=data.v19RankHistory.slice(-5);if(!h.length)return '<div class="v19-empty"><b>No rank history yet.</b>Sync your public profile and check back after your next leaderboard update.</div>';
+    const best=Math.min(...h.map(x=>x.rank||999));return `<div class="v19-info"><b>📈 Rank history</b><p>Personal best: <strong>#${best}</strong>. Your history is stored locally.</p><div class="v19-rank-history">${h.map(x=>{const r=Math.max(1,x.rank||999),height=Math.max(12,100-Math.min(90,r));return `<div class="v19-history-bar"><i style="height:${height}%"></i><b>#${r}</b><span>${escapeHtml(x.date.slice(5))}</span></div>`}).join('')}</div></div>`;
   }
-  function rankHeaders(){return {'apikey':CLOUD_CFG.anonKey,'Authorization':'Bearer '+CLOUD_CFG.anonKey,'Content-Type':'application/json'};}
-  function rankReady(){return typeof CLOUD_CFG!=='undefined' && /^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(CLOUD_CFG.url||'')&&String(CLOUD_CFG.anonKey||'').length>20;}
-  async function syncV19(){
-    if(!data.cloudOptIn){showToast('Join the community first');return false;}
-    if(!rankReady()){showToast('Community backend is not configured');return false;}
+  function v19RankPage(){
+    v19Style();const w=v19WeekInfo();const rows=v19BoardState.rows;const me=v19MyRow(rows);
+    const statusLine=v19BoardState.status==='loading'?'Updating…':v19BoardState.status==='ready'?`Updated ${new Date(v19BoardState.updatedAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`:'Community leaderboard';
+    return `<div class="v18-wrap v18-main"><section class="v19-rank-hero"><div class="v19-rank-kicker">🏆 ARC LEAGUE · THIS WEEK</div><h1>Consistency has a rank.</h1><p>Fair score. Weekly movement. No points for simply adding more habits.</p>${me.rank?`<div class="v19-my-rank"><div><strong>#${me.rank}</strong><small>${escapeHtml(me.row?.display_name||data.name||'You')} · ${v19LeagueBadge(me.row?.league||w.league)}</small></div><div class="v19-rank-score"><b>${Number(me.row?.rankScore)||0}</b><span>rank score</span></div></div>`:`<div class="v19-my-rank"><div><strong>—</strong><small>${escapeHtml(data.name||'You')} · ${data.cloudOptIn?'Sync to get your rank':'Join the community to rank'}</small></div><div class="v19-rank-score"><b>${w.rank}</b><span>local score</span></div></div>`}</section>
+      <div class="v19-filter"><button class="${data.v19LeaderboardTab==='global'?'active':''}" data-v19-rank-tab="global">🌍 Global</button><button class="${data.v19LeaderboardTab==='friends'?'active':''}" data-v19-rank-tab="friends">👥 Friends</button><button class="${data.v19LeaderboardTab==='challenge'?'active':''}" data-v19-rank-tab="challenge">⚔️ Challenge</button></div>
+      ${data.v19LeaderboardTab==='friends'?`<section class="v18-card"><div class="v18-sectionhead"><h2>👥 Friends</h2><span class="v18-muted">Private circle</span></div><div class="v19-empty"><b>Invite your people.</b>Share your Arc link and keep a small circle together.</div><button class="v18-btn primary" style="width:100%;margin-top:9px" data-v19-share-rank>Share my rank ↗</button></section>`:data.v19LeaderboardTab==='challenge'?v19ChallengePanel():`<section class="v18-card"><div class="v18-sectionhead"><div><h2>🌍 Global leaderboard</h2><span class="v18-muted">${statusLine}</span></div><button class="v18-btn" data-v19-refresh>↻</button></div>${rows.length?v19Top3(rows):`<div class="v19-info"><b>Connect your community profile.</b><p>Only people who opt into a public profile appear here. Your private habits and journal stay local.</p></div>`}${rows.length?v19Rows(rows):''}${v19BoardState.status==='offline'||v19BoardState.status==='error'?`<button class="v18-btn primary" style="width:100%;margin-top:9px" data-v19-community>Join / setup leaderboard</button>`:''}</section>}`}
+      <section class="v18-card"><div class="v18-sectionhead"><h2>⚖️ How ranking works</h2><span class="v18-muted">100 max</span></div><div class="v19-info"><b>75% · Weekly consistency</b><p>Completion percentage is weighted equally, so adding extra habits does not automatically create a higher rank.</p></div><div class="v19-info"><b>15% · Streak</b><p>Longer streaks add a capped bonus. Maximum streak contribution: 15 points.</p></div><div class="v19-info"><b>10% · Weekly wins</b><p>Completed planned actions add a small capped contribution. Score stays between 0 and 100.</p></div><div class="v19-league">${v19LeagueBadge(w.league)} · ${w.rank}/100 local weekly score</div></section>
+      ${v19History()}
+      <section class="v18-card"><div class="v18-sectionhead"><div><h2>📸 Share your position</h2><span class="v18-muted">Instagram / WhatsApp ready</span></div></div><div class="v19-share-preview"><small>WINTER ARC · ARC LEAGUE</small><strong>${me.rank?`#${me.rank}`:'YOUR SCORE'}</strong><span>${me.rank?`${Number(me.row?.rankScore)||0} rank score · ${v19LeagueBadge(me.row?.league)}`:`Local score ${w.rank} · ${v19LeagueBadge(w.league)}`}</span><b>${escapeHtml(data.name||'My Arc')}</b></div><div class="v18-actions" style="margin-top:9px"><button class="v18-btn primary" data-v19-share-rank>Share rank card ↗</button><button class="v18-btn" data-v19-refresh>Refresh rank</button></div></section>
+    </div>`;
+  }
+
+  function v19ChallengeProgress(ch){
+    const start=ch.start||today(), days=Math.max(1,Number(ch.days)||7), end=addDays(start,days-1), upto=localDate(new Date())<start?0:Math.min(days,dateDiff(start,today())+1);
+    let completed=0;for(let i=0;i<upto;i++){const d=addDays(start,i);if(data.habits.some(h=>done(h,d)))completed++;}
+    return {completed,upto,days,end,pct:days?Math.round(completed/days*100):0};
+  }
+  let v19ChallengeState={status:'idle',members:[]};
+  async function v19ChallengeBackendUpsert(ch){
+    if(!cloudReady()||!data.cloudOptIn||!ch)return false;
     try{
       const id=data.cloudUserId||crypto.randomUUID();data.cloudUserId=id;
-      const snap=v19Snapshot();snap.id=id;
-      const r=await fetch(CLOUD_CFG.url+'/rest/v1/arc_users',{method:'POST',headers:Object.assign({},rankHeaders(),{'Prefer':'resolution=merge-duplicates'}),body:JSON.stringify(snap)});
-      if(!r.ok)throw new Error('sync '+r.status);
-      data.cloudLastSync=new Date().toISOString();data.cloudStatus='Synced ✓';save();return true;
-    }catch(e){data.cloudStatus='Sync failed';save();return false;}
+      const p=v19ChallengeProgress(ch);
+      const h={...cloudHeaders(),Prefer:'resolution=merge-duplicates'};
+      const cr=await fetch(CLOUD_CFG.url+'/rest/v1/arc_challenges?on_conflict=code',{method:'POST',headers:h,body:JSON.stringify({code:ch.code,title:ch.title,description:ch.description||'',days:Number(ch.days)||7,start_date:ch.start,creator_id:id,creator_name:data.name||'Anonymous',active:true})});
+      if(!cr.ok)throw new Error('challenge create '+cr.status);
+      const mr=await fetch(CLOUD_CFG.url+'/rest/v1/arc_challenge_members?on_conflict=challenge_code,user_id',{method:'POST',headers:h,body:JSON.stringify({challenge_code:ch.code,user_id:id,display_name:data.name||'Anonymous',progress:p.completed,progress_pct:p.pct,last_seen:new Date().toISOString()})});
+      if(!mr.ok)throw new Error('challenge member '+mr.status);
+      return true;
+    }catch(e){return false;}
   }
-  async function loadRank(){
-    if(rankLoading)return;
-    rankLoading=true;rankError='';
-    if(!rankReady()){
-      rankLoading=false;rankError='The creator has not configured the community backend yet.';render();return;
-    }
+  async function v19LoadChallengeMembers(ch){
+    if(!cloudReady()||!ch){v19ChallengeState={status:'offline',members:[]};render();return;}
+    v19ChallengeState={status:'loading',members:[]};render();
     try{
-      const r=await fetch(CLOUD_CFG.url+'/rest/v1/rpc/public_leaderboard',{method:'POST',headers:rankHeaders(),body:'{}',cache:'no-store'});
-      if(!r.ok)throw new Error('leaderboard '+r.status);
-      const j=await r.json();rankRows=(Array.isArray(j)?j:[]).map(x=>{const y=Object.assign({},x);y.arc_score=v19ScoreFromRow(y);y.league=y.league||v19League(y.arc_score);return y;});
-      rankRows.sort((a,b)=>(b.arc_score||0)-(a.arc_score||0)||(b.consistency_pct||0)-(a.consistency_pct||0)||(b.best_streak||0)-(a.best_streak||0)||(b.total_wins||0)-(a.total_wins||0));
-      rankLoaded=true;
-      const me=data.cloudUserId?rankRows.findIndex(x=>x.id===data.cloudUserId)+1:0;
-      if(me){data.lastRank=me;data.lastRankChecked=today();save();}
-    }catch(e){rankError='Leaderboard is unavailable right now.';rankRows=[];}
-    rankLoading=false;render();
+      const q='select=user_id,display_name,progress,progress_pct,last_seen&challenge_code=eq.'+encodeURIComponent(ch.code)+'&order=progress_pct.desc,last_seen.desc&limit=25';
+      const r=await fetch(CLOUD_CFG.url+'/rest/v1/arc_challenge_members?'+q,{headers:cloudHeaders()});if(!r.ok)throw new Error('members '+r.status);
+      v19ChallengeState={status:'ready',members:await r.json()};render();
+    }catch(e){v19ChallengeState={status:'error',members:[]};render();}
   }
-  function top3(){return rankRows.slice(0,3);}
-  function rankOfMe(){
-    const id=data.cloudUserId;
-    if(id){const i=rankRows.findIndex(x=>x.id===id);if(i>=0)return i+1;}
-    if(data.publicProfile&&rankRows.length){
-      const me=v19LocalRow();const combined=[...rankRows.filter(x=>x.id!==id),me].sort((a,b)=>v19ScoreFromRow(b)-v19ScoreFromRow(a));return combined.findIndex(x=>x.id==='local')+1;
+  async function v19SyncActiveChallenge(){const ch=data.v19Challenges[0];if(ch&&data.cloudOptIn)await v19ChallengeBackendUpsert(ch);}
+
+  function v19ChallengePanel(){
+    const activeCh=data.v19Challenges[0],members=v19ChallengeState.members||[];
+    return `<section class="v18-card"><div class="v18-sectionhead"><div><h2>⚔️ Arc Challenges</h2><span class="v18-muted">Small shared targets</span></div></div>${activeCh?`<div class="v19-challenge"><div class="v19-challenge-card"><div class="v19-challenge-head"><b>${escapeHtml(activeCh.title)}</b><span>${Number(activeCh.days)||7} days</span></div><p class="v18-sub" style="margin-top:4px">${escapeHtml(activeCh.description||'Show up once a day and keep the streak alive.')}</p>${(()=>{const p=v19ChallengeProgress(activeCh);return `<div class="v19-challenge-progress"><i style="width:${p.pct}%"></i></div><div class="v19-note"><span>Day ${p.upto}/${p.days}</span><b>${p.pct}%</b></div>`})()}</div>${members.length?`<div class="v19-list">${members.map((m,i)=>`<div class="v19-row"><div class="v19-row-rank">#${i+1}</div><div class="v19-row-avatar">${escapeHtml((m.display_name||'?').slice(0,1).toUpperCase())}</div><div class="v19-row-main"><b>${escapeHtml(m.display_name||'Anonymous')}</b><span>${Number(m.progress_pct)||0}% challenge progress · ${Number(m.progress)||0} wins</span></div><div class="v19-row-score"><b>${Number(m.progress_pct)||0}%</b></div></div>`).join('')}</div>`:(v19ChallengeState.status==='offline'?'<div class="v19-empty"><b>Local challenge mode</b>Connect Community Sync to show shared participant progress.</div>':'<div class="v19-empty"><b>No participants loaded yet.</b>Tap refresh to load challenge members.</div>')}<div class="v19-challenge-actions"><button class="v18-btn primary" data-v19-challenge-share>Share challenge ↗</button><button class="v18-btn" data-v19-challenge-refresh>↻ Refresh</button></div></div>`:'<div class="v19-empty"><b>No active challenge.</b>Create a simple 7/14/30-day challenge and share the link.</div>'}<button class="v18-btn primary" style="width:100%;margin-top:9px" data-v19-challenge-create>＋ Create challenge</button></section>`;
+  }
+
+  function v19ChallengeUrl(ch){try{const u=new URL(location.href);u.searchParams.set('challenge',btoa(unescape(encodeURIComponent(JSON.stringify(ch)))));return u.href;}catch(e){return location.href}}
+  function v19ChallengeDecode(){try{const x=new URL(location.href).searchParams.get('challenge');if(!x)return null;return JSON.parse(decodeURIComponent(escape(atob(x))))}catch(e){return null}}
+  const invitedChallenge=v19ChallengeDecode();
+  if(invitedChallenge&&!data.v19Challenges.some(x=>x.code===invitedChallenge.code)){data.v19Challenges.unshift(Object.assign({},invitedChallenge,{joined:today()}));data.v19Challenges=data.v19Challenges.slice(0,3);save();showToast('Challenge joined ⚔️');}
+
+  function v19MenuSheet(){return `<div class="v19-menu-overlay" data-v19-menu-close><div class="v19-menu-sheet"><div class="v18-sectionhead"><div><div class="v18-kicker">WINTER ARC</div><h2>Quick navigation</h2></div><button class="v18-iconbtn" data-v19-menu-close>×</button></div><div class="v19-menu-grid"><button data-v19-nav="today">🏠 <b>Today</b><small>Your next action.</small></button><button data-v19-nav="week">📅 <b>Week</b><small>This week's pattern.</small></button><button data-v19-nav="rank">🏆 <b>Arc League</b><small>Your global rank.</small></button><button data-v19-nav="profile">👤 <b>Profile</b><small>Your Arc identity.</small></button><button data-v19-nav="arc">❄️ <b>Arc</b><small>The full journey.</small></button><button data-v19-nav="more">••• <b>More</b><small>Tools & settings.</small></button></div></div></div>`;}
+
+  async function v19ShareRank(){
+    try{
+      const w=v19WeekInfo(),me=v19MyRow(v19BoardState.rows),rank=me.rank,score=Number(me.row?.rankScore)||w.rank,league=me.row?.league||w.league;
+      const c=document.createElement('canvas');c.width=1080;c.height=1350;const ctx=c.getContext('2d');
+      ctx.fillStyle='#f5f3ed';ctx.fillRect(0,0,1080,1350);const g=ctx.createLinearGradient(0,0,0,720);g.addColorStop(0,'#153f3a');g.addColorStop(1,'#183b2d');ctx.fillStyle=g;ctx.fillRect(48,48,984,700);
+      const t=(x,y,z,w,f)=>{ctx.fillStyle=f||'#fff';ctx.font=`${w||'700'} ${z}px Arial,sans-serif`;ctx.fillText(x,y)};
+      t('WINTER ARC · ARC LEAGUE',92,125,29,'800','#bfe8ca');t((rank?`#${rank}`:'LOCAL SCORE'),92,265,84,'900','#fff');t(`${score} RANK SCORE`,92,325,30,'800','#d7e9df');t(v19LeagueBadge(league).toUpperCase(),92,380,34,'900','#bfe8ca');ctx.fillStyle='rgba(255,255,255,.15)';ctx.fillRect(92,430,896,22);ctx.fillStyle='#79d29b';ctx.fillRect(92,430,896*Math.min(1,score/100),22);t('THIS WEEK',92,545,20,'900','#bfe8ca');t(`${w.completion}% consistency`,92,595,40,'900','#fff');t(`🔥 ${w.best} day best streak`,92,645,27,'700','#d7e9df');t(`${escapeHtml(data.name||'My Arc')}`,92,885,30,'900','#2d7d47');t('My Arc · Small wins become your story.',92,940,38,'900','#202522');t('Weekly rank resets with your new week.',92,1010,22,'700','#70766f');t('Winter Arc Tracker',92,1170,23,'800','#2d7d47');
+      const blob=await new Promise(r=>c.toBlob(r,'image/png',.95));const file=new File([blob],'winter-arc-rank-v19.png',{type:'image/png'});const msg=`My Winter Arc rank: ${rank?'#'+rank:'local'} · ${score}/100 · ${v19LeagueBadge(league)}\nJoin me: ${location.href}`;
+      if(navigator.share){if(navigator.canShare?.({files:[file]})){try{await navigator.share({title:'My Arc League rank',text:msg,files:[file]});return}catch(e){}}try{await navigator.share({title:'My Arc League rank',text:msg});return}catch(e){}}
+      const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='winter-arc-rank-v19.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1200);showToast('Rank card saved ↗');
+    }catch(e){showToast('Could not create rank card');}
+  }
+
+  /* Keep the original V18.1 renderer as a stable base. */
+  const baseRenderV19=render;
+  // Use the wrapper below; V19 does not replace the working V18.1 core.
+  render=function(){
+    if(tab==='rank'&&!isLocked()){
+      baseRenderV19();
+      const main=document.querySelector('.v18-main');
+      if(main)main.outerHTML=v19RankPage();
+      v18Style?.();
+    }else{
+      baseRenderV19();
     }
-    return 0;
-  }
-  function publicRows(){
-    const q=rankSearch.trim().toLowerCase();return rankRows.filter(r=>!q||String(r.display_name||'').toLowerCase().includes(q)||String(r.instagram_handle||'').toLowerCase().includes(q));
-  }
-  function userCard(r,idx){
-    const rank=idx+1, me=data.cloudUserId&&r.id===data.cloudUserId, habits=Array.isArray(r.public_habits)?r.public_habits:[];
-    return `<button type="button" class="v19-user ${me?'me':''}" data-v19-profile="${escapeHtml(r.id||'')}">
-      <div class="v19-user-top"><div class="v19-user-rank">#${rank}</div><div class="v19-user-avatar">${escapeHtml((r.display_name||'A').slice(0,1).toUpperCase())}</div><div class="v19-user-main"><div class="v19-user-name">${escapeHtml(r.display_name||'Anonymous Hustler')}</div><div class="v19-user-handle">${escapeHtml(r.instagram_handle||'')} ${me?'· YOU':''}</div></div><div class="v19-user-score">${v19ScoreFromRow(r)}<small>ARC SCORE</small></div></div>
-      <div class="v19-user-stats"><span class="v19-league ${v19League(v19ScoreFromRow(r)).toLowerCase()}">${escapeHtml(v19League(v19ScoreFromRow(r)))}</span><span>❄️ Day ${Number(r.arc_day)||0}/${Number(r.total_arc_days)||92}</span><span>📅 ${escapeHtml(r.arc_started_at||'Not set')}</span><span>🔥 ${Number(r.best_streak)||0}</span><span>✅ ${Number(r.total_wins)||0} wins</span><span>📈 ${Number(r.consistency_pct)||0}%</span></div>
-      ${habits.length?`<div class="v19-habitchips">${habits.map(h=>`<span class="v19-habit-chip">${escapeHtml(h)}</span>`).join('')}</div>`:''}
-    </button>`;
-  }
-  function profileModal(){
-    const r=rankProfile;if(!r)return '';
-    const score=v19ScoreFromRow(r),habits=Array.isArray(r.public_habits)?r.public_habits:[];
-    return `<div class="v19-modal-bg" data-v19-profile-close><aside class="v19-modal" role="dialog" aria-modal="true"><div class="v19-modal-head"><div><div class="v181-kicker">PUBLIC ARC PROFILE</div><h2>${escapeHtml(r.display_name||'Anonymous Hustler')}</h2><span class="v181-mini">${escapeHtml(r.instagram_handle||'')} · ${escapeHtml(r.goal||'Overall')}</span></div><button class="v19-close" data-v19-profile-close>×</button></div><div class="v181-rank" style="margin-top:11px"><span class="v19-league ${v19League(score).toLowerCase()}">${escapeHtml(v19League(score))}</span><span style="margin-left:5px" class="v19-movement">Arc Score ${score}/100</span></div><div class="v19-profile-grid" style="margin-top:10px"><div class="v19-profile-stat"><b>#${rankRows.findIndex(x=>x.id===r.id)>=0?rankRows.findIndex(x=>x.id===r.id)+1:'—'}</b><span>Rank</span></div><div class="v19-profile-stat"><b>${Number(r.arc_day)||0}/${Number(r.total_arc_days)||92}</b><span>Arc day</span></div><div class="v19-profile-stat"><b>${Number(r.consistency_pct)||0}%</b><span>Consistency</span></div><div class="v19-profile-stat"><b>${Number(r.best_streak)||0}</b><span>Best streak</span></div><div class="v19-profile-stat"><b>${Number(r.total_wins)||0}</b><span>Arc wins</span></div><div class="v19-profile-stat"><b>${escapeHtml(r.arc_started_at||'—')}</b><span>Started</span></div></div><section class="v181-card" style="margin:9px 0 0"><div class="v181-head"><h2>Habits started</h2><span class="v181-muted">Public only</span></div>${habits.length?`<div class="v19-public-list">${habits.map(h=>`<div class="v19-public-item"><b>${escapeHtml(h)}</b><span>Active Arc habit</span></div>`).join('')}</div>`:'<div class="v19-empty">This user has not shared habit names.</div>'}</section><p class="v181-sub" style="margin-top:8px">Only information this user chose to make public is shown here. Private Wellness, journal, sleep, mood and PIN data stay private.</p></aside></div>`;
-  }
-  function rankPage(){
-    const local=v19LocalRow(),score=local.arc_score,league=local.league,rank=rankOfMe();
-    const filtered=publicRows();const t3=top3();
-    if(!rankLoaded&&!rankLoading&&!rankError)setTimeout(loadRank,0);
-    const movement=(rank&&Number(data.lastRank)&&rank!==Number(data.lastRank))?(rank<Number(data.lastRank)?`↑ ${Number(data.lastRank)-rank}`:`↓ ${rank-Number(data.lastRank)}`):'';
-    return `<div>
-      <section class="v19-rank-hero"><div class="v19-rank-head"><div><div class="v19-rank-kicker">YOUR RANK</div><div class="v19-rank-num">${data.publicProfile&&rank?'#'+rank:'—'}</div><div style="margin-top:4px;font-size:9px;opacity:.82">${data.publicProfile?(movement||'Your current public position'):'Join the public league to appear in rankings'}</div></div><div><div class="v19-rank-score">${score}<small>ARC SCORE</small></div><div style="text-align:right;margin-top:5px"><span class="v19-league ${league.toLowerCase()}">${league}</span></div></div></div><div class="v19-rank-bar"><i style="width:${score}%"></i></div><div class="v19-rank-meta"><span class="v19-rank-pill">❄️ Day ${local.arc_day}/${local.total_arc_days}</span><span class="v19-rank-pill">📈 ${local.consistency_pct}% consistency</span><span class="v19-rank-pill">🔥 ${local.best_streak} streak</span><span class="v19-rank-pill">✅ ${local.total_wins} wins</span></div></section>
-      <section class="v181-card"><div class="v181-head"><div><h2>🌍 Winter Arc League</h2><span class="v181-muted">${communityState.count!==null?communityNumber(communityState.count):'—'} hustlers today</span></div><button class="v181-btn" data-v19-community style="min-height:34px;padding:6px 9px">${data.cloudOptIn?'Manage':'Join'}</button></div><div class="v19-community-note"><div style="font-size:18px">🏆</div><div><b>${rankRows.length} public profiles visible</b><span>Names, progress and non-private habits appear only when a user chooses a public profile.</span></div></div></section>
-      ${t3.length?`<section class="v181-card"><div class="v181-head"><h2>🏆 Top Arc</h2><span class="v181-muted">Public profiles</span></div><div class="v19-top3">${t3[1]?`<button type="button" class="v19-podium" data-v19-profile="${escapeHtml(t3[1].id||'')}"><div class="v19-podium-rank">#2</div><div class="v19-podium-name">${escapeHtml(t3[1].display_name||'')}</div><div class="v19-podium-score">${v19ScoreFromRow(t3[1])}</div><small>${escapeHtml(v19League(v19ScoreFromRow(t3[1])))}</small></button>`:'<div></div>'}<button type="button" class="v19-podium main" data-v19-profile="${escapeHtml(t3[0].id||'')}"><div class="v19-podium-rank">#1</div><div class="v19-podium-name">${escapeHtml(t3[0].display_name||'')}</div><div class="v19-podium-score">${v19ScoreFromRow(t3[0])}</div><small>${escapeHtml(v19League(v19ScoreFromRow(t3[0])))}</small></button>${t3[2]?`<button type="button" class="v19-podium" data-v19-profile="${escapeHtml(t3[2].id||'')}"><div class="v19-podium-rank">#3</div><div class="v19-podium-name">${escapeHtml(t3[2].display_name||'')}</div><div class="v19-podium-score">${v19ScoreFromRow(t3[2])}</div><small>${escapeHtml(v19League(v19ScoreFromRow(t3[2])))}</small></button>`:'<div></div>'}</div></section>`:''}
-      <section class="v181-card"><div class="v181-head"><div><div class="v181-kicker">PUBLIC LEADERBOARD</div><h2>Everyone who made their Arc public.</h2></div><button class="v181-btn v19-refresh" data-v19-refresh>↻</button></div><div class="v19-filter"><input id="v19Search" class="v19-search" placeholder="Search name or Instagram…" value="${escapeHtml(rankSearch)}"><button class="v181-btn" data-v19-community>⚙️</button></div><div class="v19-user-list" style="margin-top:8px">${rankError?`<div class="v19-empty">${escapeHtml(rankError)}</div>`:rankLoading?'<div class="v19-empty">Loading public Arc profiles…</div>':filtered.length?filtered.map((r,i)=>userCard(r,i)).join(''):'<div class="v19-empty">No public profiles yet. Turn on Public Profile in Join League.</div>'}</div></section>
-      <section class="v19-challenge"><b>🎯 Daily Rank Challenge</b><span>Complete 3 priority habits today to keep your consistency moving.</span><strong>${local.today_completed}/${Math.min(3,Math.max(1,local.total_habits))} today</strong></section>
-      ${rankProfile?profileModal():''}${communityOpen?communityModal():''}
-    </div>`;
-  }
-  function communityModal(){
-    const pubHabits=(data.habits||[]).filter(h=>!h.private).map(h=>h.name);
-    return `<div class="v19-modal-bg" data-v19-community-close><aside class="v19-modal"><div class="v19-modal-head"><div><div class="v181-kicker">WINTER ARC LEAGUE</div><h2>Join the community</h2><span class="v181-mini">Share only what you choose.</span></div><button class="v19-close" data-v19-community-close>×</button></div><label class="v19-check-row"><input id="v19CloudOpt" type="checkbox" ${data.cloudOptIn?'checked':''}><span><b>Join the community leaderboard</b><small>Shares aggregate Arc progress so your score can be included in the league.</small></span></label><label class="v19-check-row"><input id="v19Public" type="checkbox" ${data.publicProfile?'checked':''}><span><b>Make my Arc profile public</b><small>Your name, Instagram handle, Arc day, score, streak, wins, start date and public habits can appear to other users.</small></span></label><section class="v181-card" style="margin:9px 0 0"><div class="v181-head"><h2>Habits that can be shown</h2><span class="v181-muted">Private excluded</span></div>${pubHabits.length?`<div class="v19-public-list">${pubHabits.map(h=>`<div class="v19-public-item"><b>${escapeHtml(h)}</b><span>Public if profile is on</span></div>`).join('')}`:'<div class="v19-empty">No habits available to show.</div>'}</section><p class="v181-sub" style="margin-top:8px">Private Wellness, journal, sleep, mood, PIN and detailed local history never belong in the public profile.</p><div class="v181-actions" style="margin-top:10px"><button class="v181-btn" data-v19-community-close>Cancel</button><button class="v181-btn primary" data-v19-community-save>Save & sync</button></div></aside></div>`;
-  }
-  function morePageV19(){
-    if(morePanel){
-      let inner='';
-      try{inner=morePanel==='insights'?insightsPage():morePanel==='achievements'?achievementsPage():morePanel==='getapp'?getAppPage():morePanel==='backup'?backupPage():morePanel==='about'?aboutPage():morePanel==='creator'?creatorPage():morePanel==='private'?`<section class="v181-card"><div class="v181-back"><div><div class="v181-kicker">PRIVATE WELLNESS</div><h2>Private on this device.</h2></div><button class="v181-icon" data-v19-close>×</button></div><p class="v181-sub">Private Wellness stays local and never appears on the league profile.</p></section>`:(morePanel==='manage'?manageHabitsHtml():panelHtml());}catch(e){inner='<section class="v181-card"><div class="v19-empty">This tool is temporarily unavailable.</div></section>';}
-      return `<div><section class="v181-card"><div class="v181-back"><div><div class="v181-kicker">MORE</div><h2>${escapeHtml(morePanel.replace(/^./,c=>c.toUpperCase()))}</h2></div><button class="v181-icon" data-v19-close>×</button></div></section>${inner}</div>`;
-    }
-    const tile=(icon,title,sub,id)=>`<button class="v181-tile" data-v19-more="${id}"><span>${icon}</span><b>${title}</b><small>${sub}</small></button>`;
-    return `<div>
-      <section class="v181-card"><div class="v181-head"><div><div class="v181-kicker">MORE</div><h2>Everything else, kept simple.</h2></div></div><div class="v181-actions"><button class="v181-btn primary" data-v181-sprint>⏱️ Focus Sprint</button><button class="v181-btn" data-v19-community>🌍 Community</button></div></section>
-      <section class="v181-card"><div class="v181-group"><h3>YOUR PROGRESS</h3><div class="v181-grid">${tile('📈','Insights','Useful patterns from your data','insights')}${tile('🏆','Achievements','Milestones and streak wins','achievements')}${tile('🏆','Rank','Winter Arc public leaderboard','rank')}${tile('🗓️','Month','Calendar view of your habits','month')}${tile('❄️','Arc Details','92-day Arc journey and milestones','arc')}</div></div></section>
-      <section class="v181-card"><div class="v181-group"><h3>TOOLS</h3><div class="v181-grid">${tile('✅','Habits','Add or edit habits','manage')}${tile('🎯','Goals','Goals and weekly reflection','goals')}${tile('🔁','Routines','Run habits in order','routine')}${tile('🗓️','Day Planner','Preferred times and planning','planner')}${tile('😴','Sleep','Local sleep log','sleep')}${tile('🌤️','Mood & Energy','Local check-in history','checkin')}${tile('✍️','Journal','Private one-line reflections','journal')}${tile('🔒','Private Wellness','Private local habit','private')}${tile('⏰','Reminders','Local reminders','reminders')}</div></div></section>
-      <section class="v181-card"><div class="v181-group"><h3>APP</h3><div class="v181-grid">${tile('📱','Get the App','PWA install and phone steps','getapp')}${tile('💾','Backup & Restore','JSON + CSV data tools','backup')}${tile('⚙️','Settings','Theme, data and advanced settings','settings')}${tile('ℹ️','About Winter Arc','How the tracker works','about')}</div></div></section>
-      <section class="v181-card"><div class="v181-head"><div><h2>🌍 Community</h2><span class="v181-muted">Optional</span></div><button class="v181-btn" data-v19-community>${data.cloudOptIn?'Manage':'Join'}</button></div><p class="v181-sub">See the public Arc league. Private data stays local unless you explicitly publish selected profile data.</p></section>
-      ${creatorHtml()}
-    </div>`;
-  }
-  function profilePageV19(){
-    const local=v19LocalRow(),rank=rankOfMe(),movement=(rank&&Number(data.lastRank)&&rank!==Number(data.lastRank))?(rank<Number(data.lastRank)?`↑ ${Number(data.lastRank)-rank} places`:`↓ ${rank-Number(data.lastRank)} places`):'';
-    return `<div><section class="v181-card"><div class="v181-profile"><div class="v181-profilepic">${escapeHtml((data.name||'A').slice(0,1).toUpperCase())}</div><div><div class="v181-kicker">MY PROFILE</div><h1>${escapeHtml(data.name||'Your Arc')}</h1><p>${escapeHtml(goalLabel(data.goal))} · ${local.league} · Winter Arc 2026</p></div></div><div class="v181-dayrow" style="color:var(--v181-ink);margin-top:14px"><div class="v181-day" style="font-size:27px">DAY ${local.arc_day} <span>/ ${local.total_arc_days}</span></div><div class="v181-pct" style="font-size:24px">${local.arc_progress}%<small>Arc</small></div></div><div style="height:8px;background:#e5ece6;border-radius:999px;overflow:hidden;margin-top:10px"><i style="display:block;height:100%;width:${local.arc_progress}%;background:var(--v181-green);border-radius:999px"></i></div><div class="v181-actions" style="margin-top:10px"><button class="v181-btn primary" data-v19-share>↗ Share My Arc</button><button class="v181-btn" data-v19-nav="rank">🏆 ${rank?'#'+rank:'Rank'}</button></div>${movement?`<div class="v19-movement" style="margin-top:7px">${movement} since your last check</div>`:''}</section><section class="v181-card"><div class="v181-head"><h2>Your Arc Score</h2><span class="v19-league ${local.league.toLowerCase()}">${local.league}</span></div><div class="v19-profile-grid"><div class="v19-profile-stat"><b>${local.arc_score}</b><span>Arc score</span></div><div class="v19-profile-stat"><b>${local.consistency_pct}%</b><span>Consistency</span></div><div class="v19-profile-stat"><b>${local.best_streak}</b><span>Best streak</span></div></div></section><section class="v181-card"><div class="v181-head"><h2>Public Arc profile</h2><button class="v181-btn" data-v19-community>${data.publicProfile?'Manage':'Join league'}</button></div><p class="v181-sub">${data.publicProfile?'Your public name, progress and non-private habits can appear in Rank.':'You are not publicly listed yet.'}</p></section></div>`;
-  }
-  function shellBodyV19(){
-    if(tab==='today')return (typeof todayPage==='function'?todayPage():'');
-    if(tab==='week')return `<div class="v181-legacy">${v14WeekPage()}</div>`;
-    if(tab==='rank')return rankPage();
-    if(tab==='profile')return profilePageV19();
-    if(tab==='month')return `<div class="v181-legacy">${v14MonthPage()}</div>`;
-    if(tab==='arc')return `<div class="v181-legacy">${v14ArcPage()}</div>`;
-    return morePageV19();
-  }
-  function v19Render(){
     v19Style();
-    if(isLocked()||!data.profileCreated||!data.onboardingDone){baseRender();return;}
-    data.schema=19;data.arcStart=WINTER_ARC_START;data.arcLength=WINTER_ARC_LENGTH;
-    if(typeof data.lastRank!=='number')data.lastRank=0;if(!data.lastRankChecked)data.lastRankChecked='';
-    save();
-    const initial=escapeHtml((data.name||'A').slice(0,1).toUpperCase());
-    document.body.classList.toggle('dark',!!data.dark);
-    document.body.innerHTML=`<div class="v181-app"><header class="v181-top"><div class="v181-toprow"><button class="v181-icon" data-v19-menu aria-label="Open menu">☰</button><div class="v181-brand"><b>Winter Arc</b><span>V19 · ${escapeHtml(data.name||'Your Arc')}</span></div><button class="v181-icon" data-v19-share aria-label="Share">↗</button><button class="v181-avatar" data-v19-nav="profile" aria-label="Profile">${initial}</button></div></header><main class="v181-main">${shellBodyV19()}</main><nav class="v181-bottom"><div class="v181-bottom-inner"><button class="${tab==='today'?'active':''}" data-v19-nav="today"><b>🏠</b>Today</button><button class="${tab==='week'?'active':''}" data-v19-nav="week"><b>📅</b>Week</button><button class="${tab==='rank'?'active':''}" data-v19-nav="rank"><b>🏆</b>Rank</button><button class="${tab==='profile'?'active':''}" data-v19-nav="profile"><b>👤</b>Profile</button><button class="${tab==='more'?'active':''}" data-v19-nav="more"><b>•••</b>More</button></div></nav>${rankProfile?profileModal():''}${communityOpen?communityModal():''}</div>`;
-    if(tab==='rank'&&rankLoaded===false&&!rankLoading&&!rankError)setTimeout(loadRank,0);
+    const nav=document.querySelector('.v18-nav .v18-navinner');
+    if(nav&&!isLocked())nav.innerHTML='<button data-v19-nav="today" class="'+(tab==='today'?'active':'')+'"><b>🏠</b>Today</button><button data-v19-nav="week" class="'+(tab==='week'?'active':'')+'"><b>📅</b>Week</button><button data-v19-nav="rank" class="'+(tab==='rank'?'active':'')+'"><b>🏆</b>Rank</button><button data-v19-nav="profile" class="'+(tab==='profile'?'active':'')+'"><b>👤</b>Profile</button><button data-v19-nav="more" class="'+(tab==='more'?'active':'')+'"><b>•••</b>More</button>';
+    if(!isLocked()){
+      const menuBtn=document.querySelector('[data-v181-menu],[data-v18-menu]');if(menuBtn){menuBtn.removeAttribute('data-v181-menu');menuBtn.removeAttribute('data-v18-menu');menuBtn.setAttribute('data-v19-menu','1');}
+    }
+    if(v19MenuOpen&&!document.querySelector('.v19-menu-overlay')){const holder=document.createElement('div');holder.innerHTML=v19MenuSheet();document.body.appendChild(holder.firstElementChild);}
     bindDomState();
-  }
-  function go(n){tab=n;morePanel='';rankProfile=null;communityOpen=false;selectedHabit=null;quickOpen=false;render();}
+  };
+
   window.addEventListener('click',async e=>{
-    const b=e.target.closest('button');if(!b)return;
-    if(b.dataset.v19Nav!==undefined){e.preventDefault();e.stopImmediatePropagation();go(b.dataset.v19Nav);return;}
-    if(b.dataset.v19More!==undefined){e.preventDefault();e.stopImmediatePropagation();const id=b.dataset.v19More;if(id==='rank'||id==='month'||id==='arc'){go(id);}else{tab='more';morePanel=id;render();}return;}
-    if(b.dataset.v19Close!==undefined){e.preventDefault();e.stopImmediatePropagation();morePanel='';render();return;}
-    if(b.dataset.v19Menu!==undefined){e.preventDefault();e.stopImmediatePropagation();tab='more';morePanel='';render();return;}
-    if(b.dataset.v19Community!==undefined){e.preventDefault();e.stopImmediatePropagation();communityOpen=true;render();return;}
-    if(b.dataset.v19CommunityClose!==undefined || (e.target.closest('[data-v19-community-close]')&&e.target===e.target.closest('[data-v19-community-close]'))){e.preventDefault();e.stopImmediatePropagation();communityOpen=false;render();return;}
-    if(b.dataset.v19CommunitySave!==undefined){e.preventDefault();e.stopImmediatePropagation();const cloud=!!$('#v19CloudOpt')?.checked,pub=!!$('#v19Public')?.checked;data.cloudOptIn=cloud;data.publicProfile=pub;save();communityOpen=false;rankLoaded=false;rankError='';if(cloud){const ok=await syncV19();showToast(ok?'Community profile synced ✓':'Community saved locally; sync unavailable');}else{showToast('Community sharing off');}render();return;}
-    if(b.dataset.v19Refresh!==undefined){e.preventDefault();e.stopImmediatePropagation();rankLoaded=false;rankError='';await loadRank();return;}
-    if(b.dataset.v19Profile!==undefined){e.preventDefault();e.stopImmediatePropagation();const id=b.dataset.v19Profile;if(id){rankProfile=rankRows.find(x=>x.id===id)||null;render();}return;}
-    if(b.dataset.v19ProfileClose!==undefined || (e.target.closest('[data-v19-profile-close]')&&e.target===e.target.closest('[data-v19-profile-close]'))){e.preventDefault();e.stopImmediatePropagation();rankProfile=null;render();return;}
-    if(b.dataset.v19Share!==undefined){e.preventDefault();e.stopImmediatePropagation();if(typeof v133ShareProgress==='function')await v133ShareProgress();return;}
+    const b=e.target.closest('button,a');if(!b)return;
+    if(b.dataset.v19Nav!==undefined){e.preventDefault();e.stopImmediatePropagation();tab=b.dataset.v19Nav;morePanel='';v19MenuOpen=false;render();if(tab==='rank')v19LoadLeaderboard();return;}
+    if(b.dataset.v19Menu!==undefined){e.preventDefault();e.stopImmediatePropagation();v19MenuOpen=true;render();return;}
+    if(b.dataset.v19MenuClose!==undefined || (v19MenuOpen&&e.target.closest('.v19-menu-overlay')===e.target)){e.preventDefault();e.stopImmediatePropagation();v19MenuOpen=false;render();return;}
+    if(b.dataset.v19RankTab!==undefined){e.preventDefault();e.stopImmediatePropagation();data.v19LeaderboardTab=b.dataset.v19RankTab;save();render();if(data.v19LeaderboardTab==='global')v19LoadLeaderboard();return;}
+    if(b.dataset.v19Refresh!==undefined){e.preventDefault();e.stopImmediatePropagation();v19LoadLeaderboard();return;}
+    if(b.dataset.v19Community!==undefined){e.preventDefault();e.stopImmediatePropagation();window.__v14Cloud=true;render();return;}
+    if(b.dataset.v19ShareRank!==undefined){e.preventDefault();e.stopImmediatePropagation();await v19ShareRank();return;}
+    if(b.dataset.v19ChallengeCreate!==undefined){e.preventDefault();e.stopImmediatePropagation();const title=prompt('Challenge name','7-Day Small Wins');if(!title)return;const d=Number(prompt('How many days?','7'))||7;const ch={code:uid().toUpperCase(),title:title.trim().slice(0,60),days:Math.max(2,Math.min(90,d)),start:today(),description:'Show up once a day and keep the streak alive.',creator:data.name||'My Arc'};data.v19Challenges.unshift(ch);data.v19Challenges=data.v19Challenges.slice(0,3);save();render();if(data.cloudOptIn){const ok=await v19ChallengeBackendUpsert(ch);showToast(ok?'Challenge synced ⚔️':'Challenge saved locally ⚔️');}else showToast('Challenge created ⚔️');return;}
+    if(b.dataset.v19ChallengeShare!==undefined){e.preventDefault();e.stopImmediatePropagation();const ch=data.v19Challenges[0];if(!ch)return;const url=v19ChallengeUrl(ch);try{if(navigator.share){await navigator.share({title:ch.title,text:'Join my Winter Arc challenge ⚔️',url});return;}if(navigator.clipboard){await navigator.clipboard.writeText(url);showToast('Challenge link copied ↗');return;}}catch(err){}showToast('Challenge link ready');return;}
+    if(b.dataset.v19ChallengeRefresh!==undefined){e.preventDefault();e.stopImmediatePropagation();await v19LoadChallengeMembers(data.v19Challenges[0]);return;}
+    if(b.dataset.v19ChallengeClear!==undefined){e.preventDefault();e.stopImmediatePropagation();data.v19Challenges.shift();save();render();return;}
   },{capture:true});
-  window.addEventListener('input',e=>{if(e.target?.id==='v19Search'){rankSearch=e.target.value;render();}}, {passive:true});
-  try{const q=new URL(location.href).searchParams.get('tab');if(['today','week','rank','profile','month','arc','more'].includes(q))tab=q;}catch(e){}
-  render=function(){v19Render();};
-  data.schema=19;save();
+
+  /* Auto-save a rankable snapshot only when the user has opted into community sync. */
+  const baseToggleHabitV19=toggleHabit;
+  let v19SyncTimer=null;
+  toggleHabit=function(h,d){const before=done(h,d);baseToggleHabitV19(h,d);if(!before&&data.cloudOptIn){clearTimeout(v19SyncTimer);v19SyncTimer=setTimeout(()=>{try{cloudSync()}catch(e){}},1200);}};
+
+  const baseCloudSyncV19=cloudSync;
+  cloudSync=async function(){await baseCloudSyncV19();await v19SyncActiveChallenge();};
+
+  data.schema=19;save();v19Style();
 })();
 
 communityCheckin();
