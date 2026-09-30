@@ -1,5 +1,5 @@
 {
-  "name": "Progress Tracker V12",
+  "name": "Progress Tracker V13",
   "short_name": "Progress Tracker",
   "start_url": "./",
   "scope": "./",
@@ -7,7 +7,7 @@
   "orientation": "portrait",
   "background_color": "#f7f5ef",
   "theme_color": "#3da35d",
-  "description": "Simple, offline-first personal growth and habit tracker",
+  "description": "Simple, offline-first personal growth and habit tracker with a visual Arc journey",
   "icons": [
     {
       "src": "icon-192.png",
