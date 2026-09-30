@@ -1,23 +1,63 @@
 {
-  "id":"./",
-  "name":"Winter Arc Tracker",
-  "short_name":"Winter Arc",
-  "start_url":"./",
-  "scope":"./",
-  "display":"standalone",
-  "display_override":["window-controls-overlay","standalone"],
-  "orientation":"portrait",
-  "background_color":"#f5f4ef",
-  "theme_color":"#3da35d",
-  "description":"Winter Arc Tracker V16 — simple daily habits, visible progress, sharing and an in-app install center.",
-  "categories":["lifestyle","productivity"],
-  "icons":[
-    {"src":"icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
-    {"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  "id": "./",
+  "name": "Winter Arc Tracker",
+  "short_name": "Winter Arc",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f3ed",
+  "theme_color": "#3da35d",
+  "description": "Website-first Winter Arc 2026 habit and progress tracker.",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ],
-  "shortcuts":[
-    {"name":"Today","short_name":"Today","url":"./?tab=today","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"}]},
-    {"name":"Arc","short_name":"Arc","url":"./?tab=arc","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"}]},
-    {"name":"Get App","short_name":"Get App","url":"./?tab=download","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"}]}
+  "shortcuts": [
+    {
+      "name": "Today",
+      "short_name": "Today",
+      "url": "./?tab=today",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Arc",
+      "short_name": "Arc",
+      "url": "./?tab=arc",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Get App",
+      "short_name": "Get App",
+      "url": "./?tab=download",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
   ]
 }
