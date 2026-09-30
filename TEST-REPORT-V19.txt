@@ -1,0 +1,25 @@
+Winter Arc Tracker V19 Test Report
+
+PASS — JavaScript syntax (`node --check app.js`)
+PASS — Service worker syntax (`node --check sw.js`)
+PASS — Manifest is valid JSON
+PASS — V19 Arc League code present
+PASS — 5-tab navigation (Today / Week / Rank / Profile / More)
+PASS — Global leaderboard fetch path present
+PASS — Fair weekly score formula present (75/15/10)
+PASS — League thresholds present
+PASS — Rank history local storage present
+PASS — Personal-best rank calculation present
+PASS — 1080x1350 rank share card present
+PASS — 7–90 day challenge creation present
+PASS — Challenge share link encoding/decoding present
+PASS — Challenge backend tables/policies present in schema
+PASS — V18.1 app backup included
+PASS — Creator photos/assets included
+PASS — V19 service-worker cache name present
+PASS — PWA Rank shortcut present
+PASS — Existing cloud snapshot is extended with V19 rank fields
+PASS — Community remains opt-in
+
+Browser note:
+A real Android/Chromium tap-through could not be completed reliably in this environment because the local page process did not terminate under the app's long-lived timers/service-worker behavior. Static and Node-side checks were completed; no physical-device visual result is claimed as verified.

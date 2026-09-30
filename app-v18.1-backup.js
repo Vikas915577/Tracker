@@ -2615,34 +2615,9 @@ if(data.profileCreated||data.onboardingDone)save();
     let completed=0;for(let i=0;i<upto;i++){const d=addDays(start,i);if(data.habits.some(h=>done(h,d)))completed++;}
     return {completed,upto,days,end,pct:days?Math.round(completed/days*100):0};
   }
-  let v19ChallengeState={status:'idle',members:[]};
-  async function v19ChallengeBackendUpsert(ch){
-    if(!cloudReady()||!data.cloudOptIn||!ch)return false;
-    try{
-      const id=data.cloudUserId||crypto.randomUUID();data.cloudUserId=id;
-      const p=v19ChallengeProgress(ch);
-      const h={...cloudHeaders(),Prefer:'resolution=merge-duplicates'};
-      const cr=await fetch(CLOUD_CFG.url+'/rest/v1/arc_challenges?on_conflict=code',{method:'POST',headers:h,body:JSON.stringify({code:ch.code,title:ch.title,description:ch.description||'',days:Number(ch.days)||7,start_date:ch.start,creator_id:id,creator_name:data.name||'Anonymous',active:true})});
-      if(!cr.ok)throw new Error('challenge create '+cr.status);
-      const mr=await fetch(CLOUD_CFG.url+'/rest/v1/arc_challenge_members?on_conflict=challenge_code,user_id',{method:'POST',headers:h,body:JSON.stringify({challenge_code:ch.code,user_id:id,display_name:data.name||'Anonymous',progress:p.completed,progress_pct:p.pct,last_seen:new Date().toISOString()})});
-      if(!mr.ok)throw new Error('challenge member '+mr.status);
-      return true;
-    }catch(e){return false;}
-  }
-  async function v19LoadChallengeMembers(ch){
-    if(!cloudReady()||!ch){v19ChallengeState={status:'offline',members:[]};render();return;}
-    v19ChallengeState={status:'loading',members:[]};render();
-    try{
-      const q='select=user_id,display_name,progress,progress_pct,last_seen&challenge_code=eq.'+encodeURIComponent(ch.code)+'&order=progress_pct.desc,last_seen.desc&limit=25';
-      const r=await fetch(CLOUD_CFG.url+'/rest/v1/arc_challenge_members?'+q,{headers:cloudHeaders()});if(!r.ok)throw new Error('members '+r.status);
-      v19ChallengeState={status:'ready',members:await r.json()};render();
-    }catch(e){v19ChallengeState={status:'error',members:[]};render();}
-  }
-  async function v19SyncActiveChallenge(){const ch=data.v19Challenges[0];if(ch&&data.cloudOptIn)await v19ChallengeBackendUpsert(ch);}
-
   function v19ChallengePanel(){
-    const activeCh=data.v19Challenges[0],members=v19ChallengeState.members||[];
-    return `<section class="v18-card"><div class="v18-sectionhead"><div><h2>⚔️ Arc Challenges</h2><span class="v18-muted">Small shared targets</span></div></div>${activeCh?`<div class="v19-challenge"><div class="v19-challenge-card"><div class="v19-challenge-head"><b>${escapeHtml(activeCh.title)}</b><span>${Number(activeCh.days)||7} days</span></div><p class="v18-sub" style="margin-top:4px">${escapeHtml(activeCh.description||'Show up once a day and keep the streak alive.')}</p>${(()=>{const p=v19ChallengeProgress(activeCh);return `<div class="v19-challenge-progress"><i style="width:${p.pct}%"></i></div><div class="v19-note"><span>Day ${p.upto}/${p.days}</span><b>${p.pct}%</b></div>`})()}</div>${members.length?`<div class="v19-list">${members.map((m,i)=>`<div class="v19-row"><div class="v19-row-rank">#${i+1}</div><div class="v19-row-avatar">${escapeHtml((m.display_name||'?').slice(0,1).toUpperCase())}</div><div class="v19-row-main"><b>${escapeHtml(m.display_name||'Anonymous')}</b><span>${Number(m.progress_pct)||0}% challenge progress · ${Number(m.progress)||0} wins</span></div><div class="v19-row-score"><b>${Number(m.progress_pct)||0}%</b></div></div>`).join('')}</div>`:(v19ChallengeState.status==='offline'?'<div class="v19-empty"><b>Local challenge mode</b>Connect Community Sync to show shared participant progress.</div>':'<div class="v19-empty"><b>No participants loaded yet.</b>Tap refresh to load challenge members.</div>')}<div class="v19-challenge-actions"><button class="v18-btn primary" data-v19-challenge-share>Share challenge ↗</button><button class="v18-btn" data-v19-challenge-refresh>↻ Refresh</button></div></div>`:'<div class="v19-empty"><b>No active challenge.</b>Create a simple 7/14/30-day challenge and share the link.</div>'}<button class="v18-btn primary" style="width:100%;margin-top:9px" data-v19-challenge-create>＋ Create challenge</button></section>`;
+    const activeCh=data.v19Challenges[0];
+    return `<section class="v18-card"><div class="v18-sectionhead"><div><h2>⚔️ Arc Challenges</h2><span class="v18-muted">Build a small shared target</span></div></div>${activeCh?`<div class="v19-challenge"><div class="v19-challenge-card"><div class="v19-challenge-head"><b>${escapeHtml(activeCh.title)}</b><span>${Number(activeCh.days)||7} days</span></div><p class="v18-sub" style="margin-top:4px">${escapeHtml(activeCh.description||'Show up once a day and keep the streak alive.')}</p>${(()=>{const p=v19ChallengeProgress(activeCh);return `<div class="v19-challenge-progress"><i style="width:${p.pct}%"></i></div><div class="v19-note"><span>Day ${p.upto}/${p.days}</span><b>${p.pct}%</b></div>`})()}</div><div class="v19-challenge-actions"><button class="v18-btn primary" data-v19-challenge-share>Share challenge ↗</button><button class="v18-btn" data-v19-challenge-clear>Leave challenge</button></div></div>`:'<div class="v19-empty"><b>No active challenge.</b>Create a simple 7/14/30-day challenge and share the link.</div>'}<button class="v18-btn primary" style="width:100%;margin-top:9px" data-v19-challenge-create>＋ Create challenge</button></section>`;
   }
 
   function v19ChallengeUrl(ch){try{const u=new URL(location.href);u.searchParams.set('challenge',btoa(unescape(encodeURIComponent(JSON.stringify(ch)))));return u.href;}catch(e){return location.href}}
@@ -2696,9 +2671,8 @@ if(data.profileCreated||data.onboardingDone)save();
     if(b.dataset.v19Refresh!==undefined){e.preventDefault();e.stopImmediatePropagation();v19LoadLeaderboard();return;}
     if(b.dataset.v19Community!==undefined){e.preventDefault();e.stopImmediatePropagation();window.__v14Cloud=true;render();return;}
     if(b.dataset.v19ShareRank!==undefined){e.preventDefault();e.stopImmediatePropagation();await v19ShareRank();return;}
-    if(b.dataset.v19ChallengeCreate!==undefined){e.preventDefault();e.stopImmediatePropagation();const title=prompt('Challenge name','7-Day Small Wins');if(!title)return;const d=Number(prompt('How many days?','7'))||7;const ch={code:uid().toUpperCase(),title:title.trim().slice(0,60),days:Math.max(2,Math.min(90,d)),start:today(),description:'Show up once a day and keep the streak alive.',creator:data.name||'My Arc'};data.v19Challenges.unshift(ch);data.v19Challenges=data.v19Challenges.slice(0,3);save();render();if(data.cloudOptIn){const ok=await v19ChallengeBackendUpsert(ch);showToast(ok?'Challenge synced ⚔️':'Challenge saved locally ⚔️');}else showToast('Challenge created ⚔️');return;}
+    if(b.dataset.v19ChallengeCreate!==undefined){e.preventDefault();e.stopImmediatePropagation();const title=prompt('Challenge name','7-Day Small Wins');if(!title)return;const d=Number(prompt('How many days?','7'))||7;const ch={code:uid().toUpperCase(),title:title.trim().slice(0,60),days:Math.max(2,Math.min(90,d)),start:today(),description:'Show up once a day and keep the streak alive.',creator:data.name||'My Arc'};data.v19Challenges.unshift(ch);data.v19Challenges=data.v19Challenges.slice(0,3);save();render();showToast('Challenge created ⚔️');return;}
     if(b.dataset.v19ChallengeShare!==undefined){e.preventDefault();e.stopImmediatePropagation();const ch=data.v19Challenges[0];if(!ch)return;const url=v19ChallengeUrl(ch);try{if(navigator.share){await navigator.share({title:ch.title,text:'Join my Winter Arc challenge ⚔️',url});return;}if(navigator.clipboard){await navigator.clipboard.writeText(url);showToast('Challenge link copied ↗');return;}}catch(err){}showToast('Challenge link ready');return;}
-    if(b.dataset.v19ChallengeRefresh!==undefined){e.preventDefault();e.stopImmediatePropagation();await v19LoadChallengeMembers(data.v19Challenges[0]);return;}
     if(b.dataset.v19ChallengeClear!==undefined){e.preventDefault();e.stopImmediatePropagation();data.v19Challenges.shift();save();render();return;}
   },{capture:true});
 
@@ -2706,9 +2680,6 @@ if(data.profileCreated||data.onboardingDone)save();
   const baseToggleHabitV19=toggleHabit;
   let v19SyncTimer=null;
   toggleHabit=function(h,d){const before=done(h,d);baseToggleHabitV19(h,d);if(!before&&data.cloudOptIn){clearTimeout(v19SyncTimer);v19SyncTimer=setTimeout(()=>{try{cloudSync()}catch(e){}},1200);}};
-
-  const baseCloudSyncV19=cloudSync;
-  cloudSync=async function(){await baseCloudSyncV19();await v19SyncActiveChallenge();};
 
   data.schema=19;save();v19Style();
 })();

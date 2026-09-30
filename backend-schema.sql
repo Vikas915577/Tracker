@@ -17,6 +17,10 @@ create table if not exists public.arc_users (
   best_streak integer not null default 0,
   last_seen timestamptz not null default now(),
   public_profile boolean not null default false,
+  week_score integer not null default 0,
+  rank_score integer not null default 0,
+  league text not null default 'Starter',
+  week_key date,
   created_at timestamptz not null default now()
 );
 
@@ -32,6 +36,12 @@ create table if not exists public.arc_daily (
   primary key(user_id, progress_date)
 );
 
+-- V19 migration for an existing V14/V18 table.
+alter table public.arc_users add column if not exists week_score integer not null default 0;
+alter table public.arc_users add column if not exists rank_score integer not null default 0;
+alter table public.arc_users add column if not exists league text not null default 'Starter';
+alter table public.arc_users add column if not exists week_key date;
+
 alter table public.arc_users enable row level security;
 alter table public.arc_daily enable row level security;
 
@@ -45,7 +55,10 @@ create policy arc_users_update on public.arc_users for update to anon, authentic
 drop policy if exists arc_daily_insert on public.arc_daily;
 create policy arc_daily_insert on public.arc_daily for insert to anon, authenticated with check (true);
 
-grant insert, update on public.arc_users to anon, authenticated;
+drop policy if exists arc_users_public_select on public.arc_users;
+create policy arc_users_public_select on public.arc_users for select to anon, authenticated using (public_profile = true);
+
+grant select, insert, update on public.arc_users to anon, authenticated;
 grant insert on public.arc_daily to anon, authenticated;
 
 -- Creator-only dashboard RPC.
@@ -77,3 +90,44 @@ as $$
 $$;
 
 grant execute on function public.creator_dashboard() to authenticated;
+
+
+-- V19 Arc League challenges (lightweight public challenge metadata + member snapshots).
+create table if not exists public.arc_challenges (
+  code text primary key,
+  title text not null,
+  description text default '',
+  days integer not null default 7,
+  start_date date not null,
+  creator_id uuid,
+  creator_name text not null default 'Anonymous',
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.arc_challenge_members (
+  challenge_code text not null references public.arc_challenges(code) on delete cascade,
+  user_id uuid not null,
+  display_name text not null default 'Anonymous',
+  progress integer not null default 0,
+  progress_pct integer not null default 0,
+  last_seen timestamptz not null default now(),
+  primary key(challenge_code,user_id)
+);
+
+alter table public.arc_challenges enable row level security;
+alter table public.arc_challenge_members enable row level security;
+
+drop policy if exists arc_challenges_public_select on public.arc_challenges;
+create policy arc_challenges_public_select on public.arc_challenges for select to anon, authenticated using (active = true);
+drop policy if exists arc_challenges_insert on public.arc_challenges;
+create policy arc_challenges_insert on public.arc_challenges for insert to anon, authenticated with check (true);
+drop policy if exists arc_challenge_members_public_select on public.arc_challenge_members;
+create policy arc_challenge_members_public_select on public.arc_challenge_members for select to anon, authenticated using (true);
+drop policy if exists arc_challenge_members_insert on public.arc_challenge_members;
+create policy arc_challenge_members_insert on public.arc_challenge_members for insert to anon, authenticated with check (true);
+drop policy if exists arc_challenge_members_update on public.arc_challenge_members;
+create policy arc_challenge_members_update on public.arc_challenge_members for update to anon, authenticated using (true) with check (true);
+
+grant select, insert on public.arc_challenges to anon, authenticated;
+grant select, insert, update on public.arc_challenge_members to anon, authenticated;
