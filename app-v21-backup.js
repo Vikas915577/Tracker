@@ -1,14 +1,13 @@
 (function(){
 'use strict';
 
-const VERSION='V22.0';
+const VERSION='V21.0';
 const START='2026-10-01';
 const END='2026-12-31';
 const ARC_DAYS=92;
 const KEY='progress_tracker_v17';
 const OLD_KEYS=['progress_tracker_v20','progress_tracker_v19','progress_tracker_v18','progress_tracker_v17','progress_tracker_v16','progress_tracker_v14_2','progress_tracker_v14_1','progress_tracker_v14','progress_tracker_v13','progress_tracker_v12','progress_tracker_v11','progress_tracker_v10','progress_tracker_v9','progress_tracker_v8','progress_tracker_v6','progress_tracker_v5','progress_tracker_v4','progress_tracker_v3_plain'];
 const WEBSITE='https://vikas915577.github.io/Tracker/';
-const CLOUD=()=>window.WINTER_ARC_CLOUD||window.CLOUD_CFG||{};
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -89,7 +88,7 @@ let data=load();
 if(Array.isArray(data.habits))data.habits=data.habits.map(h=>h.name==='Masturbation'?Object.assign({},h,{name:'Private Wellness',private:true}):h);
 if(data.habitNotes?.Masturbation){data.habitNotes['Private Wellness']=data.habitNotes.Masturbation;delete data.habitNotes.Masturbation;}
 let tab=(()=>{try{return new URL(location.href).searchParams.get('tab')||'today'}catch(e){return 'today'}})();
-let morePanel='';let onboardingStep=0;let onboardingGoal=data.goal||'discipline';let onboardingSelected=[];let menuOpen=false;let selectedHabit=null;let search='';let rankRows=[];let rankState='idle';let rankError='';let rankActive={state:'idle',rows:[],count:0};let remoteRank=null;let sprint=null;let installPrompt=null;let toastTimer=null;let sessionUnlocked=!data.pinHash;
+let morePanel='';let onboardingStep=0;let onboardingGoal=data.goal||'discipline';let onboardingSelected=[];let menuOpen=false;let selectedHabit=null;let search='';let rankRows=[];let rankState='idle';let rankError='';let sprint=null;let installPrompt=null;let toastTimer=null;let sessionUnlocked=!data.pinHash;
 
 function showToast(msg){clearTimeout(toastTimer);document.querySelector('.toast')?.remove();const x=document.createElement('div');x.className='toast';x.textContent=msg;document.body.appendChild(x);toastTimer=setTimeout(()=>x.remove(),2100)}
 function celebrate(){const items=['✨','🔥','⭐','💪'];items.forEach((e,i)=>{const x=document.createElement('span');x.className='burst';x.textContent=e;x.style.left=(42+i*5)+'%';x.style.bottom='115px';document.body.appendChild(x);setTimeout(()=>x.remove(),700+i*80)})}
@@ -109,7 +108,7 @@ function focusHabit(){const open=data.habits.filter(h=>!done(h,today()));if(!ope
 function addXp(k,n){data.xpEvents[k]=n;data.xp=(data.xp||0)+n}
 function removeXp(k){if(data.xpEvents[k]){data.xp-=Number(data.xpEvents[k])||0;delete data.xpEvents[k]}}
 function recalcBonus(d){const any=data.habits.some(h=>done(h,d));const all=data.habits.length&&data.habits.every(h=>done(h,d));const old=data.bonusEvents[d]||{first:0,full:0};const next={first:any?15:0,full:all?25:0};data.xp+=next.first-old.first+next.full-old.full;data.bonusEvents[d]=next;data.xp=Math.max(0,Math.round(data.xp))}
-function toggleHabit(h,d){if(!canEdit(d))return showToast('Future date is locked');if(frozen(h,d))return showToast('Undo Freeze first');const k=key(h,d);const before=done(h,d);if(before){delete data.checks[k];removeXp(k);recalcBonus(d);showToast('Check removed')}else{data.checks[k]=true;addXp(k,10);recalcBonus(d);celebrate();showToast('Nice! +10 XP 🔥')}save();render();if(data.cloudOptIn)syncCloud(false)}
+function toggleHabit(h,d){if(!canEdit(d))return showToast('Future date is locked');if(frozen(h,d))return showToast('Undo Freeze first');const k=key(h,d);const before=done(h,d);if(before){delete data.checks[k];removeXp(k);recalcBonus(d);showToast('Check removed')}else{data.checks[k]=true;addXp(k,10);recalcBonus(d);celebrate();showToast('Nice! +10 XP 🔥')}save();render()}
 function addHabit(name,meta={}){const n=String(name||'').trim();if(!n)return false;if(data.habits.some(h=>h.name.toLowerCase()===n.toLowerCase()))return false;const p=preset(n)||{};data.habits.push({id:uid(),name:n,icon:meta.icon||p.icon||'✅',private:!!meta.private||!!p.private,created:today(),difficulty:meta.difficulty||p.difficulty||'Medium',action:meta.action||p.action||'Do the smallest useful version',time:'',smallWin:meta.action||p.action||'',why:''});return true}
 function deleteHabit(id){const h=data.habits.find(x=>x.id===id);if(!h)return;if(!confirm(`Delete “${h.name}” and its history?`))return;for(const k of Object.keys(data.checks))if(k.startsWith(id+'|')){removeXp(k);delete data.checks[k]}for(const k of Object.keys(data.freezes))if(k.startsWith(id+'|'))delete data.freezes[k];data.habits=data.habits.filter(x=>x.id!==id);delete data.habitNotes[id];delete data.reminders[id];save();selectedHabit=null;render();showToast('Habit deleted')}
 function toggleFreeze(h,d){if(!canEdit(d))return showToast('Future date is locked');const k=key(h,d);if(done(h,d))return showToast('Undo completion first');if(frozen(h,d)){delete data.freezes[k];delete data.freezeUsed[today().slice(0,7)];save();render();return}const mk=today().slice(0,7);if(data.freezeUsed[mk])return showToast('Monthly freeze already used');data.freezes[k]=true;data.freezeUsed[mk]=true;save();showToast('Day protected 🛡️');render()}
@@ -145,81 +144,22 @@ function emptyState(icon,title,sub,action,id){return `<div class="empty-state"><
 
 function weekView(){const ds=Array.from({length:7},(_,i)=>addDays(today(),i-6));return `<div class="page"><section class="simple-head"><span class="eyebrow">THIS WEEK</span><h1>Your 7-day pattern.</h1><p>Tap a day to see what got done.</p></section><section class="week-summary"><div><b>${weeklyScore()}%</b><small>completion</small></div><div><b>${weeklyWins()}</b><small>wins</small></div><div><b>🔥 ${stats().best}</b><small>best streak</small></div></section><div class="week-table">${data.habits.map(h=>`<div class="week-habit"><div class="week-name"><span>${esc(h.icon)}</span><b>${esc(h.name)}</b></div><div class="week-days">${ds.map(d=>`<button class="day-dot ${done(h,d)?'done':''} ${frozen(h,d)?'freeze':''} ${d===today()?'today':''}" data-action="toggle-date" data-id="${h.id}" data-date="${d}" ${isFuture(d)?'disabled':''}><small>${fmtDay(d).toLocaleDateString(undefined,{weekday:'short'}).slice(0,2)}</small><span>${done(h,d)?'✓':frozen(h,d)?'🛡':''}</span></button>`).join('')}</div></div>`).join('')||emptyState('🗓️','No habits yet','Your week will appear after setup.','Add habits','manage')}</div><section class="info-card"><b>Tip</b><span>Missed days stay in your history. Your next win still counts.</span></section></div>`}
 
-function localRank(){
- const me=arcScore();
- const peers=rankRows.map(x=>Number(x.rank_score??x.rankScore)||0);
- return peers.length?1+peers.filter(x=>x>me).length:null;
-}
+function localRank(){const me=arcScore();const peers=rankRows.length?rankRows.map(x=>Number(x.rank_score??x.rankScore)||0):[];return 1+peers.filter(x=>x>me).length}
 function league(score){return score>=90?'Diamond':score>=75?'Platinum':score>=60?'Gold':score>=40?'Silver':'Bronze'}
-function cloudConfig(){const c=CLOUD();return {url:String(c.url||'').replace(/\/$/,''),anonKey:String(c.anonKey||'')}}
-async function cloudCount(query){
- const c=cloudConfig();
- if(!c.url||!c.anonKey)return null;
- const r=await fetch(c.url+'/rest/v1/arc_users?'+query,{method:'HEAD',headers:{apikey:c.anonKey,Authorization:'Bearer '+c.anonKey,Prefer:'count=exact',Range:'0-0'}});
- if(!r.ok)throw new Error('HTTP '+r.status);
- const range=r.headers?.get?.('content-range')||r.headers?.get?.('Content-Range')||'';
- const m=range.match(/\/([0-9]+|\*)$/);
- return m&&m[1]!=='*'?Number(m[1]):0;
-}
-async function myGlobalRank(score,lastSeen){
- try{
-  const higher=await cloudCount(`select=id&public_profile=eq.true&rank_score=gt.${encodeURIComponent(score)}`);
-  let earlier=0;
-  if(lastSeen) earlier=await cloudCount(`select=id&public_profile=eq.true&rank_score=eq.${encodeURIComponent(score)}&last_seen=lt.${encodeURIComponent(lastSeen)}`);
-  return (higher??0)+(earlier??0)+1;
- }catch(e){return null}
-}
-async function loadActive(){
- const c=cloudConfig();
- if(!c.url||!c.anonKey)return {state:'offline',rows:[],count:0};
- try{
-  const now=Date.now();
-  const sinceNow=new Date(now-15*60000).toISOString();
-  const sinceToday=new Date(now-24*60*60000).toISOString();
-  const base=`select=id,display_name,rank_score,last_seen&public_profile=eq.true&order=last_seen.desc&limit=20`;
-  const [rNow,rToday]=await Promise.all([
-   fetch(c.url+'/rest/v1/arc_users?'+base+`&last_seen=gte.${encodeURIComponent(sinceNow)}`,{headers:{apikey:c.anonKey,Authorization:'Bearer '+c.anonKey}}),
-   fetch(c.url+'/rest/v1/arc_users?'+base+`&last_seen=gte.${encodeURIComponent(sinceToday)}`,{headers:{apikey:c.anonKey,Authorization:'Bearer '+c.anonKey}})
-  ]);
-  if(!rNow.ok||!rToday.ok)throw new Error('HTTP '+(!rNow.ok?rNow.status:rToday.status));
-  const rows=await rNow.json();
-  const activeTodayCount=await cloudCount(`select=id&public_profile=eq.true&last_seen=gte.${encodeURIComponent(sinceToday)}`);
-  return {state:'ready',rows:Array.isArray(rows)?rows:[],count:Number(activeTodayCount)||0};
- }catch(e){return {state:'error',rows:[],count:0}}
-}
 async function loadRank(){
- rankState='loading';rankError='';rankActive={state:'loading',rows:[],count:0};render();
- const c=cloudConfig();
- if(!c.url||!c.anonKey){rankState='offline';rankError='Community backend is not configured. Connect Community Sync to see the public Top 20.';rankRows=[];rankActive={state:'offline',rows:[],count:0};render();return}
+ rankState='loading';rankError='';render();
+ if(!window.CLOUD_CFG?.url||!window.CLOUD_CFG?.anonKey){rankState='offline';rankError='Community backend is not configured. Showing your local score.';rankRows=[];render();return}
  try{
-  await syncCloud(false);
-  const url=c.url+'/rest/v1/arc_users?select=id,display_name,arc_day,arc_progress,total_wins,best_streak,rank_score,week_score,league,last_seen&public_profile=eq.true&order=rank_score.desc,last_seen.asc,id.asc&limit=20';
-  const r=await fetch(url,{headers:{apikey:c.anonKey,Authorization:'Bearer '+c.anonKey}});if(!r.ok)throw new Error('HTTP '+r.status);
-  rankRows=await r.json();rankState='ready';
-  rankActive=await loadActive();
-  const s=arcScore();
-  const last=data.cloudLastSync||new Date().toISOString();
-  remoteRank=await myGlobalRank(s,last);
-  render();
- }catch(e){rankState='error';rankError='Could not load the public leaderboard. Your personal tracker is safe.';rankRows=[];rankActive={state:'error',rows:[],count:0};remoteRank=null;render()}
+  const u=String(CLOUD_CFG.url).replace(/\/$/,'');
+  const url=u+'/rest/v1/arc_users?select=id,display_name,instagram_handle,arc_day,arc_progress,total_wins,best_streak,rank_score,week_score,league,last_seen&public_profile=eq.true&order=rank_score.desc,last_seen.asc&limit=20';
+  const r=await fetch(url,{headers:{apikey:CLOUD_CFG.anonKey,Authorization:'Bearer '+CLOUD_CFG.anonKey}});if(!r.ok)throw new Error('HTTP '+r.status);rankRows=await r.json();rankState='ready';render();
+ }catch(e){rankState='error';rankError='Could not load the public leaderboard. Your personal tracker is safe.';rankRows=[];render()}
 }
-function myRankFromRows(){const score=arcScore();const rank=remoteRank||localRank()||'—';return {rank,score,league:league(score)}}
-function rankView(){
- const me=myRankFromRows();
- const shown=rankRows.slice(0,20);
- const q=search.trim().toLowerCase();
- const filtered=shown.map((x,i)=>({x,i})).filter(o=>String(o.x.display_name||'').toLowerCase().includes(q));
- const activeRows=(rankActive?.rows||[]).slice(0,6);
- return `<div class="page">
- <section class="rank-hero"><div><span class="eyebrow">ARC LEAGUE</span><h1>${typeof me.rank==='number'?'#'+me.rank:'—'}</h1><p>${rankState==='ready'?'Your exact public rank':'Your current local score'}</p></div><div class="rank-score"><b>${me.score}</b><small>/100</small></div><div class="rank-bar"><i style="width:${me.score}%"></i></div><div class="rank-chips"><span>${me.league}</span><span>${weeklyScore()}% week</span><span>🔥 ${stats().best} best</span></div></section>
- <section class="active-strip"><div><span class="eyebrow">COMMUNITY</span><h2>${rankActive?.count||0} active today</h2><p>${rankActive?.state==='ready'?(activeRows.length?'Names from the community are shown below.':'No active public profiles yet.'):'Connect community to see active members.'}</p></div><span class="live-dot">●</span></section>
- ${activeRows.length?`<section class="section"><div class="section-head"><div><span class="eyebrow">ACTIVE NOW</span><h2>People on the Arc</h2></div></div><div class="active-list">${activeRows.map(x=>`<div class="active-row"><span class="active-avatar">${esc(String(x.display_name||'A').slice(0,1).toUpperCase())}</span><div><b>${esc(x.display_name||'Arc member')}</b><small>Active now · #${Number(x.rank_score)>=0?(rankRows.findIndex(r=>r.id===x.id)+1||'—'):'—'}</small></div></div>`).join('')}</div></section>`:''}
- <section class="section"><div class="section-head"><div><span class="eyebrow">GLOBAL</span><h2>Top 20</h2></div><button class="icon-btn" data-action="rank-refresh" aria-label="Refresh">↻</button></div><input class="search" id="rankSearch" value="${esc(search)}" placeholder="Search Top 20 by name"><div class="top20-list">${rankState==='loading'?`<div class="info-card">Loading public Top 20…</div>`:rankState==='ready'&&filtered.length?filtered.map(o=>rankRow(o.x,o.i)).join(''):rankState==='ready'?`<div class="info-card"><b>No matching name.</b><span>Search only filters the visible Top 20; original rank numbers stay unchanged.</span></div>`:`<div class="info-card"><b>No public Top 20 loaded.</b><span>${esc(rankError||'Turn on Community Sync and make your profile public to join.')}</span></div>`}</div>${rankState==='ready'&&rankRows.length<20?`<div class="info-card"><b>Showing ${rankRows.length}/20 public profiles.</b><span>The leaderboard always keeps the public list capped at 20.</span></div>`:''}${rankState==='ready'?`<div class="my-position"><b>Your public position: ${typeof me.rank==='number'?'#'+me.rank:'—'}</b><span>${typeof me.rank==='number'&&me.rank<=20?'You are inside the visible Top 20.':'The exact public position is calculated across all public profiles.'}</span></div>`:''}</section>
- <section class="challenge-card"><div><span class="eyebrow">WEEKLY CHALLENGE</span><h3>Show up 5 times.</h3><p>${Math.min(5,weeklyWins())}/5 wins this week</p></div><b>${Math.min(100,Math.round(Math.min(5,weeklyWins())/5*100))}%</b></section>
- <section class="info-card"><b>How rank works</b><span>75% weekly consistency + 15% best streak + 10% weekly wins. Public names are shown; private profile data stays off the leaderboard.</span></section>
- </div>`
-}
-function rankRow(x,i){const name=String(x.display_name||'Arc member');const score=Number(x.rank_score)||0;const isMe=data.cloudUserId&&x.id===data.cloudUserId;return `<div class="rank-row ${isMe?'me':''}"><span class="rank-num">#${i+1}</span><span class="avatar">${esc(name.slice(0,1).toUpperCase())}</span><span class="rank-person"><b>${esc(name)}</b><small>${Number(x.total_wins)||0} wins · 🔥 ${Number(x.best_streak)||0} streak</small></span><span class="rank-side"><b>${score}</b><small>${esc(x.league||league(score))}</small></span></div>`}
+function myRankFromRows(){const me=arcScore();const rank=1+rankRows.filter(x=>(Number(x.rank_score)||0)>me).length;return {rank,score:me,league:league(me)}}
+function rankView(){const me=myRankFromRows();const shown=rankRows.slice(0,20);return `<div class="page"><section class="rank-hero"><div><span class="eyebrow">ARC LEAGUE</span><h1>#${me.rank}</h1><p>Your current local score</p></div><div class="rank-score"><b>${me.score}</b><small>/100</small></div><div class="rank-bar"><i style="width:${me.score}%"></i></div><div class="rank-chips"><span>${me.league}</span><span>${weeklyScore()}% week</span><span>🔥 ${stats().best} best</span></div></section>
+ <section class="section"><div class="section-head"><div><span class="eyebrow">GLOBAL</span><h2>Top 20</h2></div><button class="icon-btn" data-action="rank-refresh" aria-label="Refresh">↻</button></div><input class="search" id="rankSearch" value="${esc(search)}" placeholder="Search Top 20 by name"><div class="top20-list">${rankState==='loading'?`<div class="info-card">Loading public Top 20…</div>`:rankState==='ready'&&shown.length?shown.map((x,i)=>({x,i})).filter(o=>(String(o.x.display_name||'').toLowerCase()+String(o.x.instagram_handle||'').toLowerCase()).includes(search.toLowerCase())).map(o=>rankRow(o.x,o.i)).join(''):`<div class="info-card"><b>No public Top 20 loaded.</b><span>${esc(rankError||'Turn on Community Sync and make your profile public to join.')}</span></div>`}</div>${rankState==='ready'&&rankRows.length<20?`<div class="info-card"><b>Showing ${rankRows.length}/20 public profiles.</b><span>More profiles appear as people opt in to the public Arc League.</span></div>`:''}${rankState==='ready'&&rankRows.length>=20?`<div class="my-position"><b>Your position: #${me.rank}</b><span>${me.rank<=20?'You are inside the visible Top 20.':'The public screen shows the Top 20 above; your score stays private unless you opt in.'}</span></div>`:''}</section>
+ <section class="challenge-card"><div><span class="eyebrow">WEEKLY CHALLENGE</span><h3>Show up 5 times.</h3><p>${Math.min(5,weeklyWins())}/5 wins this week</p></div><b>${Math.min(100,Math.round(Math.min(5,weeklyWins())/5*100))}%</b></section><section class="info-card"><b>How rank works</b><span>75% weekly consistency + 15% best streak + 10% weekly wins. Only public profile data can appear here.</span></section></div>`}
+function rankRow(x,i){const name=String(x.display_name||'Anonymous');const score=Number(x.rank_score)||0;const isMe=data.cloudUserId&&x.id===data.cloudUserId;return `<div class="rank-row ${isMe?'me':''}"><span class="rank-num">#${i+1}</span><span class="avatar">${esc(name.slice(0,1).toUpperCase())}</span><span class="rank-person"><b>${esc(name)}</b><small>${esc(x.instagram_handle||'Winter Arc member')} · ${Number(x.total_wins)||0} wins · 🔥 ${Number(x.best_streak)||0}</small></span><span class="rank-side"><b>${score}</b><small>${esc(x.league||league(score))}</small></span></div>`}
 
 function profileView(){const s=stats(),score=arcScore(),best=s.best;return `<div class="page"><section class="profile-hero"><div class="profile-avatar">${esc((data.name||'A').slice(0,1).toUpperCase())}</div><div><span class="eyebrow">MY ARC</span><h1>${esc(data.name||'Your Arc')}</h1><p>${esc(data.goal||'Personal growth')} · Day ${s.day}/${ARC_DAYS}</p></div><button class="icon-btn" data-more="settings" data-nav="more">⚙</button></section><section class="profile-stats"><div><b>${arcPct()}%</b><small>Arc progress</small></div><div><b>${score}</b><small>Arc score</small></div><div><b>🔥 ${best}</b><small>Best streak</small></div><div><b>${s.completed}</b><small>Total wins</small></div></section><section class="section"><div class="section-head"><div><span class="eyebrow">SHARE</span><h2>Show your progress.</h2></div></div><button class="share-card" data-action="share"><span>↗</span><div><b>Share my Arc</b><small>Generate a clean 4:5 progress card for WhatsApp or Instagram.</small></div></button><button class="secondary full" data-nav="rank">🏆 Open Top 20 Rank</button></section><section class="section"><div class="section-head"><div><span class="eyebrow">IDENTITY</span><h2>Profile</h2></div></div><div class="setting-row"><span><b>Name</b><small>${esc(data.name||'Not set')}</small></span><button class="secondary" data-action="edit-profile">Edit</button></div><div class="setting-row"><span><b>Main focus</b><small>${esc(data.goal||'Personal growth')}</small></span><button class="secondary" data-action="edit-goal">Edit</button></div></section></div>`}
 
@@ -265,7 +205,7 @@ function aboutView(){return `<div class="page">${backHeader('About','Simple by d
 function shell(){
  const labels=[['today','⌂','Today'],['week','▦','Week'],['rank','🏆','Rank'],['profile','◯','Profile'],['more','•••','More']];
  const body=tab==='today'?todayView():tab==='week'?weekView():tab==='rank'?rankView():tab==='profile'?profileView():moreView();
- return `<div class="app-shell"><header class="topbar"><button class="icon-btn" data-action="menu" aria-label="Menu">☰</button><div class="brand"><b>Winter Arc</b><small>2026 · ${esc(data.name||'Your Arc')}</small></div><button class="icon-btn" data-action="share" aria-label="Share">↗</button><button class="profile-mini" data-action="account" aria-label="Account">${esc((data.name||'A').slice(0,1).toUpperCase())}</button></header><main>${body}</main><nav class="bottom-nav">${labels.map(([id,icon,label])=>`<button class="${tab===id?'active':''}" data-nav="${id}"><b>${icon}</b><span>${label}</span></button>`).join('')}</nav>${menuOpen?menuSheet():''}${selectedHabit?habitModal():''}${sprint?sprintModal():''}</div>`;
+ return `<div class="app-shell"><header class="topbar"><button class="icon-btn" data-action="menu" aria-label="Menu">☰</button><div class="brand"><b>Winter Arc</b><small>2026 · ${esc(data.name||'Your Arc')}</small></div><button class="icon-btn" data-action="share" aria-label="Share">↗</button><button class="profile-mini" data-nav="profile">${esc((data.name||'A').slice(0,1).toUpperCase())}</button></header><main>${body}</main><nav class="bottom-nav">${labels.map(([id,icon,label])=>`<button class="${tab===id?'active':''}" data-nav="${id}"><b>${icon}</b><span>${label}</span></button>`).join('')}</nav>${menuOpen?menuSheet():''}${selectedHabit?habitModal():''}${sprint?sprintModal():''}</div>`;
 }
 function menuSheet(){return `<div class="overlay" data-action="menu-close"><aside class="sheet"><div class="sheet-head"><div><span class="eyebrow">WINTER ARC</span><h2>Quick navigation</h2></div><button class="icon-btn" data-action="menu-close">×</button></div><button class="menu-link" data-nav="today"><b>Today</b><small>Your next win.</small><strong>→</strong></button><button class="menu-link" data-nav="week"><b>Week</b><small>Your 7-day pattern.</small><strong>→</strong></button><button class="menu-link" data-nav="rank"><b>Top 20 Rank</b><small>Community leaderboard.</small><strong>→</strong></button><button class="menu-link" data-nav="profile"><b>Profile</b><small>Your identity and share card.</small><strong>→</strong></button><button class="menu-link" data-nav="more"><b>More</b><small>Tools and settings.</small><strong>→</strong></button></aside></div>`}
 function habitModal(){const h=data.habits.find(x=>x.id===selectedHabit);if(!h)return '';return `<div class="overlay" data-action="habit-close"><div class="modal"><div class="sheet-head"><div><span class="eyebrow">HABIT</span><h2>${esc(h.icon)} ${esc(h.name)}</h2></div><button class="icon-btn" data-action="habit-close">×</button></div><div class="profile-stats compact"><div><b>${habitStats(h).run}</b><small>Current</small></div><div><b>${habitStats(h).longest}</b><small>Best</small></div><div><b>${habitStats(h).total}</b><small>Wins</small></div></div><label class="label">Icon<input id="habitIcon" maxlength="4" value="${esc(h.icon)}"></label><label class="label">Smallest action<input id="habitAction" value="${esc(h.action||'')}"></label><label class="label">Best time<input id="habitTime" type="time" value="${esc(h.time||'')}"></label><label class="label">Difficulty<select id="habitDifficulty"><option ${h.difficulty==='Easy'?'selected':''}>Easy</option><option ${h.difficulty==='Medium'?'selected':''}>Medium</option><option ${h.difficulty==='Hard'?'selected':''}>Hard</option></select></label><label class="check-line"><input id="habitPrivate" type="checkbox" ${h.private?'checked':''}><span>Keep habit name private</span></label><button class="primary full" data-action="habit-save">Save changes</button><button class="danger-btn full" data-action="habit-delete" data-id="${h.id}">Delete habit</button></div></div>`}
@@ -274,23 +214,10 @@ function sprintModal(){const sec=Math.max(0,Math.ceil((sprint.ends-Date.now())/1
 async function shareArc(){
  const s=stats(),score=arcScore();
  try{
-  const c=document.createElement('canvas');c.width=1080;c.height=1350;const ctx=c.getContext('2d');ctx.fillStyle='#173f3a';ctx.fillRect(0,0,1080,1350);ctx.fillStyle='#bfe8ca';ctx.font='700 30px Arial';ctx.fillText('WINTER ARC 2026',80,110);ctx.fillStyle='#fff';ctx.font='900 86px Arial';ctx.fillText(`DAY ${s.day} / ${ARC_DAYS}`,80,240);ctx.font='800 58px Arial';ctx.fillText(`${arcPct()}% ARC PROGRESS`,80,330);ctx.font='600 32px Arial';ctx.fillStyle='#d8ece1';ctx.fillText(`${s.completed} total wins · 🔥 ${s.best} best streak`,80,390);ctx.fillStyle='#7bd29b';ctx.fillRect(80,440,920,28);ctx.fillStyle='#fff';ctx.fillRect(80,440,920*arcPct()/100,28);ctx.fillStyle='#fff';ctx.font='900 54px Arial';ctx.fillText(`${score}/100 ARC SCORE`,80,590);ctx.font='800 28px Arial';ctx.fillText(data.name||'My Arc',80,730);ctx.font='500 24px Arial';ctx.fillStyle='#cbe4d8';ctx.fillText('Small wins become your story.',80,780);ctx.fillText(WEBSITE.replace(/^https?:\/\//,''),80,1230);const blob=await new Promise(r=>c.toBlob(r,'image/png',.95));const file=new File([blob],'winter-arc-v22.png',{type:'image/png'});const text=`My Winter Arc progress: Day ${s.day}/${ARC_DAYS} · ${arcPct()}% · ${s.completed} wins 🔥`;if(navigator.share){if(navigator.canShare?.({files:[file]})){await navigator.share({title:'My Winter Arc',text,files:[file]});return}await navigator.share({title:'My Winter Arc',text,url:WEBSITE});return}const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='winter-arc-v22.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);showToast('Share card saved ↗');
+  const c=document.createElement('canvas');c.width=1080;c.height=1350;const ctx=c.getContext('2d');ctx.fillStyle='#173f3a';ctx.fillRect(0,0,1080,1350);ctx.fillStyle='#bfe8ca';ctx.font='700 30px Arial';ctx.fillText('WINTER ARC 2026',80,110);ctx.fillStyle='#fff';ctx.font='900 86px Arial';ctx.fillText(`DAY ${s.day} / ${ARC_DAYS}`,80,240);ctx.font='800 58px Arial';ctx.fillText(`${arcPct()}% ARC PROGRESS`,80,330);ctx.font='600 32px Arial';ctx.fillStyle='#d8ece1';ctx.fillText(`${s.completed} total wins · 🔥 ${s.best} best streak`,80,390);ctx.fillStyle='#7bd29b';ctx.fillRect(80,440,920,28);ctx.fillStyle='#fff';ctx.fillRect(80,440,920*arcPct()/100,28);ctx.fillStyle='#fff';ctx.font='900 54px Arial';ctx.fillText(`${score}/100 ARC SCORE`,80,590);ctx.font='800 28px Arial';ctx.fillText(data.name||'My Arc',80,730);ctx.font='500 24px Arial';ctx.fillStyle='#cbe4d8';ctx.fillText('Small wins become your story.',80,780);ctx.fillText(WEBSITE.replace(/^https?:\/\//,''),80,1230);const blob=await new Promise(r=>c.toBlob(r,'image/png',.95));const file=new File([blob],'winter-arc-v21.png',{type:'image/png'});const text=`My Winter Arc progress: Day ${s.day}/${ARC_DAYS} · ${arcPct()}% · ${s.completed} wins 🔥`;if(navigator.share){if(navigator.canShare?.({files:[file]})){await navigator.share({title:'My Winter Arc',text,files:[file]});return}await navigator.share({title:'My Winter Arc',text,url:WEBSITE});return}const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='winter-arc-v21.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);showToast('Share card saved ↗');
  }catch(e){try{await navigator.clipboard?.writeText(`My Winter Arc progress: Day ${s.day}/${ARC_DAYS} · ${arcPct()}% · ${s.completed} wins 🔥\n${WEBSITE}`);showToast('Progress link copied ↗')}catch(_){showToast('Sharing is not available here')}}
 }
-async function syncCloud(doRender=true){
- if(!data.cloudOptIn)return false;
- const c=cloudConfig();
- if(!c.url||!c.anonKey)return false;
- try{
-  const id=data.cloudUserId||crypto.randomUUID();data.cloudUserId=id;
-  const s=stats(),now=new Date().toISOString(),score=arcScore();
-  const body={id,display_name:data.name||'Anonymous',instagram_handle:data.profileInstagram||'',arc_day:s.day,total_arc_days:ARC_DAYS,arc_progress:arcPct(),today_completed:s.todayDone,total_habits:data.habits.length,total_wins:s.completed,best_streak:s.best,public_profile:!!data.publicProfile,week_score:weeklyScore(),rank_score:score,league:league(score),week_key:today(),last_seen:now};
-  const r=await fetch(c.url+'/rest/v1/arc_users',{method:'POST',headers:{apikey:c.anonKey,Authorization:'Bearer '+c.anonKey,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},body:JSON.stringify(body)});
-  if(!r.ok)throw new Error(String(r.status));
-  data.cloudLastSync=now;data.cloudStatus='Synced ✓';save();
-  return true
- }catch(e){data.cloudStatus='Sync failed';save();return false}
-}
+async function syncCloud(){if(!data.cloudOptIn||!window.CLOUD_CFG?.url||!window.CLOUD_CFG?.anonKey)return false;try{const u=String(CLOUD_CFG.url).replace(/\/$/,'');const id=data.cloudUserId||crypto.randomUUID();data.cloudUserId=id;const s=stats();const body={id,display_name:data.name||'Anonymous',instagram_handle:data.profileInstagram||'',arc_day:s.day,total_arc_days:ARC_DAYS,arc_progress:arcPct(),today_completed:s.todayDone,total_habits:data.habits.length,total_wins:s.completed,best_streak:s.best,public_profile:!!data.publicProfile,week_score:weeklyScore(),rank_score:arcScore(),league:league(arcScore()),week_key:today(),last_seen:new Date().toISOString()};const r=await fetch(u+'/rest/v1/arc_users',{method:'POST',headers:{apikey:CLOUD_CFG.anonKey,Authorization:'Bearer '+CLOUD_CFG.anonKey,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},body:JSON.stringify(body)});if(!r.ok)throw new Error(String(r.status));data.cloudLastSync=new Date().toISOString();data.cloudStatus='Synced ✓';save();return true}catch(e){data.cloudStatus='Sync failed';save();return false}}
 function communitySettings(){return `<div class="page">${backHeader('Community sync','Off by default. Only opt-in data is shared.')}<label class="check-line"><input id="cloudOpt" type="checkbox" ${data.cloudOptIn?'checked':''}><span><b>Join the community</b><small>Your name, Arc progress, wins, best streak and last seen can sync.</small></span></label><label class="check-line"><input id="publicOpt" type="checkbox" ${data.publicProfile?'checked':''}><span><b>Allow public profile</b><small>Lets your shared stats appear in Top 20.</small></span></label><button class="primary full" data-action="community-save">Save choice</button><div class="info-card"><b>Private data stays local</b><span>Habit names marked private, journal, sleep, mood, PIN and notes are not part of the public leaderboard payload.</span></div></div>`}
 function pinModal(){return `<div class="overlay" data-action="generic-close"><div class="modal"><div class="sheet-head"><div><span class="eyebrow">LOCAL PIN</span><h2>${data.pinHash?'Change PIN':'Set a PIN'}</h2></div><button class="icon-btn" data-action="generic-close">×</button></div><label class="label">Your name<input id="pinName" value="${esc(data.name)}"></label><label class="label">New PIN<input id="pinA" type="password" inputmode="numeric" maxlength="6" placeholder="4–6 digits"></label><label class="label">Confirm PIN<input id="pinB" type="password" inputmode="numeric" maxlength="6"></label><button class="primary full" data-action="pin-save">Save PIN</button>${data.pinHash?'<button class="danger-btn full" data-action="pin-remove">Remove PIN</button>':''}</div></div>`}
 
@@ -303,7 +230,6 @@ document.addEventListener('click',async e=>{
  const nav=b.dataset.nav,more=b.dataset.more,action=b.dataset.action;
  if(more){e.preventDefault();tab='more';morePanel=more;menuOpen=false;selectedHabit=null;render();if(more==='rank')loadRank();return}
  if(nav){e.preventDefault();tab=nav;morePanel='';menuOpen=false;selectedHabit=null;render();if(tab==='rank'&&rankState==='idle')loadRank();return}
- if(action==='login'){const pin=$('#loginPin')?.value.trim()||'';if(!/^\d{4,6}$/.test(pin))return showToast('Enter your 4–6 digit PIN');const h=await hashPin(pin);if(h!==data.pinHash)return showToast('Wrong PIN');sessionUnlocked=true;data.lastLogin=today();save();render();showToast('Welcome back 👋');if(data.cloudOptIn)syncCloud(false);return}
  if(action==='on-next'){if(onboardingStep===1){const n=$('#onName')?.value.trim();if(!n)return showToast('Enter your name first');data.name=n;data.goal=onboardingGoal;save()}onboardingStep=Math.min(3,onboardingStep+1);render();return}
  if(action==='on-back'){onboardingStep=Math.max(0,onboardingStep-1);render();return}
  if(action==='on-tour'){showToast('Today → Week → Rank → More. Start simple.');return}
@@ -311,7 +237,6 @@ document.addEventListener('click',async e=>{
  if(action==='finish-onboarding'){if(onboardingSelected.length!==3)return showToast('Pick exactly 3 habits');data.name=data.name.trim();data.goal=onboardingGoal;data.habits=[];onboardingSelected.forEach(n=>addHabit(n));data.profileCreated=true;data.onboardingDone=true;data.journeyStart=today();data.lastLogin=today();save();tab='today';render();showToast('Your Arc is live 🚀');return}
  if(action==='toggle'){const h=data.habits.find(x=>x.id===b.dataset.id);if(h)toggleHabit(h,today());return}
  if(action==='toggle-date'){const h=data.habits.find(x=>x.id===b.dataset.id);if(h)toggleHabit(h,b.dataset.date);return}
- if(action==='account'){tab='profile';morePanel='';menuOpen=false;selectedHabit=null;render();return}
  if(action==='menu'){menuOpen=true;render();return}
  if(action==='menu-close'){menuOpen=false;render();return}
  if(action==='habit-close'){selectedHabit=null;render();return}
@@ -336,7 +261,7 @@ document.addEventListener('click',async e=>{
  if(action==='pin-save'){const a=$('#pinA')?.value.trim(),bb=$('#pinB')?.value.trim(),n=$('#pinName')?.value.trim();if(!/^\d{4,6}$/.test(a)||a!==bb)return showToast('PIN must be 4–6 digits and match');if(n)data.name=n;data.pinHash=await hashPin(a);sessionUnlocked=true;save();render();showToast('PIN saved 🔒');return}
  if(action==='pin-remove'){data.pinHash='';sessionUnlocked=true;save();render();showToast('PIN removed');return}
  if(action==='generic-close'){b.closest('.overlay')?.remove();return}
- if(action==='backup'){const blob=new Blob([JSON.stringify(Object.assign({},data,{schema:22,backupVersion:'V22.0',backupCreated:new Date().toISOString()}),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`winter-arc-v22-backup-${today()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);showToast('Latest backup exported 💾');return}
+ if(action==='backup'){const blob=new Blob([JSON.stringify(Object.assign({},data,{schema:21,backupVersion:'V21.0',backupCreated:new Date().toISOString()}),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`winter-arc-v21-backup-${today()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);showToast('Latest backup exported 💾');return}
  if(action==='reset-profile'){if(!confirm('Reset this local profile and delete local tracker data?'))return;[KEY,...OLD_KEYS].forEach(k=>localStorage.removeItem(k));location.href=location.pathname;return}
  if(action==='install'){if(vStandalone())return showToast('Already installed 📱');if(installPrompt){await installPrompt.prompt();installPrompt=null;return}showToast('Browser menu → Install app / Add to Home screen');return}
  if(action==='share'){await shareArc();return}
@@ -358,11 +283,9 @@ setInterval(reminderTick,30000);
 
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});
 window.addEventListener('appinstalled',()=>{installPrompt=null;showToast('App installed 📱')});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&profileReady()&&data.cloudOptIn)syncCloud(false)});
 try{if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').then(r=>r.update()).catch(()=>{})}catch(e){}
 
 // Initial setup for brand-new users: preload the suggested 3 habits only after the wizard is completed.
-if(profileReady()&&data.cloudOptIn)setTimeout(()=>syncCloud(false),250);
 if(profileReady()&&tab==='rank'&&rankState==='idle')setTimeout(loadRank,0);
 render();
 })();

@@ -1,4 +1,4 @@
--- Winter Arc Tracker V14.1 — Supabase backend
+-- Winter Arc Tracker V22 — Supabase backend
 -- 1) Create a Supabase project.
 -- 2) Replace YOUR_CREATOR_EMAIL below with the email you use for the creator dashboard.
 -- 3) Run this SQL in Supabase SQL Editor.
@@ -131,3 +131,14 @@ create policy arc_challenge_members_update on public.arc_challenge_members for u
 
 grant select, insert on public.arc_challenges to anon, authenticated;
 grant select, insert, update on public.arc_challenge_members to anon, authenticated;
+
+
+-- V22 leaderboard performance helpers.
+create index if not exists arc_users_rank_public_idx on public.arc_users (public_profile, rank_score desc, last_seen asc, id asc);
+create index if not exists arc_users_last_seen_public_idx on public.arc_users (public_profile, last_seen desc);
+
+-- V22 rank/active read contract:
+-- Top 20: public_profile=true ordered by rank_score desc, last_seen asc, id asc, limit 20.
+-- Exact rank: count public rows with higher rank_score, plus same-score rows with an earlier last_seen.
+-- Active now: public rows with last_seen within the last 15 minutes.
+-- Active today: public rows with last_seen within the last 24 hours.

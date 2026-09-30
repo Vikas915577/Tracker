@@ -1,0 +1,73 @@
+Winter Arc Tracker V22 — Tester Report
+Date: 1 Oct 2026
+
+SCOPE
+V22 was checked against the V21 source/package with focus on the reported account/login failure, Rank/Top-20 behavior, active community names, cache/versioning, and regression safety.
+
+P0 FIXES
+PASS — PIN login now has a real `data-action="login"` handler and validates the 4–6 digit PIN hash before unlocking.
+PASS — top-right account/avatar button now uses an explicit `data-action="account"` handler and opens Profile.
+PASS — Supabase config mismatch fixed with a single V22 `CLOUD` resolver and compatibility alias in `cloud-config.js`.
+PASS — Rank no longer uses the 20 returned rows to pretend that they are the complete global population.
+PASS — exact public rank uses separate count queries for higher scores and same-score earlier activity.
+
+RANK / COMMUNITY
+PASS — public leaderboard request is capped at exactly 20 rows.
+PASS — all visible leaderboard rows show the user's display name prominently.
+PASS — Instagram handle is no longer used as the primary visible identity on Rank rows.
+PASS — search filters the existing Top-20 rows without renumbering them.
+PASS — visible Rank numbers stay #1 through #20.
+PASS — current user rank is separated from the visible Top-20 list.
+PASS — Active Now list uses public profiles with `last_seen` within 15 minutes.
+PASS — Active Today count uses an exact count request for public profiles seen within 24 hours.
+PASS — Active Now names are displayed as display names.
+PASS — Rank refresh syncs the opt-in user's latest score/last_seen before loading the leaderboard.
+PASS — app visibility and habit completion can refresh the opt-in user's `last_seen`/score.
+
+NAVIGATION / UX
+PASS — Today → Week → Rank → Profile → More navigation remains intact.
+PASS — profile avatar/account action opens Profile.
+PASS — menu, habit, More, Rank refresh and other declared data-action controls have matching handlers.
+PASS — only two delegated click listeners remain in active app.js.
+PASS — one active `render()` function remains.
+
+DATA / MIGRATION
+PASS — localStorage compatibility key `progress_tracker_v17` remains in use.
+PASS — legacy version keys are still read for migration.
+PASS — existing local data normalization remains compatible with V22.
+PASS — backup export is V22 format.
+PASS — package contains only the immediately previous app-code backup: `app-v21-backup.js`.
+
+PWA / BUILD
+PASS — `node --check app.js`.
+PASS — `node --check sw.js`.
+PASS — manifest parses as valid JSON.
+PASS — index points to V22 assets.
+PASS — service-worker cache is `winter-arc-v22.0`.
+PASS — CSS remains in styles.css; no V17/V18/V19 renderer stack was reintroduced.
+
+STATIC CONTRACT CHECK
+PASS — 46 data-action values found, all 46 have a corresponding handler.
+PASS — Rank helper contains a higher-score count query.
+PASS — Rank helper contains same-score tie handling via `last_seen`.
+PASS — leaderboard query orders by score, last_seen and id and limits to 20.
+PASS — backend schema includes V22 leaderboard indexes.
+
+AUTOMATED VM SMOKE TEST
+PASS — new-user Welcome renders.
+PASS — existing-profile Home renders.
+PASS — account button action switches to Profile.
+PASS — PIN unlock action switches from lock screen to the app.
+PASS — completed-day state renders.
+PASS — mocked Supabase Top 20 renders exactly 20 rows.
+PASS — 20th user's name is present.
+PASS — Active Now section renders.
+PASS — exact public-rank UI copy renders.
+PASS — required V22 rank/login/cloud helpers are present.
+RESULT: V22 SMOKE TEST PASS
+
+BROWSER TEST LIMITATION
+A Chromium headless dump-dom run was attempted against a local HTTP server with a mocked Supabase endpoint. Chromium remained alive beyond the 15-second command timeout (the app registers a repeating reminder timer/service worker), so no physical-device visual sign-off is claimed. The VM smoke suite above is the automated functional sign-off used for this build.
+
+KNOWN BACKEND PRODUCTION NOTE
+The prototype still uses a browser-visible Supabase anon key and client-generated profile IDs for opt-in community sync. For a public production launch, use authenticated sessions/Edge Functions plus server-side validation and rate limiting.

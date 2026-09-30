@@ -1,22 +1,22 @@
-# Winter Arc Tracker V21 — Supabase setup
+# Winter Arc V22 backend
 
-V21 keeps the same lightweight Supabase shape used by the previous build and adds the rank fields needed by the Top 20 leaderboard.
+Run `backend-schema.sql` in Supabase SQL Editor.
 
-## 1. Create the tables
-Open `backend-schema.sql` in Supabase SQL Editor and run it.
+Then set this in `cloud-config.js` using your project's public anon key:
 
-## 2. Configure the web app
-Open `cloud-config.js` and set:
-- `url`: your Supabase project URL
-- `anonKey`: your Supabase anon key
+```js
+window.WINTER_ARC_CLOUD = {
+  url: 'https://YOUR-PROJECT.supabase.co',
+  anonKey: 'YOUR_PUBLIC_ANON_KEY'
+};
+```
 
-Do not put a service-role key in the website.
+V22 also exposes the same object as `window.CLOUD_CFG` for compatibility, so the V21 naming mismatch is fixed.
 
-## 3. Top 20 requirements
-The leaderboard reads public rows from `arc_users` ordered by `rank_score` descending and requests a maximum of 20 rows. A user's public profile must be opted in for it to appear.
+Rank behavior:
+- Top 20 query: public profiles only, ordered by rank score, last_seen and id, max 20 rows.
+- Exact rank: separate count queries, so a user can correctly be #47 even though only 20 leaderboard rows are displayed.
+- Active Now: public users seen in the last 15 minutes.
+- Active Today: exact public-user count seen in the last 24 hours.
 
-## 4. Local-first privacy
-Community sync is optional. Private habit names, journal, sleep, mood and local PIN are not included in the public leaderboard request.
-
-## 5. Creator dashboard
-`creator-dashboard.html` uses the same Supabase project. Keep the creator email placeholder in the SQL/RPC configured before using that dashboard in a real deployment.
+Only public display information is intended for the leaderboard. Private habit names, journal, sleep, mood, PIN and local notes stay on the device.
