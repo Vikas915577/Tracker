@@ -1,13 +1,13 @@
 (function(){
 'use strict';
 
-const VERSION='V13.3';
+const VERSION='V14';
 const WINTER_ARC_START='2026-10-01';
 const WINTER_ARC_END='2026-12-31';
 const WINTER_ARC_LENGTH=92;
 const COMMUNITY_NS='winter-arc-2026';
-const KEY='progress_tracker_v13';
-const OLD_KEYS=['progress_tracker_v12','progress_tracker_v11','progress_tracker_v10','progress_tracker_v9','progress_tracker_v8','progress_tracker_v6','progress_tracker_v5','progress_tracker_v4','progress_tracker_v3_plain'];
+const KEY='progress_tracker_v14';
+const OLD_KEYS=['progress_tracker_v13','progress_tracker_v12','progress_tracker_v11','progress_tracker_v10','progress_tracker_v9','progress_tracker_v8','progress_tracker_v6','progress_tracker_v5','progress_tracker_v4','progress_tracker_v3_plain'];
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);
@@ -76,7 +76,7 @@ const DAY_MESSAGES={
 };
 
 function defaults(){return {
- schema:14,arcStart:WINTER_ARC_START,arcLength:WINTER_ARC_LENGTH,name:'',month:currentMonth(),habits:[],checks:{},freezes:{},freezeUsed:{},xpEvents:{},bonusEvents:{},sleep:{},notes:{},habitNotes:{},
+ schema:15,arcStart:WINTER_ARC_START,arcLength:WINTER_ARC_LENGTH,name:'',month:currentMonth(),habits:[],checks:{},freezes:{},freezeUsed:{},xpEvents:{},bonusEvents:{},sleep:{},notes:{},habitNotes:{},
  goal:'',target:7,achieved:0,win:'',barrier:'',ifThen:'',dark:false,xp:0,onboardingDone:false,journeyStart:'',mood:{},energy:{},planner:{},
  routines:[],activeRoutine:null,goalLinks:[],reminders:{},pinHash:'',profileCreated:false,lastLogin:'',coachEnabled:true,installHint:true,creatorName:'',creatorHandle:'',creatorBio:'',creatorLink:'',creatorPhoto:'creator-profile.jpg',communityCount:0,communityCheckinDate:'',invitedBy:''
 }};
@@ -94,8 +94,8 @@ let toastTimer=null;
 let installPrompt=null;
 let sessionUnlocked=!data.pinHash;
 
-/* V13.1 migration-safe defaults */
-data.schema=14;
+/* V14 migration-safe defaults */
+data.schema=15;
 /* Winter Arc 2026 starts tomorrow: 1 Oct → 31 Dec (92 days). */
 if(!data.arcStart || !/^\d{4}-\d{2}-\d{2}$/.test(data.arcStart)){data.arcStart=WINTER_ARC_START;}
 if(data.arcStart===WINTER_ARC_START){data.arcLength=WINTER_ARC_LENGTH;}
@@ -103,7 +103,7 @@ else{data.arcLength=Math.max(14,Math.min(3650,Number(data.arcLength)||WINTER_ARC
 if(!data.journeyStart)data.journeyStart=today();
 if(!data.creatorName)data.creatorName='Vashu Sharmaa';
 if(!data.creatorHandle)data.creatorHandle='@pandatvikas1';
-if(!data.creatorBio)data.creatorBio='Actor · Creator of Winter Arc Tracker';
+if(!data.creatorBio || data.creatorBio==='Actor · Creator of Winter Arc Tracker')data.creatorBio='Hi, I’m Vashu Sharmaa — Actor & creator. I built Winter Arc Tracker to make daily progress simple, visible, and easy to share.';
 if(!data.creatorLink)data.creatorLink='https://instagram.com/pandatvikas1';
 if(!data.creatorPhoto)data.creatorPhoto='creator-profile.jpg';
 if(typeof data.communityCount!=='number')data.communityCount=0;
@@ -134,12 +134,12 @@ function normalize(x){
  d.achieved=Math.max(0,Math.min(d.target,Number(d.achieved)||0));
  d.arcStart=/^\d{4}-\d{2}-\d{2}$/.test(d.arcStart)?d.arcStart:WINTER_ARC_START;
  d.arcLength=Math.max(14,Math.min(3650,Number(d.arcLength)||WINTER_ARC_LENGTH));
- d.creatorName=String(d.creatorName||'Vashu Sharmaa');d.creatorHandle=String(d.creatorHandle||'@pandatvikas1');d.creatorBio=String(d.creatorBio||'Actor · Creator of Winter Arc Tracker');d.creatorLink=String(d.creatorLink||'https://instagram.com/pandatvikas1');d.creatorPhoto=String(d.creatorPhoto||'creator-profile.jpg');
+ d.creatorName=String(d.creatorName||'Vashu Sharmaa');d.creatorHandle=String(d.creatorHandle||'@pandatvikas1');d.creatorBio=String((d.creatorBio&&d.creatorBio!=='Actor · Creator of Winter Arc Tracker')?d.creatorBio:'Hi, I’m Vashu Sharmaa — Actor & creator. I built Winter Arc Tracker to make daily progress simple, visible, and easy to share.');d.creatorLink=String(d.creatorLink||'https://instagram.com/pandatvikas1');d.creatorPhoto=String(d.creatorPhoto||'creator-profile.jpg');
  d.communityCount=Math.max(0,Number(d.communityCount)||0);d.communityCheckinDate=String(d.communityCheckinDate||'');d.invitedBy=String(d.invitedBy||'').slice(0,80);
  d.month=/^\d{4}-\d{2}$/.test(d.month)?d.month:currentMonth();
  d.pinHash=String(d.pinHash||'');
  d.lastLogin=String(d.lastLogin||'');
- d.schema=14;
+ d.schema=15;
  return d;
 }
 
@@ -414,7 +414,7 @@ function panelHtml(){return {goals:goalsHtml,routine:routineHtml,planner:planner
 
 function quickModal(){return `<div class="overlay" data-close-overlay><div class="modal"><div class="section"><h2>⚡ Quick add</h2><button class="btn small" data-close-quick>Close</button></div><div class="drawer-grid"><button class="more-tile" data-quick="habit"><span>✅</span><b>Habit</b><small>Add something to repeat.</small></button><button class="more-tile" data-quick="goals"><span>🎯</span><b>Goal</b><small>Set a target.</small></button><button class="more-tile" data-quick="routine"><span>🔁</span><b>Routine</b><small>Group habits.</small></button><button class="more-tile" data-quick="journal"><span>✍️</span><b>Journal</b><small>Write one line.</small></button></div></div></div>`}
 
-function onboarding(){return `<div class="overlay"><div class="modal"><div class="kicker">V13.3 SETUP</div><h2>👋 Build your system.</h2><p class="muted smalltext">Start with a realistic group of habits. You can change everything later.</p><label class="smalltext muted">Your name</label><input id="onName" value="${escapeHtml(data.name)}" placeholder="Enter your name"><div class="section" style="margin-top:13px"><h2>Choose habits</h2><span class="badge" id="onCount">0 selected</span></div><div class="preset-grid" id="onPresets">${PRESETS.filter(p=>!p.private).map((p,i)=>`<button class="preset ${i<4?'selected':''}" data-onpreset="${escapeHtml(p.name)}"><div class="line"><input type="checkbox" ${i<4?'checked':''}><span style="font-size:22px">${p.icon}</span><div><b>${escapeHtml(p.name)}</b><div class="muted">${escapeHtml(p.cat)}</div></div></div></button>`).join('')}</div><div class="private-section"><div class="section"><h2>🔒 Private habit</h2><span class="muted smalltext">Optional</span></div><button class="preset" style="width:100%" data-onpreset="Masturbation"><div class="line"><input type="checkbox"><span style="font-size:22px">🔒</span><div><b>Masturbation</b><div class="muted">Discreet label</div></div></div></button></div><label class="smalltext muted" style="display:block;margin-top:12px">Add a custom habit</label><div class="search-row" style="margin-top:6px"><input id="onCustom" placeholder="e.g. Stretch"><button class="btn" data-on-custom>Add</button></div><div id="customSetupList" style="display:grid;gap:6px;margin-top:7px"></div><div class="note" style="margin-top:10px">💡 You do not need a perfect routine. Pick habits you can realistically repeat.</div>${data.invitedBy?`<div class="v133-invite-note">🤝 Invited by <b>@${escapeHtml(data.invitedBy)}</b></div>`:''}<button class="btn primary block" data-finish-onboarding style="margin-top:12px;padding:12px">Save My System 🚀</button></div></div>`}
+function onboarding(){return `<div class="overlay"><div class="modal"><div class="kicker">V14 SETUP</div><h2>👋 Build your system.</h2><p class="muted smalltext">Start with a realistic group of habits. You can change everything later.</p><label class="smalltext muted">Your name</label><input id="onName" value="${escapeHtml(data.name)}" placeholder="Enter your name"><div class="section" style="margin-top:13px"><h2>Choose habits</h2><span class="badge" id="onCount">0 selected</span></div><div class="preset-grid" id="onPresets">${PRESETS.filter(p=>!p.private).map((p,i)=>`<button class="preset ${i<4?'selected':''}" data-onpreset="${escapeHtml(p.name)}"><div class="line"><input type="checkbox" ${i<4?'checked':''}><span style="font-size:22px">${p.icon}</span><div><b>${escapeHtml(p.name)}</b><div class="muted">${escapeHtml(p.cat)}</div></div></div></button>`).join('')}</div><div class="private-section"><div class="section"><h2>🔒 Private habit</h2><span class="muted smalltext">Optional</span></div><button class="preset" style="width:100%" data-onpreset="Masturbation"><div class="line"><input type="checkbox"><span style="font-size:22px">🔒</span><div><b>Masturbation</b><div class="muted">Discreet label</div></div></div></button></div><label class="smalltext muted" style="display:block;margin-top:12px">Add a custom habit</label><div class="search-row" style="margin-top:6px"><input id="onCustom" placeholder="e.g. Stretch"><button class="btn" data-on-custom>Add</button></div><div id="customSetupList" style="display:grid;gap:6px;margin-top:7px"></div><div class="note" style="margin-top:10px">💡 You do not need a perfect routine. Pick habits you can realistically repeat.</div>${data.invitedBy?`<div class="v133-invite-note">🤝 Invited by <b>@${escapeHtml(data.invitedBy)}</b></div>`:''}<button class="btn primary block" data-finish-onboarding style="margin-top:12px;padding:12px">Save My System 🚀</button></div></div>`}
 
 function habitOverlay(){const h=data.habits.find(x=>x.id===selectedHabit);if(!h)return '';const hs=habitStats(h),ds=makeDays(data.month);return `<div class="overlay"><div class="modal"><div class="section"><div><div class="kicker">HABIT DETAILS</div><h2 style="margin:3px 0 0">${escapeHtml(h.icon)} ${escapeHtml(h.name)}</h2></div><button class="btn small" data-close-habit>Close</button></div><div class="grid three"><div class="stat"><small>Current</small><b>${hs.run} 🔥</b></div><div class="stat"><small>Longest</small><b>${hs.longest}</b></div><div class="stat"><small>Total</small><b>${hs.total}</b></div></div><div class="form" style="margin-top:10px"><div class="field"><label>Icon</label><input id="habitIcon" value="${escapeHtml(h.icon)}" maxlength="3"></div><div class="field"><label>Difficulty</label><select id="habitDifficulty"><option ${h.difficulty==='Easy'?'selected':''}>Easy</option><option ${h.difficulty==='Medium'?'selected':''}>Medium</option><option ${h.difficulty==='Hard'?'selected':''}>Hard</option></select></div><div class="field"><label>Private label</label><select id="habitPrivate"><option value="0" ${!h.private?'selected':''}>No</option><option value="1" ${h.private?'selected':''}>Yes</option></select></div></div><div class="form" style="margin-top:10px"><div class="field"><label>Best time</label><input id="habitTime" type="time" value="${escapeHtml(h.time||'')}"></div><div class="field"><label>Smallest action</label><input id="habitAction" value="${escapeHtml(h.action||'')}"></div><div class="field"><label>Why</label><input id="habitWhy" value="${escapeHtml(h.why||'')}"></div></div><label class="smalltext muted" style="display:block;margin-top:10px">Habit note</label><textarea id="habitNote">${escapeHtml(data.habitNotes[h.id]||'')}</textarea><button class="btn primary block" data-save-habit style="margin-top:10px">Save settings ✅</button><div class="section" style="margin-top:15px"><h2>📅 Monthly history</h2><span class="muted smalltext">${escapeHtml(data.month)}</span></div><div class="matrix-wrap"><table class="matrix"><thead><tr><th>Habit</th>${ds.map(d=>`<th>${Number(d.slice(-2))}</th>`).join('')}</tr></thead><tbody><tr><td class="habit-cell">${escapeHtml(h.name)}</td>${ds.map(d=>{const future=d>today(),fr=frozen(h,d);return `<td><button class="daycheck ${done(h,d)?'done':''} ${fr?'freeze':''} ${future?'future-day':''} ${d===today()?'today':''}" data-toggle="${h.id}|${d}" ${future?'disabled':''}>${done(h,d)?'✓':fr?'🛡':future?'·':''}</button></td>`}).join('')}</tr></tbody></table></div><div class="quick-actions"><button class="btn" data-rename-habit>Rename</button><button class="btn" data-delete-habit>Delete</button></div><div class="note" style="margin-top:9px">🛡 Monthly freeze: ${freezeAvailable()?'available':'used this month'}. Future dates stay locked.</div></div></div>`}
 
@@ -423,8 +423,8 @@ function profileLogin(){return `<div class="login-shell"><div class="login-card"
 function resetProfile(){if(!confirm('Reset the local profile and erase all progress?'))return;if(!confirm('Final confirmation: permanently erase this device profile?'))return;try{localStorage.removeItem(KEY)}catch(e){}data=defaults();sessionUnlocked=true;tab='home';morePanel='';selectedHabit=null;focusMode=false;quickOpen=false;save();render();showToast('Profile reset')}
 function lockNow(){if(!data.pinHash){tab='more';morePanel='security';render();showToast('Create a PIN first');return}sessionUnlocked=false;render()}
 
-function downloadBackup(){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='progress-tracker-v13-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
-function csvBackup(){const rows=[['Date','Habit','Status','Current streak']];allDates().forEach(d=>data.habits.forEach(h=>rows.push([d,h.name,done(h,d)?'Done':frozen(h,d)?'Freeze':'Open',habitStats(h).run])));const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='progress-tracker-v13-report.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function downloadBackup(){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='progress-tracker-v14-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function csvBackup(){const rows=[['Date','Habit','Status','Current streak']];allDates().forEach(d=>data.habits.forEach(h=>rows.push([d,h.name,done(h,d)?'Done':frozen(h,d)?'Freeze':'Open',habitStats(h).run])));const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='progress-tracker-v14-report.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 function restoreFile(input){const f=input.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const restored=normalize(JSON.parse(r.result));data=restored;sessionUnlocked=!data.pinHash;selectedHabit=null;morePanel='';tab='home';focusMode=false;quickOpen=false;save();render();showToast(data.pinHash?'Backup restored. PIN lock is active 🔒':'Backup restored ✅')}catch(e){alert('Could not restore that backup file.')}};r.readAsText(f)}
 
 async function hashPin(pin){if(crypto?.subtle){const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pin));return [...new Uint8Array(buf)].map(x=>x.toString(16).padStart(2,'0')).join('')}return btoa(pin)}
@@ -442,7 +442,7 @@ function isLocked(){return !!data.pinHash&&!sessionUnlocked}
 
 let customSetup=[];
 function updateOnCount(){const n=$$('[data-onpreset] input:checked').length+customSetup.length;const el=$('#onCount');if(el)el.textContent=n+' selected'}
-function finishOnboarding(){const name=$('#onName')?.value.trim()||'';if(!name){alert('Please enter your name.');return}const chosen=[];$$('[data-onpreset]').forEach(b=>{const cb=$('input',b);if(cb?.checked){const p=preset(b.dataset.onpreset);chosen.push({name:b.dataset.onpreset,icon:p?.icon||'✅',private:!!p?.private,difficulty:p?.difficulty||'Medium',action:p?.action||'Do the smallest useful version'})}});customSetup.forEach(n=>chosen.push({name:n,icon:'✅',private:false,difficulty:'Medium',action:'Do the smallest useful version'}));if(!chosen.length){alert('Select at least one habit.');return}data.name=name;if(!data.creatorName)data.creatorName=name;data.habits=chosen.slice(0,15).map(x=>Object.assign({id:uid(),created:currentMonth(),time:'',smallWin:x.action,why:''},x));data.onboardingDone=true;data.profileCreated=true;data.journeyStart=today();data.lastLogin=today();save();render();showToast('Your V13.2 system is ready 🚀')}
+function finishOnboarding(){const name=$('#onName')?.value.trim()||'';if(!name){alert('Please enter your name.');return}const chosen=[];$$('[data-onpreset]').forEach(b=>{const cb=$('input',b);if(cb?.checked){const p=preset(b.dataset.onpreset);chosen.push({name:b.dataset.onpreset,icon:p?.icon||'✅',private:!!p?.private,difficulty:p?.difficulty||'Medium',action:p?.action||'Do the smallest useful version'})}});customSetup.forEach(n=>chosen.push({name:n,icon:'✅',private:false,difficulty:'Medium',action:'Do the smallest useful version'}));if(!chosen.length){alert('Select at least one habit.');return}data.name=name;if(!data.creatorName)data.creatorName=name;data.habits=chosen.slice(0,15).map(x=>Object.assign({id:uid(),created:currentMonth(),time:'',smallWin:x.action,why:''},x));data.onboardingDone=true;data.profileCreated=true;data.journeyStart=today();data.lastLogin=today();save();render();showToast('Your V14 system is ready 🚀')}
 
 function bindDomState(){
  updateOnCount();
@@ -533,7 +533,7 @@ try{if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').t
 
 /* ========================= V12 COMPACT UI ========================= */
 
-function finishOnboarding(){const name=$('#onName')?.value.trim()||'';if(!name){alert('Please enter your name.');return}const chosen=[];$$('[data-onpreset]').forEach(b=>{const cb=$('input',b);if(cb?.checked){const p=preset(b.dataset.onpreset);chosen.push({name:b.dataset.onpreset,icon:p?.icon||'✅',private:!!p?.private,difficulty:p?.difficulty||'Medium',action:p?.action||'Do the smallest useful version'})}});customSetup.forEach(n=>chosen.push({name:n,icon:'✅',private:false,difficulty:'Medium',action:'Do the smallest useful version'}));if(!chosen.length){alert('Select at least one habit.');return}data.name=name;if(!data.creatorName)data.creatorName=name;data.habits=chosen.slice(0,15).map(x=>Object.assign({id:uid(),created:currentMonth(),time:'',smallWin:x.action,why:''},x));data.onboardingDone=true;data.profileCreated=true;data.journeyStart=today();data.lastLogin=today();save();tab='today';morePanel='';selectedHabit=null;focusMode=false;quickOpen=false;render();showToast('Your V13.2 system is ready 🚀')}
+function finishOnboarding(){const name=$('#onName')?.value.trim()||'';if(!name){alert('Please enter your name.');return}const chosen=[];$$('[data-onpreset]').forEach(b=>{const cb=$('input',b);if(cb?.checked){const p=preset(b.dataset.onpreset);chosen.push({name:b.dataset.onpreset,icon:p?.icon||'✅',private:!!p?.private,difficulty:p?.difficulty||'Medium',action:p?.action||'Do the smallest useful version'})}});customSetup.forEach(n=>chosen.push({name:n,icon:'✅',private:false,difficulty:'Medium',action:'Do the smallest useful version'}));if(!chosen.length){alert('Select at least one habit.');return}data.name=name;if(!data.creatorName)data.creatorName=name;data.habits=chosen.slice(0,15).map(x=>Object.assign({id:uid(),created:currentMonth(),time:'',smallWin:x.action,why:''},x));data.onboardingDone=true;data.profileCreated=true;data.journeyStart=today();data.lastLogin=today();save();tab='today';morePanel='';selectedHabit=null;focusMode=false;quickOpen=false;render();showToast('Your V14 system is ready 🚀')}
 
 
 function habitOverlay(){
@@ -789,7 +789,7 @@ function v12ArcPage(){
 
 function v12Drawer(){
   return `<div class="v12-drawer-backdrop" data-close-drawer></div><aside class="v12-drawer">
-    <div class="v12-drawer-brand"><div class="kicker">PROGRESS TRACKER V13.2</div><h2>Simple. Personal. Yours.</h2><p>Everything is here, but only when you need it.</p></div>
+    <div class="v12-drawer-brand"><div class="kicker">PROGRESS TRACKER V14</div><h2>Simple. Personal. Yours.</h2><p>Everything is here, but only when you need it.</p></div>
     <button class="v12-drawer-item active" data-tab="today">🏠 <span>Progress</span></button>
     <button class="v12-drawer-item" data-tab="week">📅 <span>Week</span></button>
     <button class="v12-drawer-item" data-tab="month">🗓️ <span>Month</span></button>
@@ -1149,7 +1149,7 @@ function v12HabitCard(h,mode='today'){
 
 function v13Drawer(){
   return `<div class="v12-drawer-backdrop" data-close-drawer></div><aside class="v12-drawer">
-    <div class="v12-drawer-brand"><div class="kicker">PROGRESS TRACKER V13.2</div><h2>Simple outside. Powerful inside.</h2><p>Daily actions stay easy. Deeper tools stay here until you need them.</p></div>
+    <div class="v12-drawer-brand"><div class="kicker">PROGRESS TRACKER V14</div><h2>Simple outside. Powerful inside.</h2><p>Daily actions stay easy. Deeper tools stay here until you need them.</p></div>
     <button class="v12-drawer-item ${tab==='today'?'active':''}" data-tab="today">🏠 <span>Today</span></button>
     <button class="v12-drawer-item ${tab==='week'?'active':''}" data-tab="week">📅 <span>Week</span></button>
     <button class="v12-drawer-item ${tab==='month'?'active':''}" data-tab="month">🗓️ <span>Month</span></button>
@@ -1230,7 +1230,7 @@ function v12Shell(){
 }
 
 
-/* ========================= V13.1 PATCH ========================= */
+/* ========================= V14 PATCH ========================= */
 function v13ArcStart(){return /^\d{4}-\d{2}-\d{2}$/.test(data.arcStart)?data.arcStart:WINTER_ARC_START;}
 function v13ArcLength(){return v13ArcStart()===WINTER_ARC_START?WINTER_ARC_LENGTH:Math.max(14,Math.min(3650,Number(data.arcLength)||WINTER_ARC_LENGTH));}
 function v13ArcEnd(){return v13ArcStart()===WINTER_ARC_START?WINTER_ARC_END:addDays(v13ArcStart(),v13ArcLength()-1);}
@@ -1268,7 +1268,7 @@ function settingsHtml(){const c=creatorName();return `<section class="card"><div
 function creditsHtml(){return `<div class="v13-credits-page"><div class="v13-section-head"><div><div class="kicker">CREDITS</div><h2>Built by the creator</h2></div><button class="btn small" data-close-more>Close</button></div>${creatorCard()}<div class="note" style="margin-top:10px">Your creator details are saved only on this device. Add your social link in Settings to turn this into a profile promo.</div></div>`;}
 function panelHtml(){return {goals:goalsHtml,routine:routineHtml,planner:plannerHtml,checkin:checkinHtml,sleep:sleepHtml,journal:journalHtml,reminders:remindersHtml,security:securityHtml,settings:settingsHtml,credits:creditsHtml}[morePanel]?.()||settingsHtml();}
 function morePage(){if(morePanel==='manage')return manageHabitsHtml();if(morePanel==='credits')return creditsHtml();return `<div class="v12-tool-page"><section class="card hero"><div class="kicker">MORE TOOLS</div><h2 style="margin:4px 0 6px">Everything else, when you need it.</h2><p class="muted" style="margin:0">Goals, routines, planner, check-in, sleep, journal, reminders, privacy, creator profile and data tools.</p></section><section class="drawer-grid"><button class="more-tile v133-share-tile" data-share-progress><span>↗</span><b>Share & invite</b><small>Make a progress card or invite friends.</small></button><button class="more-tile" data-more="manage"><span>✅</span><b>Manage habits</b><small>Add, edit or remove habits.</small></button><button class="more-tile" data-more="goals"><span>🎯</span><b>Goals & review</b><small>Link goals to habits and reflect.</small></button><button class="more-tile" data-more="routine"><span>🔁</span><b>Routines</b><small>Run habits step by step.</small></button><button class="more-tile" data-more="planner"><span>🗓️</span><b>Day planner</b><small>Set preferred times.</small></button><button class="more-tile" data-more="checkin"><span>🌤️</span><b>Mood & energy</b><small>Build a simple personal history.</small></button><button class="more-tile" data-more="sleep"><span>😴</span><b>Sleep</b><small>Log hours and timing.</small></button><button class="more-tile" data-more="journal"><span>✍️</span><b>Journal</b><small>Keep one-line reflections.</small></button><button class="more-tile" data-more="reminders"><span>⏰</span><b>Reminders</b><small>Time your next action.</small></button><button class="more-tile" data-more="security"><span>🔐</span><b>Privacy</b><small>Local PIN and session lock.</small></button><button class="more-tile" data-more="settings"><span>⚙️</span><b>Settings & data</b><small>Theme, backup, install, creator profile.</small></button><button class="more-tile" data-more="credits"><span>❤️</span><b>Credits</b><small>Promote the person who built it.</small></button></section>${v13CommunityCard()}</div>`;}
-function v12Drawer(){return `<div class="v12-drawer-backdrop" data-close-drawer></div><aside class="v12-drawer"><div class="v12-drawer-brand"><div class="kicker">WINTER ARC 2026</div><h2>Winter Arc Tracker</h2><p>1 Oct – 31 Dec 2026 · Your progress stays on this device.</p></div><section class="v13-drawer-community">${v13CommunityCard()}</section><button class="v12-drawer-item" data-tab="today">🏠 <span>Today</span></button><button class="v12-drawer-item" data-tab="week">📅 <span>Week</span></button><button class="v12-drawer-item" data-tab="month">🗓️ <span>Month</span></button><button class="v12-drawer-item" data-tab="arc">❄️ <span>Arc</span></button><div class="v12-drawer-line"></div><div class="v12-drawer-label">TOOLS</div><button class="v12-drawer-item" data-more="manage">✅ <span>Manage habits</span></button><button class="v12-drawer-item" data-more="goals">🎯 <span>Goals</span></button><button class="v12-drawer-item" data-more="routine">🔁 <span>Routines</span></button><button class="v12-drawer-item" data-more="planner">🗓️ <span>Day planner</span></button><button class="v12-drawer-item" data-more="checkin">🌤️ <span>Mood & energy</span></button><button class="v12-drawer-item" data-more="sleep">😴 <span>Sleep</span></button><button class="v12-drawer-item" data-more="journal">✍️ <span>Journal</span></button><button class="v12-drawer-item" data-more="reminders">⏰ <span>Reminders</span></button><button class="v12-drawer-item" data-more="security">🔐 <span>Privacy</span></button><button class="v12-drawer-item" data-more="credits">❤️ <span>Credits</span></button><button class="v12-drawer-item" data-more="settings">⚙️ <span>Settings & data</span></button><div class="v12-drawer-bottom"><span>Made for small wins.</span><b>❄️ V13.2</b></div></aside>`;}
+function v12Drawer(){return `<div class="v12-drawer-backdrop" data-close-drawer></div><aside class="v12-drawer"><div class="v12-drawer-brand"><div class="kicker">WINTER ARC 2026</div><h2>Winter Arc Tracker</h2><p>1 Oct – 31 Dec 2026 · Your progress stays on this device.</p></div><section class="v13-drawer-community">${v13CommunityCard()}</section><button class="v12-drawer-item" data-tab="today">🏠 <span>Today</span></button><button class="v12-drawer-item" data-tab="week">📅 <span>Week</span></button><button class="v12-drawer-item" data-tab="month">🗓️ <span>Month</span></button><button class="v12-drawer-item" data-tab="arc">❄️ <span>Arc</span></button><div class="v12-drawer-line"></div><div class="v12-drawer-label">TOOLS</div><button class="v12-drawer-item" data-more="manage">✅ <span>Manage habits</span></button><button class="v12-drawer-item" data-more="goals">🎯 <span>Goals</span></button><button class="v12-drawer-item" data-more="routine">🔁 <span>Routines</span></button><button class="v12-drawer-item" data-more="planner">🗓️ <span>Day planner</span></button><button class="v12-drawer-item" data-more="checkin">🌤️ <span>Mood & energy</span></button><button class="v12-drawer-item" data-more="sleep">😴 <span>Sleep</span></button><button class="v12-drawer-item" data-more="journal">✍️ <span>Journal</span></button><button class="v12-drawer-item" data-more="reminders">⏰ <span>Reminders</span></button><button class="v12-drawer-item" data-more="security">🔐 <span>Privacy</span></button><button class="v12-drawer-item" data-more="credits">❤️ <span>Credits</span></button><button class="v12-drawer-item" data-more="settings">⚙️ <span>Settings & data</span></button><div class="v12-drawer-bottom"><span>Made for small wins.</span><b>❄️ V14</b></div></aside>`;}
 function v12Shell(){const body=tab==='today'?v12TodayPage():tab==='week'?v12WeekPage():tab==='month'?v12MonthPage():tab==='more'?morePage():v12ArcPage(),st=stats(),arcLine=v13ArcStarted()?`Arc Day ${v13ArcDay()}`:'Arc starts tomorrow';return `<div class="v12-app">${v12Topbar()}<div class="v12-global-line"><span>${data.name?`Hi, ${escapeHtml(data.name)} 👋`:'Your progress'}</span><span>${st.todayDone}/${data.habits.length} today · ${arcLine}</span></div><main class="v12-main">${body}</main><button class="v12-fab" data-fab aria-label="Add">${quickOpen?'×':'+'}</button>${quickOpen?`<div class="v12-fab-menu"><button data-quick="habit">✅ Add habit</button><button data-quick="goals">🎯 Goal</button><button data-quick="routine">🔁 Routine</button></div>`:''}${selectedHabit?habitOverlay():''}${!data.onboardingDone&&!data.pinHash?onboarding():''}${window.__v11QuickModal?quickModal():''}${newHabitOpen?newHabitModal():''}</div>`;}
 document.addEventListener('click',e=>{
   const b=e.target.closest('button');
@@ -1293,7 +1293,7 @@ document.addEventListener('keydown',e=>{
 
 document.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.saveCreator!==undefined){const n=$('#creatorName')?.value.trim()||data.name||'You',h=$('#creatorHandle')?.value.trim()||'',bio=$('#creatorBio')?.value.trim()||'',link=$('#creatorLink')?.value.trim()||'';if(link&&!safeHttpsUrl(link)){alert('Profile link must start with https://');return;}data.creatorName=n;data.creatorHandle=h;data.creatorBio=bio;data.creatorLink=link;save();render();showToast('Creator profile saved ❤️');return;}if(b.dataset.communityRefresh!==undefined){await communityCheckin(true);return;}if(b.dataset.share!==undefined){const share={title:'Winter Arc Tracker',text:'Join me on the Winter Arc 2026 ❄️',url:location.href};try{if(navigator.share){await navigator.share(share);return;}if(navigator.clipboard){await navigator.clipboard.writeText(share.url);showToast('Tracker link copied ↗');}}catch(err){}}});
 
-/* ========================= V13.3 CLEAN + SHARING ========================= */
+/* ========================= V14 CLEAN + SHARING ========================= */
 function v133ShareUrl(){
   try{const u=new URL(location.href);const h=creatorHandle().replace(/^@/,'');if(h)u.searchParams.set('from',h);return u.href;}catch(e){return location.href;}
 }
@@ -1369,6 +1369,235 @@ v12ArcPage=v133ArcPage;
 
 /* Sharing controls are intentionally optional and non-blocking. */
 document.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.shareProgress!==undefined){e.preventDefault();await v133ShareProgress();return;}if(b.dataset.shareInvite!==undefined){e.preventDefault();await v133InviteFriends();return;}if(b.dataset.openDrawer!==undefined){return;}});
+
+/* ========================= V14 UX + SHARE PATCH ========================= */
+window.__v14ShareCenter = false;
+
+function v14CommunityMini(){
+  const n=communityState.count??data.communityCount??0;
+  return `<section class="v14-community-mini">
+    <div><span>TOTAL HUSTLERS TODAY</span><b>${communityNumber(n)}</b></div>
+    <div class="v14-community-right"><small>${escapeHtml(communityState.status||'Daily community check-ins')}</small><button data-community-refresh aria-label="Refresh community count">↻</button></div>
+  </section>`;
+}
+
+function v14InviteBanner(){
+  return data.invitedBy?`<section class="v14-invite-banner"><span>🤝</span><div><b>Invited by @${escapeHtml(data.invitedBy)}</b><small>Start your own Arc and build your first small win.</small></div></section>`:'';
+}
+
+function v14FocusCard(){
+  const f=focusHabit();
+  if(!f)return `<section class="v14-card v14-empty-focus"><div><span class="v14-kicker">TODAY'S FOCUS</span><b>Add one habit to choose a focus.</b></div><button class="v14-pill-btn" data-more="manage">＋ Add habit</button></section>`;
+  const is=done(f,today());
+  return `<section class="v14-card v14-focus-card">
+    <div class="v14-focus-head"><div><span class="v14-kicker">TODAY'S FOCUS</span><h2>${escapeHtml(f.name)}</h2><p>${escapeHtml(f.smallWin||f.action||'Smallest useful version')}</p></div><div class="v14-focus-icon">${escapeHtml(f.icon)}</div></div>
+    <div class="v14-focus-actions"><span>🔥 ${habitStats(f).run} day streak</span><button class="v14-round-check ${is?'done':''}" data-toggle="${f.id}|${today()}" ${today()<v13ArcStart()?'disabled':''}>${is?'✓':'→'}</button></div>
+  </section>`;
+}
+
+function v14HabitRow(h){
+  const d=today(), hs=habitStats(h), is=done(h,d), fr=frozen(h,d);
+  return `<article class="v14-habit-row ${is?'completed':''}">
+    <div class="v14-habit-icon">${escapeHtml(h.icon||'✅')}</div>
+    <div class="v14-habit-body"><div class="v14-habit-title"><b>${escapeHtml(h.name)}</b>${h.private?'<span class="v14-private">🔒</span>':''}</div><div class="v14-habit-sub">🔥 ${hs.run} day streak · ${escapeHtml(h.action||'Smallest useful version')}</div></div>
+    <button class="v14-main-check ${is?'done':''} ${fr?'freeze':''}" data-toggle="${h.id}|${d}" ${d<v13ArcStart()?'disabled':''} aria-label="${is?'Undo':'Complete'} ${escapeHtml(h.name)}">${is?'✓':'○'}</button>
+    <button class="v14-edit" data-open-habit="${h.id}" aria-label="Edit ${escapeHtml(h.name)}">✎</button>
+  </article>`;
+}
+
+function v14WeekHabit(h){
+  const ds=v12MiniDays(), hs=habitStats(h);
+  return `<article class="v14-week-habit">
+    <div class="v14-week-head"><div class="v14-habit-icon">${escapeHtml(h.icon||'✅')}</div><div class="v14-habit-body"><b>${escapeHtml(h.name)}</b><span>🔥 ${hs.run} days · ${hs.weekPct}%</span></div><button class="v14-main-check ${done(h,today())?'done':''}" data-toggle="${h.id}|${today()}" ${today()<v13ArcStart()?'disabled':''}>${done(h,today())?'✓':'○'}</button></div>
+    <div class="v14-dot-row">${ds.map(d=>`<div class="v14-day-dot-wrap"><small>${v12DayLabel(d)}</small><button class="v14-day-dot ${done(h,d)?'done':''} ${frozen(h,d)?'freeze':''} ${d===today()?'today':''}" data-toggle="${h.id}|${d}" ${d>today()?'disabled':''}>${done(h,d)?'✓':frozen(h,d)?'🛡':''}</button></div>`).join('')}</div>
+  </article>`;
+}
+
+function v14MonthGrid(h){
+  const ds=makeDays(data.month), first=dateObj(ds[0]).getDay(), cells=[];
+  for(let i=0;i<first;i++)cells.push(''); ds.forEach(d=>cells.push(d));
+  return `<div class="v14-calendar"><div class="v14-cal-week">${['S','M','T','W','T','F','S'].map(x=>`<span>${x}</span>`).join('')}</div><div class="v14-cal-grid">${cells.map(d=>d?(()=>{const future=d>today();return `<button class="v14-cal-cell ${done(h,d)?'done':''} ${frozen(h,d)?'freeze':''} ${d===today()?'today':''}" data-toggle="${h.id}|${d}" ${future?'disabled':''} title="${formatDay(d)}">${done(h,d)?'✓':frozen(h,d)?'🛡':d.slice(-2)}</button>`;})():'<i></i>').join('')}</div></div>`;
+}
+
+function v14TodayPage(){
+  const s=stats(), day=v13ArcDay(), pct=data.habits.length?Math.round(s.todayDone/data.habits.length*100):0, remaining=Math.max(0,data.habits.length-s.todayDone);
+  return `<div class="v14-page">
+    ${v14InviteBanner()}
+    <section class="v14-hero">
+      <div><span class="v14-kicker">${day?`WINTER ARC · DAY ${day}`:'WINTER ARC · STARTS TOMORROW'}</span><h1>${data.name?`Hi, ${escapeHtml(data.name)} 👋`:'Your next win starts here'}</h1><p>${day?(remaining?`${s.todayDone}/${data.habits.length} habits done · ${remaining} left today.`:'All habits complete. You are done for today. 🔥'):'Today is setup day. Tomorrow is Day 1.'}</p></div>
+      <div class="v14-progress-ring" style="--p:${pct}%"><span><b>${pct}%</b><small>today</small></span></div>
+    </section>
+    ${v14CommunityMini()}
+    <section class="v14-share-bar"><div><b>Share the win</b><span>Generate a clean 4:5 progress card.</span></div><button class="v14-pill-btn primary" data-share-progress>Share ↗</button></section>
+    ${v14FocusCard()}
+    <section class="v14-section"><div class="v14-section-head"><div><span class="v14-kicker">TODAY</span><h2>Your habits</h2></div><span class="v14-counter">${s.todayDone}/${data.habits.length}</span></div>
+      <div class="v14-habits-list">${data.habits.length?data.habits.map(v14HabitRow).join(''):`<div class="v14-empty-card"><div>🌱</div><b>Your first habit is waiting.</b><span>Add one habit and make your first win.</span><button class="v14-pill-btn primary" data-more="manage">＋ Add habit</button></div>`}</div>
+    </section>
+    ${s.todayDone===data.habits.length&&data.habits.length?`<section class="v14-complete"><span>✅</span><div><b>Today complete</b><small>Nice. Share the win or just enjoy the finish.</small></div><button class="v14-pill-btn" data-share-progress>Share ↗</button></section>`:''}
+    ${v14CreatorMini()}
+  </div>`;
+}
+
+function v14WeekPage(){
+  const s=stats(), ds=v12MiniDays();
+  return `<div class="v14-page">
+    <section class="v14-simple-hero"><div><span class="v14-kicker">THIS WEEK</span><h1>${s.score}% complete</h1><p>Seven days, one small action at a time.</p></div><div class="v14-mini-score"><b>${s.todayDone}</b><span>today</span></div></section>
+    <section class="v14-week-board">${ds.map(d=>{const eligible=data.habits.filter(h=>canUseHabitOn(h,d)).length,n=data.habits.filter(h=>active(h,d)).length,p=eligible?Math.round(n/eligible*100):0;return `<div class="v14-week-day ${d===today()?'today':''}"><small>${v12DayLabel(d)}</small><div class="v14-week-circle" style="--p:${p}%"><b>${p}</b></div><span>${n}/${eligible}</span></div>`}).join('')}</section>
+    <section class="v14-section"><div class="v14-section-head"><div><span class="v14-kicker">HABITS</span><h2>Your week</h2></div><button class="v14-pill-btn" data-share-progress>Share ↗</button></div><div class="v14-stack">${data.habits.map(v14WeekHabit).join('')||'<div class="v14-empty-card"><b>Add a habit to see your week.</b></div>'}</div></section>
+    <section class="v14-card v14-insight"><span>💡</span><div><b>Weekly insight</b><p>${v13BestWeek()?`Your best week so far reached ${v13BestWeek().score}%. Keep the next action easy.`:'Your first full week will create a useful baseline here.'}</p></div></section>
+  </div>`;
+}
+
+function v14MonthPage(){
+  const s=stats();
+  return `<div class="v14-page">
+    <section class="v14-simple-hero"><div><span class="v14-kicker">MONTH</span><h1>${formatMonthName(data.month)}</h1><p>${s.completed} completed checks · future days stay locked.</p></div><div class="v14-mini-score"><b>${v13MonthWinSummary()}</b><span>wins</span></div></section>
+    <section class="v14-month-picker"><button class="v14-pill-btn" data-month-shift="-1">‹</button><input id="monthPicker" type="month" value="${escapeHtml(data.month)}" aria-label="Month"><button class="v14-pill-btn" data-month-shift="1">›</button></section>
+    <section class="v14-stack">${data.habits.map(h=>`<article class="v14-month-card"><div class="v14-week-head"><div class="v14-habit-icon">${escapeHtml(h.icon||'✅')}</div><div class="v14-habit-body"><b>${escapeHtml(h.name)}</b><span>🔥 ${habitStats(h).run} day streak · ${habitStats(h).monthPct}%</span></div><button class="v14-edit" data-open-habit="${h.id}">✎</button></div>${v14MonthGrid(h)}</article>`).join('')||'<div class="v14-empty-card"><b>Add a habit first.</b></div>'}</section>
+  </div>`;
+}
+
+function v14Milestones(){
+  const day=v13ArcDay(),L=v13ArcLength(),raw=[1,7,14,30,45,60,75,90,L],ms=[...new Set(raw.filter(n=>n>=1&&n<=L))];
+  return `<div class="v14-milestones">${ms.map(m=>`<div class="v14-milestone ${day>=m?'on':''}"><div>${day>=m?'✓':'○'}</div><b>Day ${m}</b><span>${m===1?'Start':m===7?'First week':m===30?'One month':m===60?'Two months':m===90?'Three months':m===L?'Finish':'Checkpoint'}</span></div>`).join('')}</div>`;
+}
+
+function v14ArcPage(){
+  const day=v13ArcDay(),L=v13ArcLength(),pct=v13ArcProgress(),pairs=v13ArcEligiblePairs(),best=v13BestHabit(),bw=v13BestWeek(),rebuild=v13RebuildHabit(),rec=v13Recovery(),consistency=pairs.eligible?Math.round(pairs.activeN/pairs.eligible*100):0;
+  const next=day?nextMilestone(day):1;
+  return `<div class="v14-page">
+    <section class="v14-arc-hero"><div class="v14-arc-top"><div><span class="v14-kicker">❄️ WINTER ARC 2026</span><h1>${day?`Day ${day}`:'Starts tomorrow'} <em>${day?`/ ${L}`:''}</em></h1><p>${escapeHtml(v13ArcMessage())}</p></div><div class="v14-arc-percent"><b>${pct}%</b><span>ARC</span></div></div><div class="v14-arc-line"><i style="width:${pct}%"></i></div><div class="v14-arc-meta"><span>${day?v13ArcRemaining()?`${v13ArcRemaining()} days left`:'Arc complete 🎉':'1 Oct = Day 1'}</span><span>${v13TotalWins()} Arc wins</span></div></section>
+    ${v14CommunityMini()}
+    <section class="v14-share-bar"><div><b>Make your progress shareable</b><span>4:5 card + creator handle + invite link.</span></div><button class="v14-pill-btn primary" data-open-share-center>Share ↗</button></section>
+    <section class="v14-section"><div class="v14-section-head"><div><span class="v14-kicker">ARC JOURNEY</span><h2>One path · three months.</h2></div><span class="v14-counter">${day?`Day ${day}`:'Ready'}</span></div>${v13ArcMap()}${v14Milestones()}<div class="v14-month-strip"><div class="active"><b>OCT</b><span>${day?'In progress':'Starts tomorrow'}</span></div><div class="${day>=32?'active':''}"><b>NOV</b><span>${day>=32?'In progress':'Locked'}</span></div><div class="${day>=62?'active':''}"><b>DEC</b><span>${day>=62?'In progress':'Locked'}</span></div></div></section>
+    <section class="v14-section"><div class="v14-section-head"><div><span class="v14-kicker">NEXT CHECKPOINT</span><h2>Day ${next}</h2></div><span class="v14-counter">${day?Math.max(0,next-day):1} days</span></div><div class="v14-next-row"><span>Keep the next checkpoint visible, not the whole mountain.</span><button class="v14-round-arrow" data-tab="today">→</button></div></section>
+    <section class="v14-section"><div class="v14-section-head"><div><span class="v14-kicker">ARC SNAPSHOT</span><h2>Only what matters.</h2></div></div><div class="v14-snapshot"><div><b>${day}</b><span>Arc days</span></div><div><b>${consistency}%</b><span>Consistency</span></div><div><b>${Math.max(0,...data.habits.map(h=>habitStats(h).longest))}</b><span>Best streak</span></div><div><b>${v13TotalWins()}</b><span>Total wins</span></div></div></section>
+    <section class="v14-section"><div class="v14-section-head"><div><span class="v14-kicker">YOUR ARC STORY</span><h2>What your data says.</h2></div></div><div class="v14-story-grid">${best?v14Story('🔥','Strongest habit',best.name,`${habitStats(best).total} wins · ${habitStats(best).run} day streak`):v14Story('🔥','Strongest habit','Waiting for data','Your first completed habit starts the story.')}${bw?v14Story('📈','Best week',`${bw.score}% completion`,`${formatDay(bw.start)} → ${formatDay(bw.end)}`):v14Story('📈','Best week','Coming soon','Your first week will appear here.')}${rebuild?v14Story('🌱','Habit to rebuild',rebuild.name,`${habitStats(rebuild).run} day streak · simplify the next action`):v14Story('🌱','Habit to rebuild','You are ready','Pick one habit to work on next.')}${rec?v14Story('🛟','Recent recovery',`${rec.h.name} restarted`,`Missed ${formatDay(rec.miss)} → showed up ${formatDay(rec.next)}`):v14Story('🛟','Recent recovery','None yet','That is okay — recovery can become part of the story.')}</div></section>
+    <section class="v14-card v14-focus-arc"><div class="v14-focus-arc-top"><div><span class="v14-kicker">FOCUS OF THE ARC</span><h2>${escapeHtml(data.goal||'Choose one personal goal')}</h2></div><button class="v14-pill-btn" data-more="goals">Edit</button></div>${focusHabit()?`<div class="v14-focus-line"><span>${escapeHtml(focusHabit().icon)}</span><div><b>${escapeHtml(focusHabit().name)}</b><small>${escapeHtml(focusHabit().smallWin||focusHabit().action||'Smallest useful version')}</small></div><button class="v14-round-arrow" data-toggle="${focusHabit().id}|${today()}" ${today()<v13ArcStart()?'disabled':''}>${done(focusHabit(),today())?'✓':'→'}</button></div>`:'<div class="v14-empty">Add a habit to focus your Arc.</div>'}</section>
+    ${rec?`<section class="v14-recovery"><span>🛟</span><div><b>Recovery counts.</b><small>You missed ${formatDay(rec.miss)} and showed up again ${formatDay(rec.next)}.</small></div></section>`:''}
+    ${v14CreatorMini()}
+  </div>`;
+}
+
+function v14Story(icon,title,main,sub){return `<div class="v14-story"><div class="v14-story-icon">${icon}</div><div><span>${escapeHtml(title)}</span><b>${escapeHtml(main)}</b><small>${escapeHtml(sub)}</small></div></div>`;}
+
+function v14CreatorMini(){
+  const h=creatorHandle(),link=safeHttpsUrl(data.creatorLink),photo=data.creatorPhoto||'creator-profile.jpg';
+  return `<section class="v14-creator-mini"><img src="${escapeHtml(photo)}" alt="${escapeHtml(creatorName())}" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><div class="v14-creator-fallback">${escapeHtml(creatorName().slice(0,2).toUpperCase())}</div><div><span>Made with ❤️ by</span><b>${escapeHtml(creatorName())}</b>${h?`<small>${escapeHtml(h)}</small>`:''}</div>${link?`<a href="${escapeHtml(link)}" target="_blank" rel="noopener">Instagram ↗</a>`:''}</section>`;
+}
+
+function v14CreatorCard(){
+  const n=creatorName(),h=creatorHandle(),link=safeHttpsUrl(data.creatorLink),photo=data.creatorPhoto||'creator-profile.jpg';
+  const bio=data.creatorBio||'Hi, I’m Vashu Sharmaa — Actor & creator. I built Winter Arc Tracker to make daily progress simple, visible, and easy to share.';
+  return `<section class="v14-creator-card"><div class="v14-section-head"><div><span class="v14-creator-kicker">CREDITS</span><h2 style="margin:3px 0 0;font-size:18px">Meet the creator</h2></div><button class="v14-pill-btn" data-close-more>Back</button></div><div class="v14-creator-row"><img src="${escapeHtml(photo)}" alt="${escapeHtml(n)}" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><div class="v14-creator-avatar">${escapeHtml(n.slice(0,2).toUpperCase())}</div><div><h2>Hi, I’m ${escapeHtml(n)} 👋</h2><p>${escapeHtml(bio)}</p>${h?`<b class="v14-handle">${escapeHtml(h)}</b>`:''}</div></div><div class="v14-creator-actions">${link?`<a class="v14-creator-link" href="${escapeHtml(link)}" target="_blank" rel="noopener">Visit Instagram ↗</a>`:''}<button class="v14-pill-btn primary" data-open-share-center>Share Tracker ↗</button></div></section>`;
+}
+
+function v14ShareModal(){
+  const s=stats(),day=v13ArcDay(),L=v13ArcLength(),best=Math.max(0,...data.habits.map(h=>habitStats(h).longest));
+  return `<div class="v14-share-overlay" data-close-share-center><div class="v14-share-modal" role="dialog" aria-modal="true"><div class="v14-share-head"><div><span class="v14-kicker">SHARE CENTER</span><h2>Make your progress visible.</h2></div><button class="v14-close" data-close-share-center>×</button></div><div class="v14-share-preview"><div class="v14-share-preview-top">❄️ WINTER ARC 2026</div><strong>${day?`DAY ${day} / ${L}`:'STARTS TOMORROW'}</strong><span>${s.todayDone}/${data.habits.length} habits today · 🔥 ${best} day best streak</span><b>${creatorName()}</b><small>${creatorHandle()}</small></div><div class="v14-share-buttons"><button class="v14-pill-btn primary" data-share-progress>Share 4:5 card ↗</button><button class="v14-pill-btn" data-download-card>Save image ↓</button><button class="v14-pill-btn" data-share-invite>Invite a friend 🤝</button><button class="v14-pill-btn" data-open-instagram>Instagram ↗</button></div><p class="v14-share-note">The card includes your Arc day, wins, best streak and creator handle.</p></div></div>`;
+}
+
+function v14MorePage(){
+  if(morePanel==='manage')return manageHabitsHtml();
+  if(morePanel==='credits')return v14CreatorCard();
+  if(morePanel)return `<div class="v14-page"><div class="v14-section-head"><div><span class="v14-kicker">MORE</span><h2>${escapeHtml(morePanel[0].toUpperCase()+morePanel.slice(1))}</h2></div><button class="v14-pill-btn" data-close-more>← More</button></div>${panelHtml()}</div>`;
+  return `<div class="v14-page"><section class="v14-simple-hero"><div><span class="v14-kicker">MORE</span><h1>Tools without the clutter.</h1><p>Everything advanced lives here, so Today stays simple.</p></div></section><section class="v14-more-grid"><button class="v14-more-tile feature" data-open-share-center><span>↗</span><b>Share & invite</b><small>4:5 progress card, invite link and creator promo.</small></button><button class="v14-more-tile" data-more="manage"><span>✅</span><b>Manage habits</b><small>Add, edit, private labels.</small></button><button class="v14-more-tile" data-more="goals"><span>🎯</span><b>Goals</b><small>Link habits to one goal.</small></button><button class="v14-more-tile" data-more="routine"><span>🔁</span><b>Routines</b><small>Build a step-by-step sequence.</small></button><button class="v14-more-tile" data-more="planner"><span>🗓️</span><b>Day planner</b><small>Set preferred times.</small></button><button class="v14-more-tile" data-more="checkin"><span>🌤️</span><b>Mood & energy</b><small>Quick daily check-in.</small></button><button class="v14-more-tile" data-more="sleep"><span>😴</span><b>Sleep</b><small>Keep a simple sleep log.</small></button><button class="v14-more-tile" data-more="journal"><span>✍️</span><b>Journal</b><small>One-line reflection.</small></button><button class="v14-more-tile" data-more="reminders"><span>⏰</span><b>Reminders</b><small>Time your next action.</small></button><button class="v14-more-tile" data-more="security"><span>🔐</span><b>Privacy</b><small>Local PIN & session lock.</small></button><button class="v14-more-tile" data-more="settings"><span>⚙️</span><b>Settings</b><small>Creator, data, theme and install.</small></button><button class="v14-more-tile" data-more="credits"><span>❤️</span><b>Credits</b><small>Meet the creator.</small></button></section>${v14CommunityMini()}${v14CreatorMini()}</div>`;
+}
+
+function v14SettingsHtml(){
+  return `<section class="v14-card"><div class="v14-section-head"><div><span class="v14-kicker">SETTINGS</span><h2>Personalize your app</h2></div><button class="v14-pill-btn" data-close-more>Close</button></div><div class="v14-settings-form"><label>Winter Arc start<input value="1 Oct 2026" disabled></label><label>Winter Arc end<input value="31 Dec 2026" disabled></label><label>Creator name<input id="creatorName" value="${escapeHtml(creatorName())}"></label><label>Instagram handle<input id="creatorHandle" value="${escapeHtml(data.creatorHandle||'')}"></label><label class="full">Short intro<textarea id="creatorBio" rows="3">${escapeHtml(data.creatorBio||'')}</textarea></label><label class="full">Instagram link (https)<input id="creatorLink" value="${escapeHtml(data.creatorLink||'')}"></label></div><button class="v14-pill-btn primary" data-save-creator>Save creator profile ❤️</button><div class="v14-settings-actions"><button class="v14-pill-btn" data-dark>${data.dark?'☀️ Light':'🌙 Dark'}</button><button class="v14-pill-btn" data-backup>💾 Backup</button><button class="v14-pill-btn" data-restore>📥 Restore</button><button class="v14-pill-btn" data-csv>📊 CSV</button><button class="v14-pill-btn" data-install>📱 Install</button><input id="restoreFile" type="file" accept=".json" hidden></div><div class="note">Core progress stays local on this device. The community counter needs internet access.</div></section>`;
+}
+
+
+function v14Drawer(){
+  return `<div class="v14-drawer-backdrop" data-close-drawer></div><aside class="v14-drawer"><div class="v14-drawer-head"><div><span class="v14-kicker">WINTER ARC 2026</span><h2>Winter Arc Tracker</h2><p>1 Oct → 31 Dec · Progress stays on this device.</p></div><button class="v14-close" data-close-drawer>×</button></div>${v14CommunityMini()}<div class="v14-drawer-links"><button data-tab="today">🏠 <span>Today</span></button><button data-tab="week">📅 <span>Week</span></button><button data-tab="month">🗓️ <span>Month</span></button><button data-tab="arc">❄️ <span>Arc</span></button><button data-open-share-center>↗ <span>Share & invite</span></button><div class="v14-drawer-label">TOOLS</div><button data-more="manage">✅ <span>Manage habits</span></button><button data-more="goals">🎯 <span>Goals</span></button><button data-more="routine">🔁 <span>Routines</span></button><button data-more="planner">🗓️ <span>Day planner</span></button><button data-more="checkin">🌤️ <span>Mood & energy</span></button><button data-more="sleep">😴 <span>Sleep</span></button><button data-more="journal">✍️ <span>Journal</span></button><button data-more="reminders">⏰ <span>Reminders</span></button><button data-more="security">🔐 <span>Privacy</span></button><button data-more="settings">⚙️ <span>Settings</span></button><button data-more="credits">❤️ <span>Credits</span></button></div><div class="v14-drawer-foot"><span>Made for small wins.</span><b>V14</b></div></aside>`;
+}
+
+function v14Shell(){
+  const body=tab==='today'?v14TodayPage():tab==='week'?v14WeekPage():tab==='month'?v14MonthPage():tab==='more'?v14MorePage():v14ArcPage();
+  const s=stats(), labels={today:'Today',week:'Week',month:'Month',arc:'Arc'};
+  return `<div class="v14-app"><header class="v14-topbar"><button class="v14-menu" data-open-drawer aria-label="Open menu">☰</button><div class="v14-brand"><strong>Winter Arc</strong> <span>Tracker</span></div><div class="v14-top-actions"><button class="v14-top-icon" data-open-share-center aria-label="Share">↗</button><button class="v14-top-icon" data-dark aria-label="Theme">${data.dark?'☀️':'◔'}</button><button class="v14-frost" data-tab="arc" aria-label="Arc">❄️</button></div></header><nav class="v14-tabs">${Object.entries(labels).map(([n,l])=>`<button data-tab="${n}" class="${tab===n?'active':''}">${l}</button>`).join('')}</nav><div class="v14-meta-line"><span>${data.name?`Hi, ${escapeHtml(data.name)} 👋`:'Your progress'}</span><span>${s.todayDone}/${data.habits.length} today</span></div><main class="v14-main">${body}</main><button class="v14-fab" data-fab aria-label="Add habit">${quickOpen?'×':'+'}</button>${quickOpen?`<div class="v14-fab-menu"><button data-quick="habit">✅ Add habit</button><button data-quick="goals">🎯 Goal</button><button data-quick="routine">🔁 Routine</button></div>`:''}${selectedHabit?habitOverlay():''}${!data.onboardingDone&&!data.pinHash?onboarding():''}${window.__v11QuickModal?quickModal():''}${newHabitOpen?newHabitModal():''}${window.__v14ShareCenter?v14ShareModal():''}</div>`;
+}
+
+/* Make advanced tools use the new clean surface. */
+v12TodayPage=v14TodayPage;
+v12WeekPage=v14WeekPage;
+v12MonthPage=v14MonthPage;
+v12ArcPage=v14ArcPage;
+v12Topbar=function(){return '';};
+morePage=v14MorePage;
+settingsHtml=v14SettingsHtml;
+creatorCard=v14CreatorCard;
+v12Drawer=v14Drawer;
+
+/* Real share card: 4:5 PNG with creator identity. */
+async function v133MakeShareBlob(){
+  const c=document.createElement('canvas'); c.width=1080;c.height=1350; const ctx=c.getContext('2d');
+  const s=stats(),day=v13ArcDay(),L=v13ArcLength(),pct=day?Math.min(100,Math.round(day/L*100)):0,best=Math.max(0,...data.habits.map(h=>habitStats(h).longest)),wins=v13TotalWins();
+  ctx.fillStyle='#f5f3ed';ctx.fillRect(0,0,c.width,c.height);
+  const g=ctx.createLinearGradient(0,0,0,780);g.addColorStop(0,'#173f47');g.addColorStop(1,'#153c2e');ctx.fillStyle=g;v133RoundRect(ctx,46,46,988,760,48);ctx.fill();
+  v133Text(ctx,'❄  WINTER ARC 2026',92,132,31,'800','left','#a8e1bf');
+  v133Text(ctx,day?`DAY ${day} / ${L}`:'STARTS TOMORROW',92,235,76,'900','left','#ffffff');
+  v133Text(ctx,day?`${pct}% of the Arc completed`:'Setup day · Day 1 starts tomorrow',92,290,28,'700','left','#d9eee5');
+  v133RoundRect(ctx,92,344,896,24,12);ctx.fillStyle='rgba(255,255,255,.16)';ctx.fill();v133RoundRect(ctx,92,344,Math.max(12,896*pct/100),24,12);ctx.fillStyle='#75cf94';ctx.fill();
+  v133Text(ctx,`${s.todayDone}/${data.habits.length} habits today`,92,470,48,'800','left','#ffffff');
+  v133Text(ctx,`🔥 Best streak ${best} days`,92,532,34,'700','left','#d9eee5');
+  v133Text(ctx,`🏁 ${wins} Arc wins`,92,588,34,'700','left','#d9eee5');
+  const img=await v133LoadCreatorPhoto();if(img){ctx.save();v133RoundRect(ctx,810,610,140,140,32);ctx.clip();ctx.drawImage(img,810,610,140,140);ctx.restore();}
+  v133Text(ctx,'SMALL WINS. REAL PROGRESS.',92,876,34,'900','left','#3da35d');
+  v133Text(ctx,'Keep your Arc moving.',92,944,52,'900','left','#202020');
+  v133Text(ctx,'Share your day. Invite a friend to start.',92,992,27,'600','left','#686868');
+  v133Text(ctx,creatorName(),92,1060,32,'800','left','#202020');
+  const h=creatorHandle();if(h)v133Text(ctx,h,92,1102,29,'800','left','#3da35d');
+  v133Text(ctx,'Winter Arc Tracker',988,1102,24,'800','right','#767676');
+  v133Text(ctx,'1 OCT → 31 DEC 2026',92,1176,23,'800','left','#8b8b8b');
+  v133Text(ctx,'Start your own Arc ❄️',988,1176,23,'800','right','#3da35d');
+  return new Promise(r=>c.toBlob(r,'image/png',.95));
+}
+
+async function v133ShareProgress(){
+  try{
+    const blob=await v133MakeShareBlob(); if(!blob)throw new Error('image');
+    const file=new File([blob],'winter-arc-progress-v14.png',{type:'image/png'});
+    const text=v133ShareText();
+    if(navigator.share){
+      if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({title:'Winter Arc Tracker',text,files:[file]});showToast('4:5 progress card shared ❄️');return;}catch(e){}}
+      try{await navigator.share({title:'Winter Arc Tracker',text});showToast('Progress shared ↗');return;}catch(e){}
+    }
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='winter-arc-progress-v14.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+    try{if(navigator.clipboard)await navigator.clipboard.writeText(text)}catch(e){}
+    showToast('4:5 card saved 📤');
+  }catch(e){
+    const text=v133ShareText();try{if(navigator.clipboard){await navigator.clipboard.writeText(text);showToast('Share text copied ↗');return;}}catch(err){}alert(text);
+  }
+}
+
+async function v133InviteFriends(){
+  const text=`Join me for Winter Arc 2026 ❄️\nStart your own daily habit Arc from 1 Oct to 31 Dec.\n\n${v133ShareUrl()}`;
+  try{if(navigator.share){await navigator.share({title:'Join Winter Arc 2026',text});showToast('Invite ready 🤝');return;}}catch(e){}
+  try{await navigator.clipboard.writeText(text);showToast('Invite link copied 🤝');}catch(e){alert(text)}
+}
+
+/* V14 event bridge for the share center. */
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('button');
+  if(!b)return;
+  if(b.dataset.openShareCenter!==undefined){e.preventDefault();e.stopImmediatePropagation();window.__v14ShareCenter=true;render();return;}
+  if(b.dataset.closeShareCenter!==undefined || (e.target.closest('.v14-share-overlay') && e.target===e.target.closest('.v14-share-overlay'))){e.preventDefault();e.stopImmediatePropagation();window.__v14ShareCenter=false;render();return;}
+  if(b.dataset.downloadCard!==undefined){e.preventDefault();e.stopImmediatePropagation();try{const blob=await v133MakeShareBlob();const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='winter-arc-progress-v14.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);showToast('4:5 card saved ↓')}catch(err){showToast('Could not save card')}}
+  if(b.dataset.openInstagram!==undefined){e.preventDefault();e.stopImmediatePropagation();const u=safeHttpsUrl(data.creatorLink);if(u)window.open(u,'_blank','noopener');else showToast('Add your Instagram link in Settings');}
+},{capture:true});
+
+/* V14 share buttons get first chance, so only one share flow fires. */
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.shareProgress!==undefined){e.preventDefault();e.stopImmediatePropagation();await v133ShareProgress();return;}
+  if(b.dataset.shareInvite!==undefined){e.preventDefault();e.stopImmediatePropagation();await v133InviteFriends();return;}
+},{capture:true});
+
+/* Reuse existing shell helpers but return the V14 surface. */
+function v12Shell(){return v14Shell();}
+
 
 communityCheckin();
 render();
