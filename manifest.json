@@ -1,9 +1,11 @@
 {
-  "name": "Progress Tracker V10.1",
+  "name": "Progress Tracker V11",
   "short_name": "Progress Tracker",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#f5f7fb",
   "theme_color": "#635bff",
-  "description": "Personal growth and habit tracker"
+  "description": "Offline-first personal growth and habit tracker"
 }
