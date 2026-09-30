@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 
-const VERSION='V18.0';
+const VERSION='V17.1';
 const WINTER_ARC_START='2026-10-01';
 const WINTER_ARC_END='2026-12-31';
 const WINTER_ARC_LENGTH=92;
@@ -1900,7 +1900,7 @@ data.schema=17;
 if(data.profileCreated||data.onboardingDone)save();
 
 
-/* ========================= V18 MOBILE-FIRST UX PATCH =========================
+/* ========================= V17.1 MOBILE-FIRST UX PATCH =========================
    Rebuilds only the user-facing shell. Existing data + deeper features remain available.
    Goals: mobile-first layout, fewer cards, faster taps, clickable creator profile card,
    and one useful new feature: Focus Sprint.
@@ -2104,7 +2104,7 @@ if(data.profileCreated||data.onboardingDone)save();
     else if(tab==='download')body=`<div class="v171-inner v171-content">${v16GetAppPage()}</div>`;
     else body=v171More();
     const s=stats(),day=v13ArcDay(),L=v13ArcLength(),pct=v13ArcProgress();
-    return `<div class="v171-shell"><header class="v171-top"><div class="v171-toprow"><button class="v171-menu" data-v171-menu aria-label="Menu">☰</button><div class="v171-brand"><b>Winter Arc</b><span>DAY ${day} · ${pct}% complete · V18</span></div><button class="v171-topbtn" data-dark aria-label="Theme">${data.dark?'☀️':'◔'}</button><button class="v171-topbtn primary" data-open-share-center aria-label="Share">↗</button></div></header>${body}<nav class="v171-nav"><div class="v171-nav-inner">${v171NavButton('today','🏠','Today')}${v171NavButton('week','📅','Week')}${v171NavButton('arc','❄️','Arc')}${v171NavButton('more','•••','More')}</div></nav>${v171Menu?v171MenuSheet():''}${v171CreatorOpen?v171ProfileModal():''}${v171SprintOpen?v171SprintModal():''}</div>`;
+    return `<div class="v171-shell"><header class="v171-top"><div class="v171-toprow"><button class="v171-menu" data-v171-menu aria-label="Menu">☰</button><div class="v171-brand"><b>Winter Arc</b><span>DAY ${day} · ${pct}% complete · V17.1</span></div><button class="v171-topbtn" data-dark aria-label="Theme">${data.dark?'☀️':'◔'}</button><button class="v171-topbtn primary" data-open-share-center aria-label="Share">↗</button></div></header>${body}<nav class="v171-nav"><div class="v171-nav-inner">${v171NavButton('today','🏠','Today')}${v171NavButton('week','📅','Week')}${v171NavButton('arc','❄️','Arc')}${v171NavButton('more','•••','More')}</div></nav>${v171Menu?v171MenuSheet():''}${v171CreatorOpen?v171ProfileModal():''}${v171SprintOpen?v171SprintModal():''}</div>`;
   }
 
   function v171ClearSprint(){
@@ -2168,216 +2168,6 @@ if(data.profileCreated||data.onboardingDone)save();
     const b=e.target.closest('a');
     if(!b)return;
   },{passive:true});
-})();
-
-
-/* ========================= V18 MAJOR UX =========================
-   Mobile-first entry, unified completion action, My Profile, creator credit on first screen,
-   simple sharing, and a calmer information hierarchy.
-*/
-(function(){
-  const V18='V18.0';
-  let v18Step=0;
-  let v18Focus='discipline';
-  let v18Habits=[];
-  let v18CustomHabit='';
-  let v18CreatorOpen=false;
-  let v18CreatorPhoto='creator-profile.jpg';
-  let v18SprintOpen=false;
-  let v18SprintRunning=false;
-  let v18SprintMinutes=10;
-  let v18SprintEndsAt=0;
-  let v18SprintTimer=null;
-
-  const v18GoalMap={
-    discipline:{icon:'🎯',label:'Build discipline'},
-    study:{icon:'📚',label:'Study / work'},
-    fitness:{icon:'💪',label:'Get fitter'},
-    mind:{icon:'🧠',label:'Improve my mind'},
-    personal:{icon:'✨',label:'Personal growth'}
-  };
-
-  function v18Style(){
-    if(document.getElementById('v18-style'))return;
-    const s=document.createElement('style');s.id='v18-style';
-    s.textContent=`
-      :root{--v18-green:#3da35d;--v18-green2:#2e7d49;--v18-soft:#eef7ef;--v18-bg:var(--bg,#f5f3ed);--v18-card:var(--card,#fff);--v18-line:var(--line,#e5e6df);--v18-muted:var(--muted,#727972);}
-      html,body{margin:0;min-height:100%;width:100%;overflow-x:hidden;-webkit-text-size-adjust:100%;}
-      body{background:var(--v18-bg);color:var(--ink,#202522);touch-action:manipulation;}
-      button,a,input{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
-      .v18-app{min-height:100dvh;padding-bottom:92px;background:var(--v18-bg)}
-      .v18-wrap{width:min(100%,760px);margin:0 auto;padding:0 14px}
-      .v18-top{position:sticky;top:0;z-index:25;background:color-mix(in srgb,var(--v18-bg) 90%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid color-mix(in srgb,var(--v18-line) 75%,transparent);padding:10px 12px}
-      .v18-toprow{width:min(100%,760px);margin:auto;display:flex;align-items:center;gap:8px}.v18-brand{flex:1;min-width:0}.v18-brand b{display:block;font-size:17px;line-height:1.1;letter-spacing:-.02em}.v18-brand span{display:block;color:var(--v18-muted);font-size:9px;margin-top:3px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
-      .v18-iconbtn{width:42px;height:42px;border:1px solid var(--v18-line);background:var(--v18-card);color:inherit;border-radius:14px;display:grid;place-items:center;font-size:18px}
-      .v18-avatarbtn{width:42px;height:42px;border:1px solid var(--v18-line);background:var(--v18-card);color:#2d7d47;border-radius:14px;display:grid;place-items:center;font-size:15px;font-weight:950;overflow:hidden;padding:0}
-      .v18-main{padding-top:12px}.v18-card{background:var(--v18-card);border:1px solid var(--v18-line);border-radius:21px;padding:15px;margin:10px 0;box-shadow:0 8px 24px rgba(30,44,34,.045)}
-      .v18-hero{background:linear-gradient(145deg,#153f3a,#183b2c);color:#fff;border:0;padding:19px;box-shadow:0 18px 38px rgba(24,64,45,.16)}
-      .v18-kicker{font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:950;color:#3b7e50}.v18-hero .v18-kicker{color:#b9e7c6}.v18-title{font-size:30px;line-height:1.02;letter-spacing:-.045em;margin:7px 0}.v18-sub{font-size:12px;line-height:1.5;color:var(--v18-muted);margin:0}.v18-hero .v18-sub{color:#d9ece1}
-      .v18-bigday{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;margin-top:16px}.v18-day{font-weight:950;font-size:34px;letter-spacing:-.05em;line-height:.95}.v18-day span{font-size:14px;opacity:.7;letter-spacing:0}.v18-pct{font-size:27px;font-weight:950}.v18-pct small{display:block;font-size:9px;opacity:.7;text-transform:uppercase;letter-spacing:.1em;text-align:right}
-      .v18-progress{height:9px;background:rgba(255,255,255,.14);border-radius:999px;overflow:hidden;margin:15px 0 10px}.v18-progress i{display:block;height:100%;border-radius:inherit;background:#7bd29a}
-      .v18-pillrow{display:flex;gap:6px;flex-wrap:wrap}.v18-pill{padding:7px 9px;border-radius:999px;background:rgba(255,255,255,.08);font-size:10px;font-weight:800;color:#d8eee4}
-      .v18-sectionhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.v18-sectionhead h2{margin:0;font-size:17px;letter-spacing:-.02em}.v18-muted{color:var(--v18-muted);font-size:10px}
-      .v18-next{display:grid;grid-template-columns:46px 1fr 52px;gap:10px;align-items:center;background:var(--v18-soft);border:1px solid #d6e5d8;border-radius:18px;padding:12px}.v18-nexticon{width:46px;height:46px;border-radius:14px;background:#fff;display:grid;place-items:center;font-size:22px}.v18-nextcopy b{display:block;font-size:15px}.v18-nextcopy span{display:block;margin-top:3px;color:var(--v18-muted);font-size:10px;line-height:1.35}.v18-complete{width:52px;height:52px;border-radius:16px;border:1px solid #cfe1d2;background:#fff;color:#2f7f49;font-weight:950;font-size:21px}.v18-complete.done{background:var(--v18-green);border-color:var(--v18-green);color:#fff}
-      .v18-habits{display:grid;gap:8px}.v18-habit{display:grid;grid-template-columns:40px 1fr 44px;gap:9px;align-items:center;padding:10px;border:1px solid var(--v18-line);border-radius:16px;background:var(--v18-card)}.v18-hicon{width:40px;height:40px;border-radius:12px;background:#f3f6f2;display:grid;place-items:center;font-size:19px}.v18-hmain{min-width:0}.v18-hmain b{display:block;font-size:13px}.v18-hmain small{display:block;margin-top:3px;color:var(--v18-muted);font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v18-hstats{display:flex;gap:7px;flex-wrap:wrap;margin-top:4px;color:var(--v18-muted);font-size:8px;font-weight:800}.v18-tick{width:44px;height:44px;border-radius:13px;border:1px solid #d9e4db;background:#fbfdfb;color:#2e7d49;font-size:19px;font-weight:950}.v18-tick.done{background:var(--v18-green);border-color:var(--v18-green);color:#fff}
-      .v18-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.v18-btn{min-height:44px;border-radius:14px;border:1px solid var(--v18-line);background:var(--v18-card);color:inherit;font-size:11px;font-weight:900;padding:10px}.v18-btn.primary{background:var(--v18-green);border-color:var(--v18-green);color:#fff}.v18-btn:active,.v18-tick:active,.v18-complete:active{transform:scale(.97)}
-      .v18-nav{position:fixed;left:0;right:0;bottom:0;z-index:35;padding:7px 10px calc(7px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--v18-card) 94%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--v18-line)}.v18-navinner{width:min(100%,760px);margin:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.v18-nav button{min-height:56px;border:0;background:transparent;border-radius:15px;color:var(--v18-muted);font-size:9px;font-weight:900;display:grid;place-items:center;gap:2px}.v18-nav button b{font-size:18px}.v18-nav button.active{background:var(--v18-soft);color:#2d7d47}
-      .v18-statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.v18-stat{background:#f6f8f5;border:1px solid var(--v18-line);border-radius:16px;padding:12px}.v18-stat b{display:block;font-size:21px}.v18-stat span{display:block;color:var(--v18-muted);font-size:9px;margin-top:3px}.v18-profilehero{display:grid;grid-template-columns:70px 1fr;gap:12px;align-items:center}.v18-profilephoto{width:70px;height:70px;border-radius:20px;background:#eef5ef;color:#2d7d47;display:grid;place-items:center;font-size:25px;font-weight:950}.v18-profilehero h1{margin:0;font-size:23px;letter-spacing:-.04em}.v18-profilehero p{margin:4px 0 0;color:var(--v18-muted);font-size:10px}
-      .v18-sharecard{background:linear-gradient(145deg,#234f57,#183a2a);color:#fff;border-radius:22px;padding:17px;min-height:205px;display:flex;flex-direction:column;justify-content:space-between}.v18-sharecard small{letter-spacing:.12em;color:#bfe8ca;font-weight:900;font-size:8px}.v18-sharecard strong{display:block;font-size:38px;letter-spacing:-.05em;line-height:1}.v18-sharecard span{font-size:10px;color:#d5e9dd}.v18-sharestats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.v18-sharestats div{background:rgba(255,255,255,.08);border-radius:12px;padding:8px}.v18-sharestats b{display:block;font-size:15px}.v18-sharestats small{display:block;color:#cfe4d6;letter-spacing:0;margin-top:2px;font-size:8px}
-      .v18-achievements{display:grid;grid-template-columns:1fr 1fr;gap:8px}.v18-ach{padding:11px;border:1px solid var(--v18-line);border-radius:15px;background:var(--v18-card)}.v18-ach b{display:block;font-size:11px}.v18-ach span{display:block;color:var(--v18-muted);font-size:9px;margin-top:3px}
-      .v18-creator{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--v18-line);background:var(--v18-card);border-radius:17px;width:100%;text-align:left}.v18-creator img{width:49px;height:49px;border-radius:15px;object-fit:cover;flex:none}.v18-creatorcopy{flex:1;min-width:0}.v18-creatorcopy small{display:block;color:var(--v18-muted);font-size:8px;font-weight:900;letter-spacing:.08em}.v18-creatorcopy b{display:block;font-size:12px;margin-top:2px}.v18-creatorcopy span{display:block;color:#2d7d47;font-size:9px;font-weight:850;margin-top:2px}.v18-arrow{font-size:20px;color:var(--v18-muted)}
-      .v18-overlay{position:fixed;inset:0;z-index:80;background:rgba(8,14,10,.5);display:flex;align-items:flex-end;justify-content:center;padding:10px}.v18-sheet{width:min(100%,700px);max-height:92dvh;overflow:auto;background:var(--v18-card);color:var(--ink,#202522);border-radius:25px 25px 16px 16px;padding:15px;box-shadow:0 24px 80px rgba(0,0,0,.25)}.v18-sheethead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.v18-close{width:40px;height:40px;border:1px solid var(--v18-line);background:var(--v18-card);border-radius:13px;font-size:20px}.v18-mainphoto{width:100%;aspect-ratio:1/1;border-radius:20px;object-fit:cover;background:#eef2ed}.v18-thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:8px}.v18-thumb{padding:0;aspect-ratio:1;border:2px solid transparent;border-radius:13px;overflow:hidden;background:#eef2ed}.v18-thumb.active{border-color:var(--v18-green)}.v18-thumb img{width:100%;height:100%;object-fit:cover}.v18-formgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.v18-label{font-size:10px;color:var(--v18-muted);font-weight:850}.v18-input{width:100%;height:46px;margin-top:5px;border:1px solid var(--v18-line);border-radius:13px;background:var(--v18-card);color:inherit;padding:10px;outline:none}.v18-goals{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0}.v18-choice{min-height:74px;text-align:left;border:1px solid var(--v18-line);background:var(--v18-card);border-radius:16px;padding:12px}.v18-choice.selected{background:var(--v18-soft);border-color:#9fc7a8}.v18-choice span{display:block;font-size:21px}.v18-choice b{display:block;margin-top:5px;font-size:11px}.v18-choice small{display:block;color:var(--v18-muted);font-size:8px;margin-top:2px}
-      .v18-entry{min-height:100dvh;display:grid;place-items:center;padding:14px;background:radial-gradient(circle at 50% -10%,rgba(61,163,93,.14),transparent 38%),var(--v18-bg)}.v18-entrycard{width:min(100%,520px);background:var(--v18-card);border:1px solid var(--v18-line);border-radius:27px;padding:21px;box-shadow:0 18px 60px rgba(20,30,24,.10)}.v18-entryhero{text-align:center;padding:9px 6px 14px}.v18-logo{width:64px;height:64px;border-radius:20px;background:var(--v18-green);color:#fff;display:grid;place-items:center;font-size:30px;margin:0 auto 13px;box-shadow:0 12px 30px rgba(61,163,93,.25)}.v18-entryhero h1{font-size:31px;line-height:1.02;letter-spacing:-.05em;margin:8px 0}.v18-entryhero p{margin:0;color:var(--v18-muted);font-size:12px;line-height:1.5}.v18-entrycredit{margin:15px 0 12px}.v18-entrycredit label{display:block;color:var(--v18-muted);font-size:8px;letter-spacing:.1em;font-weight:900;margin-bottom:6px}.v18-entrycredit button{width:100%;border:1px solid var(--v18-line);background:#f8faf7;border-radius:16px;padding:9px;display:flex;align-items:center;gap:9px;text-align:left}.v18-entrycredit img{width:43px;height:43px;border-radius:14px;object-fit:cover}.v18-entrycredit b{display:block;font-size:11px}.v18-entrycredit span{display:block;color:var(--v18-muted);font-size:9px;margin-top:2px}.v18-entrycredit strong{margin-left:auto;color:#2d7d47;font-size:18px}.v18-steps{display:flex;justify-content:center;gap:5px;margin:5px 0 13px}.v18-dot{width:7px;height:7px;border-radius:50%;background:#dfe5df}.v18-dot.on{background:var(--v18-green);transform:scale(1.15)}.v18-setuphead h1{margin:0;font-size:27px;letter-spacing:-.045em}.v18-setuphead p{margin:5px 0;color:var(--v18-muted);font-size:11px;line-height:1.45}.v18-habitpicks{display:grid;gap:7px;margin:12px 0}.v18-pick{display:flex;align-items:center;gap:9px;border:1px solid var(--v18-line);background:var(--v18-card);border-radius:15px;padding:10px;text-align:left}.v18-pick.selected{background:var(--v18-soft);border-color:#9fc7a8}.v18-pickicon{width:38px;height:38px;border-radius:11px;background:#f3f6f2;display:grid;place-items:center;font-size:18px;flex:none}.v18-pickcopy{flex:1;min-width:0}.v18-pickcopy b{display:block;font-size:11px}.v18-pickcopy small{display:block;color:var(--v18-muted);font-size:8px;margin-top:2px}.v18-pickmark{font-size:19px;color:#2d7d47;font-weight:950}
-      @media(max-width:540px){.v18-wrap{padding:0 9px}.v18-top{padding-left:8px;padding-right:8px}.v18-title{font-size:28px}.v18-entrycard{padding:18px 15px}.v18-goals{grid-template-columns:1fr 1fr}.v18-formgrid{grid-template-columns:1fr}}
-      @media(min-width:900px){.v18-wrap{width:min(100%,900px)}.v18-main{display:grid;grid-template-columns:1.15fr .85fr;gap:10px;align-items:start}.v18-main>.v18-card{margin:0}.v18-wide{grid-column:1/-1}.v18-navinner{width:min(100%,900px)}.v18-toprow{width:min(100%,900px)}}
-      body.dark .v18-choice,body.dark .v18-pick,body.dark .v18-entrycredit button,body.dark .v18-stat,body.dark .v18-habit{background:#151a16}body.dark .v18-pickicon,body.dark .v18-nexticon{background:#202a22}
-    `;
-    document.head.appendChild(s);
-  }
-
-  function v18CreatorCard(){
-    const n=creatorName(),h=creatorHandle(),photo=data.creatorPhoto||'creator-profile.jpg';
-    return `<div class="v18-entrycredit"><label>BUILT BY</label><button type="button" data-v18-creator-open><img src="${escapeHtml(photo)}" alt="${escapeHtml(n)}"><span><b>${escapeHtml(n)}</b>${h?`<span>${escapeHtml(h)}</span>`:''}<span>Creator of Winter Arc Tracker</span></span><strong>›</strong></button></div>`;
-  }
-
-  function v18Welcome(){
-    return `<div class="v18-entry"><div class="v18-entrycard"><div class="v18-entryhero"><div class="v18-logo">❄️</div><div class="v18-kicker">WINTER ARC · 2026</div><h1>Your next 92 days.</h1><p>One simple place for your habits, streaks and small wins.</p></div><div class="v18-steps"><i class="v18-dot on"></i><i class="v18-dot"></i><i class="v18-dot"></i></div>${v18CreatorCard()}<button class="v18-btn primary" style="width:100%;min-height:50px" data-v18-next>🚀 Start my Arc</button><button class="v18-btn" style="width:100%;margin-top:7px" data-v18-existing>↪ I already have an Arc</button><p class="v18-muted" style="text-align:center;margin:11px 0 0">Start simple. Change anything later.</p></div></div>`;
-  }
-
-  function v18Setup(){
-    const goals=Object.entries(v18GoalMap);
-    return `<div class="v18-entry"><div class="v18-entrycard"><div class="v18-steps"><i class="v18-dot on"></i><i class="v18-dot on"></i><i class="v18-dot"></i></div><div class="v18-setuphead"><div class="v18-kicker">QUICK SETUP</div><h1>Let’s make this your Arc.</h1><p>Just two things. You can customize the rest after you start.</p></div><div style="margin-top:13px"><label class="v18-label">YOUR NAME<input id="v18Name" class="v18-input" autocomplete="name" placeholder="Your name" value="${escapeHtml(data.name||'')}"></label></div><div style="margin-top:13px"><label class="v18-label">WHAT DO YOU WANT TO IMPROVE?</label><div class="v18-goals">${goals.map(([id,g])=>`<button type="button" class="v18-choice ${v18Focus===id?'selected':''}" data-v18-goal="${id}"><span>${g.icon}</span><b>${escapeHtml(g.label)}</b><small>${id==='discipline'?'Build a consistent routine':id==='study'?'Study or work better':id==='fitness'?'Move more and feel stronger':id==='mind'?'Calmer, clearer days':'Choose your own direction'}</small></button>`).join('')}</div></div><div class="v18-actions" style="margin-top:13px"><button class="v18-btn" data-v18-back>Back</button><button class="v18-btn primary" data-v18-next>Choose habits →</button></div></div></div>`;
-  }
-
-  function v18HabitList(){
-    const map={
-      discipline:['Study / Work','Exercise','Less Phone'],
-      study:['Study / Work','Read','Less Phone'],
-      fitness:['Exercise','Walk','Healthy Food'],
-      mind:['Meditation','Read','Less Phone'],
-      personal:['Read','Exercise','Meditation']
-    };
-    const names=[...(map[v18Focus]||map.discipline),...PRESETS.filter(x=>!x.private).map(x=>x.name)].filter((x,i,a)=>a.indexOf(x)===i).slice(0,7);
-    if(!v18Habits.length)v18Habits=map[v18Focus]||map.discipline;
-    return names.map(name=>{const p=preset(name);const sel=v18Habits.includes(name);return `<button type="button" class="v18-pick ${sel?'selected':''}" data-v18-habit="${escapeHtml(name)}"><span class="v18-pickicon">${escapeHtml(p?.icon||'✅')}</span><span class="v18-pickcopy"><b>${escapeHtml(name)}</b><small>${escapeHtml(p?.action||'Do the smallest useful version')}</small></span><strong class="v18-pickmark">${sel?'✓':'+'}</strong></button>`}).join('');
-  }
-
-  function v18HabitsStep(){
-    return `<div class="v18-entry"><div class="v18-entrycard"><div class="v18-steps"><i class="v18-dot on"></i><i class="v18-dot on"></i><i class="v18-dot on"></i></div><div class="v18-setuphead"><div class="v18-kicker">FIRST WINS</div><h1>We picked a simple start.</h1><p>Start with <b>3 habits</b>. You can add more anytime.</p></div><div class="v18-habitpicks">${v18HabitList()}</div><div class="v18-actions"><button class="v18-btn" data-v18-back>Back</button><button class="v18-btn primary" data-v18-finish ${v18Habits.length?'':'disabled'}>Start my Arc 🚀</button></div></div></div>`;
-  }
-
-  function v18Ready(){
-    const h=data.habits[0];
-    return `<div class="v18-entry"><div class="v18-entrycard"><div class="v18-entryhero"><div class="v18-logo" style="font-size:28px">✓</div><div class="v18-kicker">YOUR ARC IS READY</div><h1>Let’s make today count.</h1><p>${escapeHtml(data.name||'You')}, your first action is ready. No perfect plan needed.</p></div><div class="v18-statgrid"><div class="v18-stat"><b>92</b><span>days</span></div><div class="v18-stat"><b>${data.habits.length}</b><span>habits</span></div><div class="v18-stat"><b>1</b><span>focus</span></div></div><div class="v18-next" style="margin-top:12px"><div class="v18-nexticon">${escapeHtml(h?.icon||'🎯')}</div><div class="v18-nextcopy"><b>${escapeHtml(h?.name||'First win')}</b><span>${escapeHtml(h?.action||'Do the smallest useful version')}</span></div><span style="font-size:24px">→</span></div><button class="v18-btn primary" style="width:100%;margin-top:13px;min-height:50px" data-v18-enter>Start Today →</button><button class="v18-btn" style="width:100%;margin-top:7px" data-v18-community>🌍 Join the community</button><p class="v18-muted" style="text-align:center;margin:10px 0 0">Community is optional. Your tracker works without it.</p></div></div>`;
-  }
-
-  function v18Entry(){if(v18Step===0)return v18Welcome();if(v18Step===1)return v18Setup();if(v18Step===2)return v18HabitsStep();return v18Ready();}
-
-  function v18ProfilePage(){
-    const s=stats(),day=v13ArcDay(),L=v13ArcLength(),pct=v13ArcProgress(),best=Math.max(0,...data.habits.map(h=>habitStats(h).longest)),wins=v13TotalWins();
-    const goal=v18GoalMap[data.goal]?.label||data.goal||'Your focus'; const initial=escapeHtml((data.name||'A').slice(0,1).toUpperCase());
-    const ach=achievements().filter(x=>x[1]).slice(0,6);
-    return `<div class="v18-wrap v18-main"><section class="v18-card v18-wide"><div class="v18-profilehero"><div class="v18-profilephoto" aria-hidden="true">${initial}</div><div><div class="v18-kicker">MY PROFILE</div><h1>${escapeHtml(data.name||'Your Arc')}</h1><p>${escapeHtml(goal)} · Winter Arc 2026</p></div></div><div class="v18-bigday" style="margin-top:15px;color:var(--ink,#202522)"><div class="v18-day" style="font-size:28px">DAY ${day||0} <span>/ ${L}</span></div><div class="v18-pct" style="font-size:25px">${pct}%<small>Arc</small></div></div><div class="v18-progress" style="background:#e4ebe5"><i style="width:${Math.min(100,pct)}%"></i></div><div class="v18-actions" style="margin-top:12px"><button class="v18-btn primary" data-v18-share-profile>↗ Share My Arc</button><button class="v18-btn" data-v18-nav="today">Today →</button></div></section><section class="v18-card"><div class="v18-sectionhead"><h2>Your numbers</h2><span class="v18-muted">All time</span></div><div class="v18-statgrid"><div class="v18-stat"><b>${s.todayDone}/${data.habits.length}</b><span>Today</span></div><div class="v18-stat"><b>${best}🔥</b><span>Best streak</span></div><div class="v18-stat"><b>${wins}</b><span>Arc wins</span></div></div></section><section class="v18-card"><div class="v18-sectionhead"><h2>🏆 Achievements</h2><span class="v18-muted">${ach.length} unlocked</span></div><div class="v18-achievements">${(ach.length?ach:[['First win',s.completed>0],['3-day streak',best>=3]]).map(([name,on])=>`<div class="v18-ach"><b>🏆 ${escapeHtml(name)}</b><span>Unlocked on your journey</span></div>`).join('')}</div></section><section class="v18-card"><div class="v18-sectionhead"><h2>❄️ My Journey</h2><span class="v18-muted">Day ${journeyDay()}</span></div><div class="v18-sharecard"><small>WINTER ARC 2026 · ${escapeHtml((data.name||'MY ARC').toUpperCase())}</small><strong>DAY ${day||0}/${L}</strong><span>Keep your next small win moving.</span><div class="v18-sharestats"><div><b>${pct}%</b><small>Arc</small></div><div><b>${best}</b><small>Best streak</small></div><div><b>${wins}</b><small>Wins</small></div></div></div><button class="v18-btn primary" style="width:100%;margin-top:9px" data-v18-share-profile>Share this card ↗</button></section></div>`;
-  }
-
-  function v18Today(){
-    const s=stats(),day=v13ArcDay(),L=v13ArcLength(),pct=s.todayDone&&data.habits.length?Math.round(s.todayDone/data.habits.length*100):0,f=focusHabit();
-    return `<div class="v18-wrap v18-main"><section class="v18-card v18-hero v18-wide"><div class="v18-kicker">${day?`WINTER ARC · DAY ${day}`:'WINTER ARC · STARTING SOON'}</div><div class="v18-bigday"><div class="v18-day">DAY ${day||0} <span>/ ${L}</span></div><div class="v18-pct">${pct}%<small>today</small></div></div><div class="v18-progress"><i style="width:${pct}%"></i></div><div class="v18-pillrow"><span class="v18-pill">${s.todayDone}/${data.habits.length} complete</span><span class="v18-pill">🔥 ${Math.max(0,...data.habits.map(h=>habitStats(h).run))} best</span></div></section><section class="v18-card"><div class="v18-sectionhead"><div><h2>🎯 Next up</h2><span class="v18-muted">One action. Then the next.</span></div></div>${f?`<div class="v18-next"><div class="v18-nexticon">${escapeHtml(f.icon)}</div><div class="v18-nextcopy"><b>${escapeHtml(f.name)}</b><span>${escapeHtml(f.smallWin||f.action||'Smallest useful version')}</span></div><button class="v18-complete ${done(f,today())?'done':''}" data-v18-complete="${escapeHtml(f.id)}">${done(f,today())?'✓':'→'}</button></div>`:'<div class="v18-sub">Add a habit to get your first action.</div>'}<div class="v18-actions" style="margin-top:10px"><button class="v18-btn primary" data-v18-sprint>⏱️ Focus Sprint</button><button class="v18-btn" data-v18-nav="profile">👤 My Profile</button></div></section><section class="v18-card"><div class="v18-sectionhead"><h2>✅ Today</h2><span class="v18-muted">Tap once</span></div><div class="v18-habits">${data.habits.length?data.habits.map(h=>{const d=today(),is=done(h,d),hs=habitStats(h);return `<article class="v18-habit"><div class="v18-hicon">${escapeHtml(h.icon||'✅')}</div><div class="v18-hmain"><b>${escapeHtml(h.name)}</b><small>${escapeHtml(h.action||'Smallest useful version')}</small><div class="v18-hstats"><span>🔥 ${hs.run}</span><span>${hs.weekPct}% week</span></div></div><button class="v18-tick ${is?'done':''}" data-v18-complete="${escapeHtml(h.id)}" aria-label="${is?'Undo':'Complete'} ${escapeHtml(h.name)}">${is?'✓':'+'}</button></article>`}).join(''):'<div class="v18-sub">Your first habit can be added in one tap.</div>'}</div></section>${s.todayDone===data.habits.length&&data.habits.length?`<section class="v18-card"><div class="v18-sectionhead"><div><h2>🔥 Day complete</h2><span class="v18-muted">Nice work. Save the moment.</span></div></div><div class="v18-actions"><button class="v18-btn primary" data-v18-share-profile>Share win ↗</button><button class="v18-btn" data-v18-sprint>Focus again</button></div></section>`:''}</div>`;
-  }
-
-  function v18More(){
-    if(morePanel){
-      return `<div class="v18-wrap v18-main"><section class="v18-card v18-wide"><div class="v18-sectionhead"><div><div class="v18-kicker">TOOLS</div><h2>${escapeHtml(morePanel[0].toUpperCase()+morePanel.slice(1))}</h2></div><button class="v18-iconbtn" data-v18-more-close>×</button></div>${morePanel==='credits'?v18CreatorPanel():panelHtml()}</section></div>`;
-    }
-    return `<div class="v18-wrap v18-main"><section class="v18-card v18-wide"><div class="v18-sectionhead"><div><div class="v18-kicker">MORE</div><h2>Everything else, kept simple.</h2></div></div><div class="v18-actions"><button class="v18-btn primary" data-v18-sprint>⏱️ Focus Sprint</button><button class="v18-btn" data-v18-share-profile>↗ Share My Arc</button></div></section><section class="v18-card"><div class="v18-sectionhead"><h2>Tools</h2><span class="v18-muted">Open when needed</span></div><div class="v18-goals"><button class="v18-choice" data-v18-more="manage"><span>✅</span><b>Habits</b><small>Add or edit habits</small></button><button class="v18-choice" data-v18-more="goals"><span>🎯</span><b>Goals</b><small>Set your direction</small></button><button class="v18-choice" data-v18-more="routine"><span>🔁</span><b>Routines</b><small>Run steps in order</small></button><button class="v18-choice" data-v18-more="checkin"><span>🌤️</span><b>Check-in</b><small>Mood & energy</small></button><button class="v18-choice" data-v18-more="journal"><span>✍️</span><b>Journal</b><small>One-line reflection</small></button><button class="v18-choice" data-v18-more="settings"><span>⚙️</span><b>Settings</b><small>Data, theme & install</small></button></div></section><section class="v18-card"><div class="v18-sectionhead"><h2>🌍 Community</h2><span class="v18-muted">Optional</span></div><p class="v18-sub">Share only what you choose. Core tracking remains local.</p><button class="v18-btn primary" style="width:100%;margin-top:9px" data-open-cloud>Join / manage community ↗</button></section>${v18CreatorCard()}</div>`;
-  }
-
-  function v18CreatorPanel(){
-    const n=creatorName(),h=creatorHandle(),link=safeHttpsUrl(data.creatorLink),bio=data.creatorBio||'Creator of Winter Arc Tracker';
-    return `<div><img class="v18-mainphoto" style="aspect-ratio:1.25/1;object-position:center" src="${escapeHtml(v18CreatorPhoto)}" alt="${escapeHtml(n)}"><div style="padding:12px 2px 5px"><div class="v18-kicker">CREDITS</div><h2 style="margin:4px 0;font-size:23px">${escapeHtml(n)}</h2>${h?`<div class="v18-muted" style="color:#2d7d47;font-weight:900">${escapeHtml(h)}</div>`:''}<p class="v18-sub" style="margin-top:6px">${escapeHtml(bio)}</p></div><div class="v18-thumbs">${['creator-profile.jpg','creator-photo-1.jpg','creator-photo-2.jpg','creator-photo-3.jpg'].map(x=>`<button type="button" class="v18-thumb ${v18CreatorPhoto===x?'active':''}" data-v18-creator-photo="${escapeHtml(x)}"><img src="${escapeHtml(x)}" alt="Creator photo"></button>`).join('')}</div><div class="v18-actions" style="margin-top:10px">${link?`<a class="v18-btn primary" href="${escapeHtml(link)}" target="_blank" rel="noopener" style="display:grid;place-items:center;text-decoration:none">Instagram ↗</a>`:''}<button class="v18-btn ${link?'':'primary'}" data-v18-share-profile>Share Tracker ↗</button></div></div>`;
-  }
-
-  function v18CreatorModal(){
-    const n=creatorName(),h=creatorHandle(),link=safeHttpsUrl(data.creatorLink),bio=data.creatorBio||'Creator of Winter Arc Tracker';
-    return `<div class="v18-overlay" data-v18-creator-close><div class="v18-sheet" role="dialog" aria-modal="true"><div class="v18-sheethead"><div><div class="v18-kicker">CREATOR PROFILE</div><h2 style="margin:3px 0">Meet ${escapeHtml(n)}</h2></div><button class="v18-close" data-v18-creator-close>×</button></div><img class="v18-mainphoto" src="${escapeHtml(v18CreatorPhoto)}" alt="${escapeHtml(n)}"><div style="padding:11px 2px 3px"><h2 style="margin:0;font-size:21px">${escapeHtml(n)}</h2>${h?`<div style="margin-top:4px;color:#2d7d47;font-size:11px;font-weight:900">${escapeHtml(h)}</div>`:''}<p class="v18-sub" style="margin-top:6px">${escapeHtml(bio)}</p></div><div class="v18-thumbs">${['creator-profile.jpg','creator-photo-1.jpg','creator-photo-2.jpg','creator-photo-3.jpg'].map(x=>`<button type="button" class="v18-thumb ${v18CreatorPhoto===x?'active':''}" data-v18-creator-photo="${escapeHtml(x)}"><img src="${escapeHtml(x)}" alt="Creator photo"></button>`).join('')}</div><div class="v18-actions" style="margin-top:10px">${link?`<a class="v18-btn primary" href="${escapeHtml(link)}" target="_blank" rel="noopener" style="display:grid;place-items:center;text-decoration:none">Instagram ↗</a>`:''}<button class="v18-btn ${link?'':'primary'}" data-v18-share-profile>Share Winter Arc ↗</button></div></div></div>`;
-  }
-
-  function v18SprintModal(){ const left=v18SprintRunning?Math.max(0,v18SprintEndsAt-Date.now()):v18SprintMinutes*60000; const sec=Math.ceil(left/1000),mm=String(Math.floor(sec/60)).padStart(2,'0'),ss=String(sec%60).padStart(2,'0'); return `<div class="v18-overlay" data-v18-sprint-close><div class="v18-sheet" style="text-align:center"><div class="v18-sheethead"><div><div class="v18-kicker">FOCUS SPRINT</div><h2 style="margin:3px 0">One focused block.</h2></div><button class="v18-close" data-v18-sprint-close>×</button></div><div id="v18SprintTimer" style="font-size:52px;font-weight:950;letter-spacing:-.05em;margin:12px 0">${mm}:${ss}</div>${v18SprintRunning?'':`<div class="v18-actions"><button class="v18-btn primary" data-v18-sprint-start>Start ${v18SprintMinutes}-min sprint →</button><button class="v18-btn" data-v18-sprint-close>Not now</button></div>`}<div style="margin-top:8px">${v18SprintRunning?`<button class="v18-btn primary" style="width:100%" data-v18-sprint-stop>Finish sprint ✓</button>`:''}</div><p class="v18-sub" style="margin-top:10px">A temporary timer for one task. It does not change tracker history.</p></div></div>`;}
-  function v18SprintStop(){v18SprintRunning=false;if(v18SprintTimer)clearInterval(v18SprintTimer);v18SprintTimer=null;v18SprintOpen=false;render();showToast('Sprint finished 🎯');}
-  function v18SprintStart(){v18SprintRunning=true;v18SprintEndsAt=Date.now()+v18SprintMinutes*60000;v18SprintOpen=true;if(v18SprintTimer)clearInterval(v18SprintTimer);v18SprintTimer=setInterval(()=>{const left=Math.max(0,v18SprintEndsAt-Date.now());const el=document.getElementById('v18SprintTimer');if(el){const sec=Math.ceil(left/1000);el.textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');}if(left<=0){v18SprintRunning=false;clearInterval(v18SprintTimer);v18SprintTimer=null;v18SprintOpen=false;render();showToast('Focus sprint complete 🎯');}},250);render();}
-
-  async function v18ShareProfile(){
-    try{
-      const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1350;const ctx=canvas.getContext('2d');
-      const s=stats(),day=v13ArcDay(),L=v13ArcLength(),pct=v13ArcProgress(),best=Math.max(0,...data.habits.map(h=>habitStats(h).longest)),wins=v13TotalWins();
-      ctx.fillStyle='#f5f3ed';ctx.fillRect(0,0,1080,1350);
-      const g=ctx.createLinearGradient(0,0,0,700);g.addColorStop(0,'#234f57');g.addColorStop(1,'#183a2a');ctx.fillStyle=g;ctx.fillRect(48,48,984,700);
-      const text=(t,x,y,size,weight='700',fill='#fff')=>{ctx.fillStyle=fill;ctx.font=`${weight} ${size}px Arial,sans-serif`;ctx.fillText(t,x,y)};
-      text('WINTER ARC 2026',92,125,30,'800','#bfe8ca');text((data.name||'MY ARC').toUpperCase(),92,245,46,'900','#fff');text(`DAY ${day||0} / ${L}`,92,325,74,'900','#fff');text(`${pct}% OF THE ARC`,92,370,28,'700','#d7e9df');
-      ctx.fillStyle='rgba(255,255,255,.16)';ctx.fillRect(92,425,896,24);ctx.fillStyle='#79d29b';ctx.fillRect(92,425,896*Math.min(1,pct/100),24);
-      text('YOUR PROGRESS',92,560,22,'800','#bfe8ca');text(`${s.todayDone}/${data.habits.length} today`,92,615,44,'900','#fff');text(`🔥 ${best} day best streak`,92,660,28,'700','#d7e9df');
-      ctx.fillStyle='#fff';ctx.roundRect?.(48,800,984,420,36);if(ctx.roundRect)ctx.fill();else{ctx.fillRect(48,800,984,420)}
-      text('MY ARC',92,870,18,'900','#3a7f50');text('Small wins become your story.',92,930,42,'900','#1f2421');
-      ctx.fillStyle='#f2f6f2';ctx.fillRect(92,1000,276,120);ctx.fillRect(402,1000,276,120);ctx.fillRect(712,1000,276,120);
-      text(`${pct}%`,120,1065,34,'900','#202522');text('Arc',120,1095,16,'700','#70766f');text(`${best}`,430,1065,34,'900','#202522');text('Best streak',430,1095,16,'700','#70766f');text(`${wins}`,740,1065,34,'900','#202522');text('Wins',740,1095,16,'700','#70766f');
-      text('Winter Arc Tracker',92,1175,22,'800','#3a7f50');text('Share your next small win.',988,1175,22,'700','#70766f');
-      const blob=await new Promise(r=>canvas.toBlob(r,'image/png',.95));const file=new File([blob],'winter-arc-profile-v18.png',{type:'image/png'});
-      const msg=`I’m on Winter Arc 2026 ❄️ Day ${day||0}/${L} · ${pct}% complete · 🔥 ${best} day best streak\n\nJoin my Arc: ${location.href}`;
-      if(navigator.share){if(navigator.canShare?.({files:[file]})){try{await navigator.share({title:'My Winter Arc',text:msg,files:[file]});return;}catch(e){}}try{await navigator.share({title:'My Winter Arc',text:msg});return;}catch(e){}}
-      const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='winter-arc-profile-v18.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);showToast('Profile card saved ↗');
-    }catch(e){showToast('Could not create profile card');}
-  }
-
-  function v18Locked(){
-    return `<div class="v18-entry"><div class="v18-entrycard"><div class="v18-entryhero"><div class="v18-logo">❄️</div><div class="v18-kicker">WELCOME BACK</div><h1>Continue your Arc.</h1><p>Your progress is ready on this device.</p></div><div style="width:62px;height:62px;border-radius:18px;background:var(--v18-soft);color:#2d7d47;display:grid;place-items:center;font-weight:950;font-size:25px;margin:0 auto 9px">${escapeHtml((data.name||'A').slice(0,1).toUpperCase())}</div><div style="text-align:center;font-weight:900;font-size:12px;margin-bottom:12px">${escapeHtml(data.name||'Your profile')}</div><input id="loginPin" class="v18-input" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password" placeholder="4–6 digit PIN" style="text-align:center;letter-spacing:.3em"><button class="v18-btn primary" style="width:100%;margin-top:8px;min-height:50px" data-login>Unlock 🔓</button><button class="v18-btn" style="width:100%;margin-top:7px" data-forgot-pin>Reset this profile</button><p class="v18-muted" style="text-align:center;margin:10px 0 0">Your local profile stays on this device.</p></div></div>`;
-  }
-
-  function v18Render(){
-    v18Style();document.body.classList.toggle('dark',!!data.dark);
-    if(isLocked()){
-      document.body.innerHTML=v18Locked();
-      return;
-    }
-    if(!data.profileCreated||!data.onboardingDone){document.body.innerHTML=v18Entry();return;}
-    let body=tab==='today'?v18Today():tab==='profile'?v18ProfilePage():tab==='week'?`<div class="v18-wrap v18-main"><div class="v18-card v18-wide">${v14WeekPage()}</div></div>`:tab==='arc'?`<div class="v18-wrap v18-main"><div class="v18-card v18-wide">${v14ArcPage()}</div></div>`:v18More();
-    document.body.innerHTML=`<div class="v18-app"><header class="v18-top"><div class="v18-toprow"><button class="v18-iconbtn" data-v18-menu>☰</button><div class="v18-brand"><b>Winter Arc</b><span>V18 · ${data.name?escapeHtml(data.name):'Your Arc'}</span></div><button class="v18-iconbtn" data-v18-share aria-label="Share">↗</button><button class="v18-avatarbtn" data-v18-nav="profile" aria-label="My Profile">${escapeHtml((data.name||'A').slice(0,1).toUpperCase())}</button></div></header><main class="v18-main">${body}</main><nav class="v18-nav"><div class="v18-navinner"><button data-v18-nav="today" class="${tab==='today'?'active':''}"><b>🏠</b>Today</button><button data-v18-nav="week" class="${tab==='week'?'active':''}"><b>📅</b>Week</button><button data-v18-nav="profile" class="${tab==='profile'?'active':''}"><b>👤</b>Profile</button><button data-v18-nav="more" class="${tab==='more'?'active':''}"><b>•••</b>More</button></div></nav>${v18CreatorOpen?v18CreatorModal():''}${v18SprintOpen?v18SprintModal():''}</div>`;
-    bindDomState();
-  }
-
-  /* V18 completion engine: window-level capture guarantees the check action is handled once. */
-  window.addEventListener('click',e=>{
-    const b=e.target.closest('[data-v18-complete]');if(!b)return;
-    e.preventDefault();e.stopImmediatePropagation();
-    const h=data.habits.find(x=>x.id===b.dataset.v18Complete);if(h)toggleHabit(h,today());
-  },{capture:true});
-
-  window.addEventListener('click',async e=>{
-    const b=e.target.closest('button,a');if(!b)return;
-    if(b.dataset.v18Next!==undefined){e.preventDefault();e.stopImmediatePropagation();if(v18Step===0){v18Step=1;v18Habits=[];render();return}if(v18Step===1){const n=$('#v18Name')?.value.trim()||'';if(!n){alert('Please enter your name.');return}data.name=n;v18Step=2;render();return}}
-    if(b.dataset.v18Back!==undefined){e.preventDefault();e.stopImmediatePropagation();v18Step=Math.max(0,v18Step-1);render();return}
-    if(b.dataset.v18Goal!==undefined){e.preventDefault();e.stopImmediatePropagation();v18Focus=b.dataset.v18Goal;v18Habits=[];render();return}
-    if(b.dataset.v18Habit!==undefined){e.preventDefault();e.stopImmediatePropagation();const n=b.dataset.v18Habit;const i=v18Habits.indexOf(n);if(i>=0)v18Habits.splice(i,1);else if(v18Habits.length<6)v18Habits.push(n);render();return}
-    if(b.dataset.v18Finish!==undefined){e.preventDefault();e.stopImmediatePropagation();if(!v18Habits.length){alert('Pick at least one habit.');return}data.habits=v18Habits.slice(0,6).map(name=>{const p=preset(name);return {id:uid(),name,icon:p?.icon||'✅',private:!!p?.private,created:today(),difficulty:p?.difficulty||'Medium',action:p?.action||'Do the smallest useful version',smallWin:p?.action||'Do the smallest useful version',why:''}});data.goal=v18Focus;data.onboardingDone=true;data.profileCreated=true;data.journeyStart=today();data.lastLogin=today();save();v18Step=3;render();return}
-    if(b.dataset.v18Enter!==undefined){e.preventDefault();e.stopImmediatePropagation();tab='today';morePanel='';render();showToast('Your Arc is live 🚀');return}
-    if(b.dataset.v18Community!==undefined){e.preventDefault();e.stopImmediatePropagation();window.__v14Cloud=true;render();return}
-    if(b.dataset.v18Existing!==undefined){e.preventDefault();e.stopImmediatePropagation();if(data.profileCreated){if(data.pinHash){sessionUnlocked=false;render()}else{tab='today';render()}}else showToast('Start your Arc first 🚀');return}
-    if(b.dataset.v18CreatorOpen!==undefined){e.preventDefault();e.stopImmediatePropagation();v18CreatorPhoto=data.creatorPhoto||'creator-profile.jpg';v18CreatorOpen=true;render();return}
-    if(b.dataset.v18CreatorClose!==undefined || (e.target.closest('.v18-overlay')&&e.target===e.target.closest('.v18-overlay'))){e.preventDefault();e.stopImmediatePropagation();v18CreatorOpen=false;render();return}
-    if(b.dataset.v18CreatorPhoto!==undefined){e.preventDefault();e.stopImmediatePropagation();v18CreatorPhoto=b.dataset.v18CreatorPhoto;render();return}
-    if(b.dataset.v18Nav!==undefined){e.preventDefault();e.stopImmediatePropagation();tab=b.dataset.v18Nav;morePanel='';render();return}
-    if(b.dataset.v18More!==undefined){e.preventDefault();e.stopImmediatePropagation();tab='more';morePanel=b.dataset.v18More;render();return}
-    if(b.dataset.v18MoreClose!==undefined){e.preventDefault();e.stopImmediatePropagation();morePanel='';render();return}
-    if(b.dataset.v18Share!==undefined||b.dataset.v18ShareProfile!==undefined){e.preventDefault();e.stopImmediatePropagation();await v18ShareProfile();return}
-    if(b.dataset.v18Sprint!==undefined){e.preventDefault();e.stopImmediatePropagation();v18SprintMinutes=10;v18SprintOpen=true;render();return}
-    if(b.dataset.v18SprintStart!==undefined){e.preventDefault();e.stopImmediatePropagation();v18SprintStart();return}
-    if(b.dataset.v18SprintStop!==undefined){e.preventDefault();e.stopImmediatePropagation();v18SprintStop();return}
-    if(b.dataset.v18SprintClose!==undefined){e.preventDefault();e.stopImmediatePropagation();v18SprintOpen=false;if(v18SprintTimer)clearInterval(v18SprintTimer);v18SprintTimer=null;v18SprintRunning=false;render();return}
-    if(b.dataset.v18Menu!==undefined){e.preventDefault();e.stopImmediatePropagation();tab='more';morePanel='';render();return}
-  },{capture:true});
-
-  render=function(){v18Render();};
-  data.schema=18;
-  save();
 })();
 
 
