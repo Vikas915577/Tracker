@@ -1,0 +1,30 @@
+WINTER ARC TRACKER V24 — TEST REPORT
+
+Baseline: V21 app package. No V21 feature was intentionally removed.
+
+AUTOMATED CHECKS
+PASS — node --check app.js
+PASS — brand-new-user Welcome renders creator credit
+PASS — Welcome renders exactly three creator gallery images
+PASS — app Home renders creator showcase at the top
+PASS — Top 20 renders 20 rows with original rank numbers
+PASS — exact global rank example renders #47 even outside Top 20
+PASS — active public users render names + exact ranks
+PASS — V21 delegated click-handler architecture remains 2 click listeners
+PASS — deterministic rank ordering uses score, best streak, total wins, then stable id
+
+V24 CHANGES
+- New Creator Showcase card at the top of the main app.
+- Creator credit also appears for a brand-new user on the Welcome screen.
+- Three creator photos are shown as a compact gallery card.
+- Rank search preserves original rank numbers.
+- Exact public rank is separate from visible Top 20.
+- Active public members show name + exact global rank.
+- Supabase RPCs added for leaderboard, exact rank, and active members.
+- Share image includes creator credit.
+
+PRIVACY
+Private habit details, journal, sleep, mood and local PIN remain outside the public leaderboard payload.
+
+PACKAGE BACKUP
+Only the immediately previous version is included: app-v21-backup.js

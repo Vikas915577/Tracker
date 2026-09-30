@@ -1,4 +1,4 @@
--- Winter Arc Tracker V22 — Supabase backend
+-- Winter Arc Tracker V24 — Supabase backend
 -- 1) Create a Supabase project.
 -- 2) Replace YOUR_CREATOR_EMAIL below with the email you use for the creator dashboard.
 -- 3) Run this SQL in Supabase SQL Editor.
@@ -133,12 +133,98 @@ grant select, insert on public.arc_challenges to anon, authenticated;
 grant select, insert, update on public.arc_challenge_members to anon, authenticated;
 
 
--- V22 leaderboard performance helpers.
-create index if not exists arc_users_rank_public_idx on public.arc_users (public_profile, rank_score desc, last_seen asc, id asc);
-create index if not exists arc_users_last_seen_public_idx on public.arc_users (public_profile, last_seen desc);
+-- V24 exact public rank + active member RPCs.
+-- Deterministic order: score DESC, best streak DESC, total wins DESC, id ASC.
+create or replace function public.get_public_leaderboard(p_limit integer default 20)
+returns table(
+  rank bigint,
+  id uuid,
+  display_name text,
+  instagram_handle text,
+  total_wins integer,
+  best_streak integer,
+  rank_score integer,
+  week_score integer,
+  league text,
+  last_seen timestamptz
+)
+language sql
+stable
+security invoker
+set search_path = public
+as $$
+  with ranked as (
+    select
+      row_number() over(order by u.rank_score desc, u.best_streak desc, u.total_wins desc, u.id asc) as rank,
+      u.id,u.display_name,u.instagram_handle,u.total_wins,u.best_streak,u.rank_score,u.week_score,u.league,u.last_seen
+    from public.arc_users u
+    where u.public_profile = true
+  )
+  select rank,id,display_name,instagram_handle,total_wins,best_streak,rank_score,week_score,league,last_seen
+  from ranked
+  where rank <= greatest(1, least(coalesce(p_limit,20),100))
+  order by rank;
+$$;
 
--- V22 rank/active read contract:
--- Top 20: public_profile=true ordered by rank_score desc, last_seen asc, id asc, limit 20.
--- Exact rank: count public rows with higher rank_score, plus same-score rows with an earlier last_seen.
--- Active now: public rows with last_seen within the last 15 minutes.
--- Active today: public rows with last_seen within the last 24 hours.
+grant execute on function public.get_public_leaderboard(integer) to anon, authenticated;
+
+create or replace function public.get_public_rank(p_user_id uuid)
+returns table(
+  rank bigint,
+  id uuid,
+  display_name text,
+  rank_score integer,
+  best_streak integer,
+  total_wins integer,
+  league text
+)
+language sql
+stable
+security invoker
+set search_path = public
+as $$
+  with ranked as (
+    select
+      row_number() over(order by u.rank_score desc, u.best_streak desc, u.total_wins desc, u.id asc) as rank,
+      u.id,u.display_name,u.rank_score,u.best_streak,u.total_wins,u.league
+    from public.arc_users u
+    where u.public_profile = true
+  )
+  select rank,id,display_name,rank_score,best_streak,total_wins,league
+  from ranked
+  where id = p_user_id
+  limit 1;
+$$;
+
+grant execute on function public.get_public_rank(uuid) to anon, authenticated;
+
+create or replace function public.get_public_active_members(p_minutes integer default 15, p_limit integer default 6)
+returns table(
+  rank bigint,
+  id uuid,
+  display_name text,
+  rank_score integer,
+  best_streak integer,
+  total_wins integer,
+  last_seen timestamptz
+)
+language sql
+stable
+security invoker
+set search_path = public
+as $$
+  with ranked as (
+    select
+      row_number() over(order by u.rank_score desc, u.best_streak desc, u.total_wins desc, u.id asc) as rank,
+      u.id,u.display_name,u.rank_score,u.best_streak,u.total_wins,u.last_seen
+    from public.arc_users u
+    where u.public_profile = true
+  )
+  select rank,id,display_name,rank_score,best_streak,total_wins,last_seen
+  from ranked
+  where last_seen >= now() - make_interval(mins => greatest(1, least(coalesce(p_minutes,15),1440)))
+  order by last_seen desc, rank asc
+  limit greatest(1, least(coalesce(p_limit,6),20));
+$$;
+
+grant execute on function public.get_public_active_members(integer, integer) to anon, authenticated;

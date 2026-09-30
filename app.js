@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 
-const VERSION='V22.1';
+const VERSION='V24.0';
 const START='2026-10-01';
 const END='2026-12-31';
 const ARC_DAYS=92;
@@ -23,7 +23,6 @@ const arcDay=()=>{const delta=diff(START,today());return delta<0?0:Math.min(ARC_
 const arcPct=()=>{const n=arcDay();return Math.round(Math.min(1,n/ARC_DAYS)*100)};
 const key=(h,d)=>h.id+'|'+d;
 const isFuture=d=>d>today();
-const canEdit=d=>!isFuture(d);
 
 const GOALS={
  discipline:{icon:'🎯',label:'Build discipline',desc:'Simple routines and consistency',habits:['Morning walk','Study / Work','Less Phone']},
@@ -89,7 +88,7 @@ let data=load();
 if(Array.isArray(data.habits))data.habits=data.habits.map(h=>h.name==='Masturbation'?Object.assign({},h,{name:'Private Wellness',private:true}):h);
 if(data.habitNotes?.Masturbation){data.habitNotes['Private Wellness']=data.habitNotes.Masturbation;delete data.habitNotes.Masturbation;}
 let tab=(()=>{try{return new URL(location.href).searchParams.get('tab')||'today'}catch(e){return 'today'}})();
-let morePanel='';let onboardingStep=0;let onboardingGoal=data.goal||'discipline';let onboardingSelected=[];let menuOpen=false;let selectedHabit=null;let search='';let rankRows=[];let rankState='idle';let rankError='';let rankActive={state:'idle',rows:[],count:0};let remoteRank=null;let monthCursor=(today()>=START&&today()<=END)?today().slice(0,7):'2026-10';let sprint=null;let installPrompt=null;let toastTimer=null;let sessionUnlocked=!data.pinHash;
+let morePanel='';let onboardingStep=0;let onboardingGoal=data.goal||'discipline';let onboardingSelected=[];let menuOpen=false;let selectedHabit=null;let search='';let rankRows=[];let rankDirectory=[];let rankState='idle';let rankError='';let rankActive={state:'idle',rows:[],count:0};let remoteRank=null;let sprint=null;let installPrompt=null;let toastTimer=null;let sessionUnlocked=!data.pinHash;
 
 function showToast(msg){clearTimeout(toastTimer);document.querySelector('.toast')?.remove();const x=document.createElement('div');x.className='toast';x.textContent=msg;document.body.appendChild(x);toastTimer=setTimeout(()=>x.remove(),2100)}
 function celebrate(){const items=['✨','🔥','⭐','💪'];items.forEach((e,i)=>{const x=document.createElement('span');x.className='burst';x.textContent=e;x.style.left=(42+i*5)+'%';x.style.bottom='115px';document.body.appendChild(x);setTimeout(()=>x.remove(),700+i*80)})}
@@ -118,11 +117,18 @@ async function hashPin(pin){if(window.crypto?.subtle){const b=await crypto.subtl
 function locked(){return !!data.pinHash&&!sessionUnlocked}
 function profileReady(){return !!data.profileCreated&&!!data.onboardingDone}
 
+
+function creatorShowcase(compact=false){
+ const name=data.creatorName||'Vashu Sharmaa';
+ const handle=data.creatorHandle||'@pandatvikas1';
+ const photos=['creator-photo-1.jpg','creator-photo-2.jpg','creator-photo-3.jpg'];
+ return `<button class="creator-showcase ${compact?'compact':''}" data-nav="more" data-more="creator" aria-label="Open creator profile"><div class="creator-showcase-head"><img src="${esc(data.creatorPhoto||'creator-profile.jpg')}" alt="${esc(name)}"><div><span class="eyebrow">CREDIT BY</span><b>${esc(name)}</b><small>Data Engineer · ${esc(handle)}</small></div><span class="creator-arrow">→</span></div><div class="creator-showcase-photos">${photos.map((src,i)=>`<img src="${src}" alt="${esc(name)} photo ${i+1}" loading="lazy">`).join('')}</div></button>`;
+}
 function onboardingView(){
  const goal=GOALS[onboardingGoal]||GOALS.discipline;
  const choices=[...new Set((goal.habits||[]).map(x=>x).concat(onboardingSelected))].map(n=>preset(n)||{name:n,icon:'✅',difficulty:'Medium',action:'Do the smallest useful version'});
  const sel=new Set(onboardingSelected);
- if(onboardingStep===0)return `<div class="entry"><div class="entry-card hero-entry"><div class="app-icon">❄️</div><span class="eyebrow">WINTER ARC 2026 · ${VERSION}</span><h1>Build your Arc.<br><span>One win at a time.</span></h1><p class="lead">A simple daily tracker for habits, focus and consistency. No complicated setup.</p><div class="feature-chips"><span>⚡ 10-sec daily check-in</span><span>🏆 Top 20 Arc League</span><span>🔒 Local-first privacy</span></div><button class="primary big" data-action="on-next">Start My Arc →</button><button class="textbtn" data-action="on-tour">See how it works</button></div></div>`;
+ if(onboardingStep===0)return `<div class="entry"><div class="entry-card hero-entry">${creatorShowcase(true)}<div class="app-icon">❄️</div><span class="eyebrow">WINTER ARC 2026 · ${VERSION}</span><h1>Build your Arc.<br><span>One win at a time.</span></h1><p class="lead">A simple daily tracker for habits, focus and consistency. No complicated setup.</p><div class="feature-chips"><span>⚡ 10-sec daily check-in</span><span>🏆 Top 20 Arc League</span><span>🔒 Local-first privacy</span></div><button class="primary big" data-action="on-next">Start My Arc →</button><button class="textbtn" data-action="on-tour">See how it works</button></div></div>`;
  if(onboardingStep===1)return `<div class="entry"><div class="entry-card"><div class="stepper"><i class="on"></i><i class="on"></i><i></i><i></i></div><span class="eyebrow">STEP 1 OF 3</span><h1>What should we call you?</h1><p class="lead">Just your first name. You can change it later.</p><label class="label">Your name<input id="onName" value="${esc(data.name)}" maxlength="40" placeholder="e.g. Vashu" autofocus></label><div class="goal-head"><span class="label">Your main focus</span></div><div class="goal-grid">${Object.entries(GOALS).map(([id,g])=>`<button class="goal-card ${onboardingGoal===id?'selected':''}" data-goal="${id}"><b>${g.icon}</b><span>${esc(g.label)}</span><small>${esc(g.desc)}</small></button>`).join('')}</div><button class="primary big" data-action="on-next">Continue →</button><button class="backbtn" data-action="on-back">Back</button></div></div>`;
  if(onboardingStep===2)return `<div class="entry"><div class="entry-card"><div class="stepper"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div><span class="eyebrow">STEP 2 OF 3</span><h1>Pick 3 habits.</h1><p class="lead">Keep it light. You can add more later.</p><div class="selected-count"><b>${sel.size}/3</b><span>habits selected</span></div><div class="habit-pick-grid">${choices.map(h=>`<button class="pick-card ${sel.has(h.name)?'selected':''} ${sel.size>=3&&!sel.has(h.name)?'disabled':''}" data-pick="${esc(h.name)}"><span>${esc(h.icon)}</span><div><b>${esc(h.name)}</b><small>${esc(h.action)}</small></div><strong>${sel.has(h.name)?'✓':'+'}</strong></button>`).join('')}</div><div class="custom-row"><input id="customHabit" maxlength="40" placeholder="Add your own habit"><button class="secondary" data-action="add-custom">Add</button></div><button class="primary big" data-action="on-next" ${sel.size!==3?'disabled':''}>Continue →</button><button class="backbtn" data-action="on-back">Back</button></div></div>`;
  return `<div class="entry"><div class="entry-card ready-entry"><div class="success-mark">✓</div><span class="eyebrow">ARC READY</span><h1>${esc(data.name||'Your')} Arc is ready.</h1><p class="lead">You chose <b>${esc(goal.label.toLowerCase())}</b> and 3 simple habits.</p><div class="ready-list">${onboardingSelected.map(n=>{const p=preset(n)||{};return `<div><span>${esc(p.icon||'✅')}</span><b>${esc(n)}</b><small>${esc(p.action||'Your smallest useful action')}</small></div>`}).join('')}</div><div class="tour-strip"><b>What happens next?</b><span>Today = one clear action.</span><span>Week = see your pattern.</span><span>Rank = optional public Top 20.</span></div><button class="primary big" data-action="finish-onboarding">Start Day 1 🚀</button><button class="backbtn" data-action="on-back">Back</button></div></div>`;
@@ -131,39 +137,13 @@ function loginView(){return `<div class="entry"><div class="entry-card"><div cla
 
 function nextWin(){const f=focusHabit();return f}
 function topGreeting(){const hour=new Date().getHours();return hour<12?'Good morning':hour<18?'Good afternoon':'Good evening'}
-function missedDaysBeforeToday(){
- let missed=0;
- for(let i=1;i<=2;i++){
-  const d=addDays(today(),-i);
-  const eligible=data.habits.filter(h=>canUse(h,d));
-  if(!eligible.length||!eligible.every(h=>!habitActive(h,d)))break;
-  missed++;
- }
- return missed;
-}
-function recoveryCard(){
- const n=missedDaysBeforeToday();
- if(!n)return '';
- const f=focusHabit();
- return '<section class=\'info-card\'><b>🛟 Recovery Pass · '+n+' missed day'+(n>1?'s':'')+'</b><span>No reset needed. Start again with the smallest version today. Your Arc history stays intact.</span>'+(f?'<button class=\'secondary full\' data-action=\'toggle\' data-id=\''+f.id+'\'>Start with your next win →</button>':'')+'</section>';
-}
-function daily3Markup(){
- const hs=data.habits.slice(0,3);
- if(!hs.length)return emptyState('🌱','No habits yet','Your Arc is waiting for the first 3 actions.','Add habits','manage');
- const labels=['MUST DO','SHOULD DO','BONUS'];
- return hs.map((h,i)=>'<div class=\'info-card\'><span class=\'eyebrow\'>'+labels[i]+'</span>'+habitRow(h)+'</div>').join('');
-}
-function creatorCredit(){
- return '<section class=\'section\'><button class=\'share-card creator-credit\' data-more=\'creator\'><img src=\''+esc(data.creatorPhoto||'creator-profile.jpg')+'\' alt=\''+esc(data.creatorName||'Creator')+'\' style=\'width:48px;height:48px;border-radius:14px;object-fit:cover;flex:none\'><div><small>MADE WITH ❤️ BY</small><b>'+esc(data.creatorName||'Vashu Sharmaa')+'</b><small>Data Engineer · '+esc(data.creatorHandle||'@pandatvikas1')+'</small></div><span>→</span></button></section>';
-}
-
 function todayView(){
  const s=stats(), f=nextWin(), pct=data.habits.length?Math.round(s.todayDone/data.habits.length*100):0;const next=nextMilestone(s.day);
  return `<div class="page"><section class="greet"><div><span class="eyebrow">DAY ${s.day} / ${ARC_DAYS}</span><h1>${topGreeting()}, ${esc(data.name||'there')}.</h1><p>${s.todayDone}/${data.habits.length} wins today · ${arcPct()}% through your Arc</p></div><div class="ring" style="--p:${pct}%"><span><b>${pct}%</b><small>today</small></span></div></section>
  ${f?`<section class="next-card"><div class="eyebrow">NEXT WIN</div><div class="next-row"><div class="big-icon">${esc(f.icon)}</div><div class="next-copy"><h2>${esc(f.name)}</h2><p>${esc(f.action||'Do the smallest useful version')}</p><small>🔥 ${habitStats(f).run} day streak · ${f.difficulty||'Medium'}</small></div><button class="main-check ${done(f,today())?'done':''}" data-action="toggle" data-id="${f.id}">${done(f,today())?'✓':'→'}</button></div><button class="mini-link" data-action="sprint">🎯 Focus Sprint</button></section>`:data.habits.length&&s.todayDone===data.habits.length?`<section class="next-card complete-card"><div class="eyebrow">DAY COMPLETE</div><h2>All ${data.habits.length} wins are done. 🎉</h2><p>Nice work. Protect tomorrow’s easiest first action and leave today complete.</p><button class="secondary full" data-nav="week">See this week →</button></section>`:`<section class="next-card empty-next"><div class="eyebrow">YOUR NEXT WIN</div><h2>Your first win starts here.</h2><p>Add 3 habits to turn today into an action plan.</p><button class="primary" data-nav="more" data-more="manage">Add habits →</button></section>`}
- <section class="section"><div class="section-head"><div><span class="eyebrow">TODAY</span><h2>Daily 3</h2></div><span class="count-pill">${s.todayDone}/${data.habits.length}</span></div><div class="habit-list">${daily3Markup()}</div>${data.habits.length>3?`<button class="secondary full" data-nav="more" data-more="manage">View all ${data.habits.length} habits →</button>`:''}</section>
+ <section class="section"><div class="section-head"><div><span class="eyebrow">TODAY</span><h2>Your 3 actions</h2></div><span class="count-pill">${s.todayDone}/${data.habits.length}</span></div><div class="habit-list">${data.habits.slice(0,3).map(h=>habitRow(h)).join('')||emptyState('🌱','No habits yet','Your Arc is waiting for the first 3 actions.','Add habits','manage')}</div>${data.habits.length>3?`<button class="secondary full" data-nav="more" data-more="manage">View all ${data.habits.length} habits →</button>`:''}</section>
  <section class="stats-mini"><div><b>🔥 ${s.streak}</b><small>Current streak</small></div><div><b>${s.completed}</b><small>Total wins</small></div><div><b>#${localRank()}</b><small>Local rank</small></div></section>
- ${recoveryCard()}${creatorCredit()}<section class="milestone-card"><div><span class="eyebrow">NEXT CHECKPOINT</span><h3>Day ${next}</h3><p>${next-s.day>0?`${next-s.day} days to go. Keep today's action small.`:'Arc checkpoint reached 🎉'}</p></div><span class="milestone-icon">🏁</span></section>
+ <section class="milestone-card"><div><span class="eyebrow">NEXT CHECKPOINT</span><h3>Day ${next}</h3><p>${next-s.day>0?`${next-s.day} days to go. Keep today's action small.`:'Arc checkpoint reached 🎉'}</p></div><span class="milestone-icon">🏁</span></section>
  </div>`;
 }
 function habitRow(h){return `<button class="habit-row ${done(h,today())?'completed':''}" data-action="toggle" data-id="${h.id}"><span class="habit-icon">${esc(h.icon)}</span><span class="habit-main"><b>${esc(h.name)}</b><small>${esc(h.action||'Smallest useful action')}</small></span><span class="habit-check">${done(h,today())?'✓':'○'}</span></button>`}
@@ -171,125 +151,88 @@ function emptyState(icon,title,sub,action,id){return `<div class="empty-state"><
 
 function weekView(){const ds=Array.from({length:7},(_,i)=>addDays(today(),i-6));return `<div class="page"><section class="simple-head"><span class="eyebrow">THIS WEEK</span><h1>Your 7-day pattern.</h1><p>Tap a day to see what got done.</p></section><section class="week-summary"><div><b>${weeklyScore()}%</b><small>completion</small></div><div><b>${weeklyWins()}</b><small>wins</small></div><div><b>🔥 ${stats().best}</b><small>best streak</small></div></section><div class="week-table">${data.habits.map(h=>`<div class="week-habit"><div class="week-name"><span>${esc(h.icon)}</span><b>${esc(h.name)}</b></div><div class="week-days">${ds.map(d=>`<button class="day-dot ${done(h,d)?'done':''} ${frozen(h,d)?'freeze':''} ${d===today()?'today':''}" data-action="toggle-date" data-id="${h.id}" data-date="${d}" ${isFuture(d)?'disabled':''}><small>${fmtDay(d).toLocaleDateString(undefined,{weekday:'short'}).slice(0,2)}</small><span>${done(h,d)?'✓':frozen(h,d)?'🛡':''}</span></button>`).join('')}</div></div>`).join('')||emptyState('🗓️','No habits yet','Your week will appear after setup.','Add habits','manage')}</div><section class="info-card"><b>Tip</b><span>Missed days stay in your history. Your next win still counts.</span></section></div>`}
 
+function rankScoreOf(x){return Number(x?.rank_score??x?.rankScore)||0}
+function rankWinsOf(x){return Number(x?.total_wins??x?.totalWins)||0}
+function rankStreakOf(x){return Number(x?.best_streak??x?.bestStreak)||0}
+function compareRank(a,b){
+ const sd=rankScoreOf(b)-rankScoreOf(a); if(sd) return sd;
+ const st=rankStreakOf(b)-rankStreakOf(a); if(st) return st;
+ const sw=rankWinsOf(b)-rankWinsOf(a); if(sw) return sw;
+ return String(a?.id||'').localeCompare(String(b?.id||''));
+}
+function rankDirectoryFrom(rows){
+ return (Array.isArray(rows)?rows:[]).slice().sort(compareRank).map((x,i)=>Object.assign({},x,{__rank:i+1}));
+}
+function rankTupleForMe(){const s=stats();return {id:data.cloudUserId||'~local',rank_score:arcScore(),best_streak:s.best,total_wins:s.completed}}
 function localRank(){
- const me=arcScore();
- const peers=rankRows.map(x=>Number(x.rank_score??x.rankScore)||0);
- return peers.length?1+peers.filter(x=>x>me).length:null;
+ const me=rankDirectory.find(x=>data.cloudUserId&&x.id===data.cloudUserId);
+ if(me?.__rank)return me.__rank;
+ if(!rankDirectory.length)return '—';
+ const mine=rankTupleForMe();
+ return 1+rankDirectory.filter(x=>compareRank(x,mine)<0).length;
 }
 function league(score){return score>=90?'Diamond':score>=75?'Platinum':score>=60?'Gold':score>=40?'Silver':'Bronze'}
-function cloudConfig(){const c=window.WINTER_ARC_CLOUD||window.CLOUD_CFG||{};return {url:String(c.url||'').replace(/\/$/,''),anonKey:String(c.anonKey||'')}}
-async function cloudCount(query){
- const c=cloudConfig();
- if(!c.url||!c.anonKey)return null;
- const r=await fetch(c.url+'/rest/v1/arc_users?'+query,{method:'HEAD',headers:{apikey:c.anonKey,Authorization:'Bearer '+c.anonKey,Prefer:'count=exact',Range:'0-0'}});
- if(!r.ok)throw new Error('HTTP '+r.status);
- const range=r.headers?.get?.('content-range')||r.headers?.get?.('Content-Range')||'';
- const m=range.match(/\/([0-9]+|\*)$/);
- return m&&m[1]!=='*'?Number(m[1]):0;
-}
-async function myGlobalRank(score,lastSeen){
- try{
-  const higher=await cloudCount('select=id&public_profile=eq.true&rank_score=gt.'+encodeURIComponent(score));
-  let earlier=0;
-  if(lastSeen) earlier=await cloudCount('select=id&public_profile=eq.true&rank_score=eq.'+encodeURIComponent(score)+'&last_seen=lt.'+encodeURIComponent(lastSeen));
-  return (higher??0)+(earlier??0)+1;
- }catch(e){return null}
-}
-async function loadActive(){
- const c=cloudConfig();
- if(!c.url||!c.anonKey)return {state:'offline',rows:[],count:0};
- try{
-  const now=Date.now();
-  const sinceNow=new Date(now-15*60000).toISOString();
-  const sinceToday=new Date(now-24*60*60000).toISOString();
-  const base='select=id,display_name,rank_score,last_seen&public_profile=eq.true&order=last_seen.desc&limit=20';
-  const [rNow,rToday]=await Promise.all([
-   fetch(c.url+'/rest/v1/arc_users?'+base+'&last_seen=gte.'+encodeURIComponent(sinceNow),{headers:{apikey:c.anonKey,Authorization:'Bearer '+c.anonKey}}),
-   fetch(c.url+'/rest/v1/arc_users?'+base+'&last_seen=gte.'+encodeURIComponent(sinceToday),{headers:{apikey:c.anonKey,Authorization:'Bearer '+c.anonKey}})
-  ]);
-  if(!rNow.ok||!rToday.ok)throw new Error('HTTP '+(!rNow.ok?rNow.status:rToday.status));
-  const rows=await rNow.json();
-  const activeTodayCount=await cloudCount('select=id&public_profile=eq.true&last_seen=gte.'+encodeURIComponent(sinceToday));
-  return {state:'ready',rows:Array.isArray(rows)?rows:[],count:Number(activeTodayCount)||0};
- }catch(e){return {state:'error',rows:[],count:0}}
+async function rankFetch(path,body){
+ const u=String(CLOUD_CFG.url).replace(/\/$/,'');
+ const r=await fetch(u+'/rest/v1/rpc/'+path,{method:'POST',headers:{apikey:CLOUD_CFG.anonKey,Authorization:'Bearer '+CLOUD_CFG.anonKey,'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+ if(!r.ok)throw new Error('RPC '+path+' HTTP '+r.status);
+ return r.json();
 }
 async function loadRank(){
  rankState='loading';rankError='';rankActive={state:'loading',rows:[],count:0};render();
- const c=cloudConfig();
- if(!c.url||!c.anonKey){rankState='offline';rankError='Community backend is not configured. Connect Community Sync to see the public Top 20.';rankRows=[];rankActive={state:'offline',rows:[],count:0};remoteRank=null;render();return}
+ if(!window.CLOUD_CFG?.url||!window.CLOUD_CFG?.anonKey){rankState='offline';rankError='Community backend is not configured. Showing your personal score.';rankRows=[];rankDirectory=[];rankActive={state:'offline',rows:[],count:0};remoteRank=null;render();return}
  try{
-  await syncCloud(false);
-  const url=c.url+'/rest/v1/arc_users?select=id,display_name,arc_day,arc_progress,total_wins,best_streak,rank_score,week_score,league,last_seen&public_profile=eq.true&order=rank_score.desc,last_seen.asc,id.asc&limit=20';
-  const r=await fetch(url,{headers:{apikey:c.anonKey,Authorization:'Bearer '+c.anonKey}});if(!r.ok)throw new Error('HTTP '+r.status);
-  rankRows=await r.json();rankState='ready';
-  rankActive=await loadActive();
-  const s=arcScore();
-  const last=data.cloudLastSync||new Date().toISOString();
-  remoteRank=await myGlobalRank(s,last);
-  render();
- }catch(e){rankState='error';rankError='Could not load the public leaderboard. Your personal tracker is safe.';rankRows=[];rankActive={state:'error',rows:[],count:0};remoteRank=null;render()}
+  let rows=null;
+  try{rows=await rankFetch('get_public_leaderboard',{p_limit:20});}catch(_){
+   const u=String(CLOUD_CFG.url).replace(/\/$/,'');
+   const url=u+'/rest/v1/arc_users?select=id,display_name,instagram_handle,total_wins,best_streak,rank_score,week_score,league,last_seen&public_profile=eq.true&order=rank_score.desc,best_streak.desc,total_wins.desc,id.asc&limit=1000';
+   const r=await fetch(url,{headers:{apikey:CLOUD_CFG.anonKey,Authorization:'Bearer '+CLOUD_CFG.anonKey}});if(!r.ok)throw new Error('HTTP '+r.status);rows=await r.json();
+  }
+  rankDirectory=rankDirectoryFrom(rows);
+  rankRows=rankDirectory.slice(0,20);
+  remoteRank=null;
+  if(data.cloudUserId&&data.publicProfile){
+   try{const rr=await rankFetch('get_public_rank',{p_user_id:data.cloudUserId});if(Array.isArray(rr)&&rr[0])remoteRank=Object.assign({},rr[0],{rank:Number(rr[0].rank)||Number(rr[0].rank_no)||null});}
+   catch(_){const me=rankDirectory.find(x=>x.id===data.cloudUserId);if(me)remoteRank={rank:me.__rank};}
+  }
+  try{
+   const ar=await rankFetch('get_active_public_members',{p_minutes:15,p_limit:6});
+   const activeRows=(Array.isArray(ar)?ar:[]).map(x=>{const local=rankDirectory.find(r=>r.id===x.id);return Object.assign({},x,{__rank:Number(x.rank)||local?.__rank||'—'});});
+   rankActive={state:'ready',rows:activeRows,count:activeRows.length};
+  }catch(_){
+   const u=String(CLOUD_CFG.url).replace(/\/$/,'');
+   const since=new Date(Date.now()-15*60000).toISOString();
+   const url=u+'/rest/v1/arc_users?select=id,display_name,total_wins,best_streak,rank_score,last_seen&public_profile=eq.true&last_seen=gte.'+encodeURIComponent(since)+'&order=last_seen.desc&limit=6';
+   const r=await fetch(url,{headers:{apikey:CLOUD_CFG.anonKey,Authorization:'Bearer '+CLOUD_CFG.anonKey}});
+   const arr=r.ok?await r.json():[];
+   rankActive={state:'ready',rows:(Array.isArray(arr)?arr:[]).map(x=>Object.assign({},x,{__rank:rankDirectory.find(r=>r.id===x.id)?.__rank||'—'})),count:Array.isArray(arr)?arr.length:0};
+  }
+  rankState='ready';rankError='';render();
+ }catch(e){rankState='error';rankError='Could not load the public leaderboard. Your personal tracker is safe.';rankRows=[];rankDirectory=[];rankActive={state:'error',rows:[],count:0};remoteRank=null;render()}
 }
-function myRankFromRows(){const score=arcScore();const rank=remoteRank||localRank()||'—';return {rank,score,league:league(score)}}
+function myRankFromRows(){
+ const me=rankDirectory.find(x=>data.cloudUserId&&x.id===data.cloudUserId);
+ const score=arcScore();
+ const rank=remoteRank?.rank||me?.__rank||localRank();
+ return {rank,score,league:league(score),public:!!(data.cloudOptIn&&data.publicProfile)};
+}
+function activeRankRow(x){const name=String(x.display_name||'Arc member');return `<div class="active-row"><span class="active-avatar">${esc(name.slice(0,1).toUpperCase())}</span><div><b>${esc(name)}</b><small>#${esc(x.__rank||'—')} rank · 🔥 ${rankStreakOf(x)} streak</small></div></div>`}
 function rankView(){
  const me=myRankFromRows();
  const shown=rankRows.slice(0,20);
  const q=search.trim().toLowerCase();
- const filtered=shown.map((x,i)=>({x,i})).filter(o=>String(o.x.display_name||'').toLowerCase().includes(q));
- const activeRows=(rankActive?.rows||[]).slice(0,6);
- return '<div class="page">'+
- '<section class="rank-hero"><div><span class="eyebrow">ARC LEAGUE</span><h1>'+(typeof me.rank==='number'?'#'+me.rank:'—')+'</h1><p>'+(rankState==='ready'?'Your exact public rank':'Your current local score')+'</p></div><div class="rank-score"><b>'+me.score+'</b><small>/100</small></div><div class="rank-bar"><i style="width:'+me.score+'%"></i></div><div class="rank-chips"><span>'+me.league+'</span><span>'+weeklyScore()+'% week</span><span>🔥 '+stats().best+' best</span></div></section>'+
- '<section class="active-strip"><div><span class="eyebrow">COMMUNITY</span><h2>'+(rankActive?.count||0)+' active today</h2><p>'+(rankActive?.state==='ready'?(activeRows.length?'Names from the community are shown below.':'No active public profiles yet.'):'Connect community to see active members.')+'</p></div><span class="live-dot">●</span></section>'+
- (activeRows.length?'<section class="section"><div class="section-head"><div><span class="eyebrow">ACTIVE NOW</span><h2>People on the Arc</h2></div></div><div class="active-list">'+activeRows.map(x=>'<div class="active-row"><span class="active-avatar">'+esc(String(x.display_name||'A').slice(0,1).toUpperCase())+'</span><div><b>'+esc(x.display_name||'Arc member')+'</b><small>Active now · #'+(rankRows.findIndex(r=>r.id===x.id)+1||'—')+'</small></div></div>').join('')+'</div></section>':'')+
- '<section class="section"><div class="section-head"><div><span class="eyebrow">GLOBAL</span><h2>Top 20</h2></div><button class="icon-btn" data-action="rank-refresh" aria-label="Refresh">↻</button></div><input class="search" id="rankSearch" value="'+esc(search)+'" placeholder="Search Top 20 by name"><div class="top20-list">'+(rankState==='loading'?'<div class="info-card">Loading public Top 20…</div>':rankState==='ready'&&filtered.length?filtered.map(o=>rankRow(o.x,o.i)).join(''):rankState==='ready'?'<div class="info-card"><b>No matching name.</b><span>Search only filters by display name. Rank numbers stay unchanged.</span></div>':'<div class="info-card"><b>No public Top 20 loaded.</b><span>'+esc(rankError||'Turn on Community Sync and make your profile public to join.')+'</span></div>')+'</div>'+
- (rankState==='ready'&&rankRows.length<20?'<div class="info-card"><b>Showing '+rankRows.length+'/20 public profiles.</b><span>The leaderboard always keeps the public list capped at 20.</span></div>':'')+
- (rankState==='ready'?'<div class="my-position"><b>Your public position: '+(typeof me.rank==='number'?'#'+me.rank:'—')+'</b><span>'+(typeof me.rank==='number'&&me.rank<=20?'You are inside the visible Top 20.':'The exact public position is calculated across all public profiles.')+'</span></div>':'')+
- '</section>'+
- '<section class="challenge-card"><div><span class="eyebrow">WEEKLY CHALLENGE</span><h3>Show up 5 times.</h3><p>'+Math.min(5,weeklyWins())+'/5 wins this week</p></div><b>'+Math.min(100,Math.round(Math.min(5,weeklyWins())/5*100))+'%</b></section>'+
- '<section class="info-card"><b>How rank works</b><span>75% weekly consistency + 15% best streak + 10% weekly wins. Public names are shown; Instagram handles are not displayed or searched here.</span></section>'+
- '</div>';
+ const filtered=shown.map(x=>({x,rank:Number(x.__rank)||1})).filter(o=>String(o.x.display_name||'').toLowerCase().includes(q));
+ const activeRows=(rankActive.rows||[]).slice(0,6);
+ return `<div class="page"><section class="rank-hero"><div><span class="eyebrow">ARC LEAGUE</span><h1>${me.rank==='—'?'—':'#'+me.rank}</h1><p>${me.public?'Exact public rank':'Public rank needs Community + Public profile'}</p></div><div class="rank-score"><b>${me.score}</b><small>/100</small></div><div class="rank-bar"><i style="width:${me.score}%"></i></div><div class="rank-chips"><span>${me.league}</span><span>${weeklyScore()}% week</span><span>🔥 ${stats().best} best</span></div></section>
+ ${activeRows.length?`<section class="active-strip"><div><span class="eyebrow">LIVE COMMUNITY</span><h2>${rankActive.count} active now</h2><p>Names + exact rank are shown for public members.</p></div><span class="live-dot">●</span></section><section class="section"><div class="section-head"><div><span class="eyebrow">ACTIVE NOW</span><h2>People showing up</h2></div></div><div class="active-list">${activeRows.map(activeRankRow).join('')}</div></section>`:''}
+ <section class="section"><div class="section-head"><div><span class="eyebrow">GLOBAL</span><h2>Top 20</h2></div><button class="icon-btn" data-action="rank-refresh" aria-label="Refresh">↻</button></div><input class="search" id="rankSearch" value="${esc(search)}" placeholder="Search Top 20 by name"><div class="top20-list">${rankState==='loading'?`<div class="info-card">Loading public Top 20…</div>`:rankState==='ready'&&shown.length?filtered.map(o=>rankRow(o.x,o.rank)).join(''):`<div class="info-card"><b>No public Top 20 loaded.</b><span>${esc(rankError||'Turn on Community Sync and make your profile public to join.')}</span></div>`}</div>${rankState==='ready'&&rankRows.length<20?`<div class="info-card"><b>Showing ${rankRows.length}/20 public profiles.</b><span>More profiles appear as people opt in to the public Arc League.</span></div>`:''}${rankState==='ready'&&rankRows.length>=20?`<div class="my-position"><b>Your position: ${me.rank==='—'?'Private':me.rank<=20?'#'+me.rank:'#'+me.rank}</b><span>${me.public?(me.rank<=20?'You are inside the visible Top 20.':'You are ranked globally even when outside the visible Top 20.'):'The leaderboard only counts public profiles.'}</span></div>`:''}</section>
+ <section class="challenge-card"><div><span class="eyebrow">WEEKLY CHALLENGE</span><h3>Show up 5 times.</h3><p>${Math.min(5,weeklyWins())}/5 wins this week</p></div><b>${Math.min(100,Math.round(Math.min(5,weeklyWins())/5*100))}%</b></section><section class="info-card"><b>How rank works</b><span>75% weekly consistency + 15% best streak + 10% weekly wins. Ties use best streak, then total wins, then stable ID. Only public profiles can appear.</span></section></div>`;
 }
-function rankRow(x,i){const name=String(x.display_name||'Arc member');const score=Number(x.rank_score)||0;const isMe=data.cloudUserId&&x.id===data.cloudUserId;return '<div class="rank-row '+(isMe?'me':'')+'"><span class="rank-num">#'+(i+1)+'</span><span class="avatar">'+esc(name.slice(0,1).toUpperCase())+'</span><span class="rank-person"><b>'+esc(name)+'</b><small>'+Number(x.total_wins||0)+' wins · 🔥 '+Number(x.best_streak||0)+' streak</small></span><span class="rank-side"><b>'+score+'</b><small>'+esc(x.league||league(score))+'</small></span></div>'}
+function rankRow(x,rank){const name=String(x.display_name||'Arc member');const score=rankScoreOf(x);const isMe=data.cloudUserId&&x.id===data.cloudUserId;return `<div class="rank-row ${isMe?'me':''}"><span class="rank-num">#${rank}</span><span class="avatar">${esc(name.slice(0,1).toUpperCase())}</span><span class="rank-person"><b>${esc(name)}</b><small>${rankWinsOf(x)} wins · 🔥 ${rankStreakOf(x)} streak</small></span><span class="rank-side"><b>${score}</b><small>${esc(x.league||league(score))}</small></span></div>`}
 
 function profileView(){const s=stats(),score=arcScore(),best=s.best;return `<div class="page"><section class="profile-hero"><div class="profile-avatar">${esc((data.name||'A').slice(0,1).toUpperCase())}</div><div><span class="eyebrow">MY ARC</span><h1>${esc(data.name||'Your Arc')}</h1><p>${esc(data.goal||'Personal growth')} · Day ${s.day}/${ARC_DAYS}</p></div><button class="icon-btn" data-more="settings" data-nav="more">⚙</button></section><section class="profile-stats"><div><b>${arcPct()}%</b><small>Arc progress</small></div><div><b>${score}</b><small>Arc score</small></div><div><b>🔥 ${best}</b><small>Best streak</small></div><div><b>${s.completed}</b><small>Total wins</small></div></section><section class="section"><div class="section-head"><div><span class="eyebrow">SHARE</span><h2>Show your progress.</h2></div></div><button class="share-card" data-action="share"><span>↗</span><div><b>Share my Arc</b><small>Generate a clean 4:5 progress card for WhatsApp or Instagram.</small></div></button><button class="secondary full" data-nav="rank">🏆 Open Top 20 Rank</button></section><section class="section"><div class="section-head"><div><span class="eyebrow">IDENTITY</span><h2>Profile</h2></div></div><div class="setting-row"><span><b>Name</b><small>${esc(data.name||'Not set')}</small></span><button class="secondary" data-action="edit-profile">Edit</button></div><div class="setting-row"><span><b>Main focus</b><small>${esc(data.goal||'Personal growth')}</small></span><button class="secondary" data-action="edit-goal">Edit</button></div></section></div>`}
 
-function monthLabel(m){return new Date(m+'-01T12:00:00').toLocaleDateString(undefined,{month:'long',year:'numeric'});}
-function monthStats(m){
- const ds=monthDays(m).filter(d=>d>=START&&d<=END&&d<=today());
- let eligible=0,doneN=0;
- for(const d of ds)for(const h of data.habits){if(!canUse(h,d))continue;eligible++;if(done(h,d))doneN++;}
- return {days:ds.length,eligible,doneN,pct:eligible?Math.round(doneN/eligible*100):0};
-}
-function arcView(){
- const s=stats();
- let html='<div class="page"><section class="simple-head detail-head"><button class="back-link" data-nav="today">← Today</button><span class="eyebrow">ARC DETAILS</span><h1>Winter Arc 2026</h1><p>1 Oct → 31 Dec · 92 days</p></section>';
- html+='<section class="rank-hero"><div><span class="eyebrow">YOUR ARC</span><h1>Day '+s.day+' / '+ARC_DAYS+'</h1><p>'+arcPct()+'% through the Arc</p></div><div class="rank-score"><b>'+arcScore()+'</b><small>/100</small></div><div class="rank-bar"><i style="width:'+arcPct()+'%"></i></div></section>';
- html+='<section class="section"><div class="section-head"><div><span class="eyebrow">TIMELINE</span><h2>Oct · Nov · Dec</h2></div></div>';
- ['2026-10','2026-11','2026-12'].forEach(m=>{const ms=monthStats(m);html+='<div class="info-card"><b>'+monthLabel(m)+'</b><span>'+ms.doneN+' wins · '+ms.pct+'% completion'+(m===today().slice(0,7)?' · Current month':'')+'</span><div class="progress-box"><div><b>'+ms.pct+'%</b><span>'+ms.days+' days elapsed</span></div><i style="width:'+ms.pct+'%"></i></div></div>';});
- html+='</section><section class="section"><div class="section-head"><div><span class="eyebrow">ARC SNAPSHOT</span><h2>Your milestones</h2></div></div><div class="profile-stats"><div><b>'+s.completed+'</b><small>Arc wins</small></div><div><b>🔥 '+s.best+'</b><small>Best streak</small></div><div><b>'+weeklyScore()+'%</b><small>7-day pace</small></div><div><b>'+nextMilestone(s.day)+'</b><small>Next checkpoint</small></div></div></section>';
- html+=recoveryCard()+'<button class="primary full" data-nav="month">Open Month view →</button></div>';
- return html;
-}
-function monthView(){
- const ms=monthStats(monthCursor),ds=monthDays(monthCursor).filter(d=>d>=START&&d<=END&&d<=today());
- let html='<div class="page"><section class="simple-head detail-head"><button class="back-link" data-nav="today">← Today</button><span class="eyebrow">MONTH</span><h1>'+monthLabel(monthCursor)+'</h1><p>A simple monthly view of your daily pattern.</p></section><div class="choice-row">';
- ['2026-10','2026-11','2026-12'].forEach(m=>{html+='<button class="choice '+(monthCursor===m?'selected':'')+'" data-action="month-set" data-month="'+m+'">'+monthLabel(m).split(' ')[0]+'</button>';});
- html+='</div><section class="month-summary"><div><b>'+ms.pct+'%</b><small>completion</small></div><div><b>'+ms.doneN+'</b><small>wins</small></div><div><b>'+ms.days+'</b><small>days elapsed</small></div></section>';
- html+='<section class="section"><div class="section-head"><div><span class="eyebrow">HABITS</span><h2>Monthly pattern</h2></div></div>';
- data.habits.forEach(h=>{const el=ds.filter(d=>canUse(h,d));const dn=el.filter(d=>done(h,d)).length;const p=el.length?Math.round(dn/el.length*100):0;html+='<div class="info-card"><b>'+esc(h.icon)+' '+esc(h.name)+'</b><span>'+dn+'/'+el.length+' days · '+p+'%</span><div class="progress-box"><div><b>'+p+'%</b><span></span></div><i style="width:'+p+'%"></i></div></div>';});
- if(!data.habits.length)html+='<div class="info-card">Add habits to see a monthly pattern.</div>';
- html+='</section><div class="info-card"><b>Arc note</b><span>Missed days stay in your history. Use the Recovery Pass instead of resetting the Arc.</span></div></div>';
- return html;
-}
-function wellnessView(){return '<div class="page">'+backHeader("Private Wellness","A quiet space for personal check-ins.")+'<div class="info-card"><b>🔒 Private by default</b><span>Mood, energy, sleep and journal details stay on this device. They are not part of the public Rank.</span></div><button class="primary full" data-more="checkin">Open Mood & Energy →</button><button class="secondary full" data-more="journal">Open Journal →</button><button class="secondary full" data-more="sleep">Open Sleep →</button></div>';}
-
-function moreView(){
- if(morePanel)return moreDetail(morePanel);
- return '<div class="page"><section class="simple-head"><span class="eyebrow">MORE</span><h1>Everything else, organized.</h1><p>Today stays simple; advanced features stay one tap away.</p></section>'+
- '<section class="tool-group"><h2>YOUR PROGRESS</h2>'+tile('📈','Insights','Spot patterns in your week.','insights')+tile('🏆','Achievements','See your milestones.','achievements')+tile('❄️','Arc Details','Day 1–92 timeline, milestones and recovery.','arc')+tile('🗓️','Month','Monthly habit pattern.','month')+'</section>'+
- '<section class="tool-group"><h2>TOOLS</h2>'+tile('✅','Manage habits','Add, edit and remove habits.','manage')+tile('🎯','Goals','Set a focus and target.','goals')+tile('🔁','Routines','Group habits into a quick sequence.','routine')+tile('✍️','Journal','One useful sentence a day.','journal')+tile('😴','Sleep','Track sleep basics.','sleep')+tile('🌤️','Mood & Energy','Quick private check-in.','checkin')+tile('🔒','Private Wellness','Private journal, sleep, mood and recovery space.','wellness')+tile('⏰','Reminders','Optional local reminders.','reminders')+'</section>'+
- '<section class="tool-group"><h2>APP</h2>'+tile('📱','Get the App','Install Winter Arc on your phone.','getapp')+tile('💾','Backup','Export or restore this profile.','backup')+tile('⚙️','Settings','Privacy, theme, PIN and sync.','settings')+tile('ℹ️','About Winter Arc','How Winter Arc works.','about')+'</section>'+
- '<section class="tool-group"><h2>COMMUNITY</h2>'+tile('🏆','Arc League','Public Top 20 and your exact public rank.','rank')+tile('☁️','Community Sync','Optional sharing and public profile control.','community')+tile('👤','Creator','Meet the creator.','creator')+'</section></div>';
-}
+function moreView(){if(morePanel)return moreDetail(morePanel);return `<div class="page"><section class="simple-head"><span class="eyebrow">MORE</span><h1>Tools, kept out of your way.</h1><p>Advanced features live here so Today stays simple.</p></section><section class="tool-group"><h2>Your journey</h2>${tile('✅','Manage habits','Add, edit and remove habits.','manage')}${tile('🎯','Goals','Set a focus and target.','goals')}${tile('🏆','Achievements','See your milestones.','achievements')}${tile('📈','Insights','Spot patterns in your week.','insights')}</section><section class="tool-group"><h2>Daily tools</h2>${tile('🔁','Routines','Group habits into a quick sequence.','routine')}${tile('🌤️','Check-in','Mood and energy.','checkin')}${tile('✍️','Journal','One useful sentence a day.','journal')}${tile('😴','Sleep','Track sleep basics.','sleep')}${tile('⏰','Reminders','Optional local reminders.','reminders')}</section><section class="tool-group"><h2>Community & app</h2>${tile('🏆','Arc League','Top 20, exact rank and live public members.','rank')}${tile('📱','Install app','Use Winter Arc like an app.','getapp')}${tile('👤','Creator','About the creator.','creator')}${tile('⚙️','Settings','Privacy, theme, PIN and sync.','settings')}${tile('💾','Backup','Export or restore this profile.','backup')}${tile('ℹ️','About','How Winter Arc works.','about')}</section></div>`}
 function tile(icon,title,sub,id){return `<button class="tool-row" data-more="${id}" data-nav="more"><span>${icon}</span><div><b>${esc(title)}</b><small>${esc(sub)}</small></div><strong>→</strong></button>`}
 function backHeader(title,sub){return `<section class="simple-head detail-head"><button class="back-link" data-action="more-back">← More</button><span class="eyebrow">${esc(title.toUpperCase())}</span><h1>${esc(title)}</h1>${sub?`<p>${esc(sub)}</p>`:''}</section>`}
 function moreDetail(id){
@@ -298,11 +241,8 @@ function moreDetail(id){
  if(id==='goals')return goalsView();
  if(id==='achievements')return achievementsView();
  if(id==='insights')return insightsView();
- if(id==='arc')return arcView();
- if(id==='month')return monthView();
  if(id==='routine')return routineView();
  if(id==='checkin')return checkinView();
- if(id==='wellness')return wellnessView();
  if(id==='journal')return journalView();
  if(id==='sleep')return sleepView();
  if(id==='reminders')return remindersView();
@@ -312,7 +252,7 @@ function moreDetail(id){
  if(id==='backup')return backupView();
  if(id==='about')return aboutView();
  if(id==='rank'){tab='rank';morePanel='';return rankView()}
- return '<div class="page">'+backHeader('Tool','')+'<div class="info-card">This tool is unavailable.</div></div>';
+ return `<div class="page">${backHeader('Tool','')}<div class="info-card">This tool is unavailable.</div></div>`
 }
 function manageView(){return `<div class="page">${backHeader('Manage habits','Keep your daily list small and useful.')}<div class="manage-list">${data.habits.map(h=>`<div class="manage-row"><span class="habit-icon">${esc(h.icon)}</span><div><b>${esc(h.name)}</b><small>${esc(h.action||'Smallest useful action')}</small></div><button class="secondary" data-action="habit-edit" data-id="${h.id}">Edit</button><button class="icon-btn danger" data-action="habit-delete" data-id="${h.id}">×</button></div>`).join('')||emptyState('🌱','No habits yet','Start with one small action.','Add habit','manage')} </div><button class="primary full" data-action="habit-add">＋ Add habit</button><div class="info-card"><b>3 is a good starting point.</b><span>You can keep up to 15 habits, but only your first 3 appear on Today.</span></div></div>`}
 function goalsView(){const p=Math.min(100,Math.round((goalProgress()/Math.max(1,data.target))*100));return `<div class="page">${backHeader('Goals','Choose one focus and make it measurable.')}<label class="label">Goal<input id="goalInput" value="${esc(data.goal)}" placeholder="e.g. Study consistently"></label><label class="label">Target<input id="goalTarget" type="number" min="1" max="365" value="${data.target}"></label><label class="label">Manual achieved<input id="goalAchieved" type="number" min="0" max="365" value="${data.achieved}"></label><button class="primary full" data-action="goal-save">Save goal</button><div class="progress-box"><div><b>${goalProgress()}/${data.target}</b><span>${p}%</span></div><i style="width:${p}%"></i></div><div class="info-card"><b>Focus tip</b><span>One clear goal makes your daily choices easier.</span></div></div>`}
@@ -333,18 +273,17 @@ function aboutView(){return `<div class="page">${backHeader('About','Simple by d
 
 function shell(){
  const labels=[['today','⌂','Today'],['week','▦','Week'],['rank','🏆','Rank'],['profile','◯','Profile'],['more','•••','More']];
- const body=tab==='today'?todayView():tab==='week'?weekView():tab==='month'?monthView():tab==='arc'?arcView():tab==='rank'?rankView():tab==='profile'?profileView():moreView();
- return '<div class="app-shell"><header class="topbar"><button class="icon-btn" data-action="menu" aria-label="Menu">☰</button><div class="brand"><b>Winter Arc</b><small>2026 · '+esc(data.name||'Your Arc')+'</small></div><button class="icon-btn" data-action="share" aria-label="Share">↗</button><button class="profile-mini" data-action="account" aria-label="Account">'+esc((data.name||'A').slice(0,1).toUpperCase())+'</button></header><main>'+body+'</main><nav class="bottom-nav">'+labels.map(([id,icon,label])=>'<button class="'+(tab===id?'active':'')+'" data-nav="'+id+'"><b>'+icon+'</b><span>'+label+'</span></button>').join('')+'</nav>'+(menuOpen?menuSheet():'')+(selectedHabit?habitModal():'')+(sprint?sprintModal():'')+'</div>';
+ const body=tab==='today'?todayView():tab==='week'?weekView():tab==='rank'?rankView():tab==='profile'?profileView():moreView();
+ return `<div class="app-shell"><header class="topbar"><button class="icon-btn" data-action="menu" aria-label="Menu">☰</button><div class="brand"><b>Winter Arc</b><small>2026 · ${esc(data.name||'Your Arc')}</small></div><button class="icon-btn" data-action="share" aria-label="Share">↗</button><button class="profile-mini" data-nav="profile">${esc((data.name||'A').slice(0,1).toUpperCase())}</button></header><main>${creatorShowcase()}${body}</main><nav class="bottom-nav">${labels.map(([id,icon,label])=>`<button class="${tab===id?'active':''}" data-nav="${id}"><b>${icon}</b><span>${label}</span></button>`).join('')}</nav>${menuOpen?menuSheet():''}${selectedHabit?habitModal():''}${sprint?sprintModal():''}</div>`;
 }
-function menuSheet(){return '<div class="overlay" data-action="menu-close"><aside class="sheet"><div class="sheet-head"><div><span class="eyebrow">WINTER ARC</span><h2>Quick navigation</h2></div><button class="icon-btn" data-action="menu-close">×</button></div><button class="menu-link" data-nav="today"><b>Today</b><small>Your next win.</small><strong>→</strong></button><button class="menu-link" data-nav="week"><b>Week</b><small>Your 7-day pattern.</small><strong>→</strong></button><button class="menu-link" data-nav="month"><b>Month</b><small>Monthly pattern.</small><strong>→</strong></button><button class="menu-link" data-nav="arc"><b>Arc Details</b><small>Your full 92-day story.</small><strong>→</strong></button><button class="menu-link" data-nav="rank"><b>Top 20 Rank</b><small>Community leaderboard.</small><strong>→</strong></button><button class="menu-link" data-nav="profile"><b>Profile</b><small>Your identity and share card.</small><strong>→</strong></button><button class="menu-link" data-nav="more"><b>More</b><small>Tools and settings.</small><strong>→</strong></button></aside></div>'}
-
+function menuSheet(){return `<div class="overlay" data-action="menu-close"><aside class="sheet"><div class="sheet-head"><div><span class="eyebrow">WINTER ARC</span><h2>Quick navigation</h2></div><button class="icon-btn" data-action="menu-close">×</button></div><button class="menu-link" data-nav="today"><b>Today</b><small>Your next win.</small><strong>→</strong></button><button class="menu-link" data-nav="week"><b>Week</b><small>Your 7-day pattern.</small><strong>→</strong></button><button class="menu-link" data-nav="rank"><b>Top 20 Rank</b><small>Community leaderboard.</small><strong>→</strong></button><button class="menu-link" data-nav="profile"><b>Profile</b><small>Your identity and share card.</small><strong>→</strong></button><button class="menu-link" data-nav="more"><b>More</b><small>Tools and settings.</small><strong>→</strong></button></aside></div>`}
 function habitModal(){const h=data.habits.find(x=>x.id===selectedHabit);if(!h)return '';return `<div class="overlay" data-action="habit-close"><div class="modal"><div class="sheet-head"><div><span class="eyebrow">HABIT</span><h2>${esc(h.icon)} ${esc(h.name)}</h2></div><button class="icon-btn" data-action="habit-close">×</button></div><div class="profile-stats compact"><div><b>${habitStats(h).run}</b><small>Current</small></div><div><b>${habitStats(h).longest}</b><small>Best</small></div><div><b>${habitStats(h).total}</b><small>Wins</small></div></div><label class="label">Icon<input id="habitIcon" maxlength="4" value="${esc(h.icon)}"></label><label class="label">Smallest action<input id="habitAction" value="${esc(h.action||'')}"></label><label class="label">Best time<input id="habitTime" type="time" value="${esc(h.time||'')}"></label><label class="label">Difficulty<select id="habitDifficulty"><option ${h.difficulty==='Easy'?'selected':''}>Easy</option><option ${h.difficulty==='Medium'?'selected':''}>Medium</option><option ${h.difficulty==='Hard'?'selected':''}>Hard</option></select></label><label class="check-line"><input id="habitPrivate" type="checkbox" ${h.private?'checked':''}><span>Keep habit name private</span></label><button class="primary full" data-action="habit-save">Save changes</button><button class="danger-btn full" data-action="habit-delete" data-id="${h.id}">Delete habit</button></div></div>`}
 function sprintModal(){const sec=Math.max(0,Math.ceil((sprint.ends-Date.now())/1000));return `<div class="overlay" data-action="sprint-close"><div class="modal center"><div class="eyebrow">FOCUS SPRINT</div><h2>One focused block.</h2><div class="timer">${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}</div><div class="choice-row">${[5,10,25].map(m=>`<button class="choice ${sprint.min===m?'selected':''}" data-action="sprint-min" data-value="${m}" ${sprint.running?'disabled':''}>${m}m</button>`).join('')}</div>${sprint.running?'<button class="primary full" data-action="sprint-stop">Finish sprint ✓</button>':'<button class="primary full" data-action="sprint-start">Start sprint →</button>'}<button class="secondary full" data-action="sprint-close">Not now</button></div></div>`}
 
 async function shareArc(){
  const s=stats(),score=arcScore();
  try{
-  const c=document.createElement('canvas');c.width=1080;c.height=1350;const ctx=c.getContext('2d');ctx.fillStyle='#173f3a';ctx.fillRect(0,0,1080,1350);ctx.fillStyle='#bfe8ca';ctx.font='700 30px Arial';ctx.fillText('WINTER ARC 2026',80,110);ctx.fillStyle='#fff';ctx.font='900 86px Arial';ctx.fillText(`DAY ${s.day} / ${ARC_DAYS}`,80,240);ctx.font='800 58px Arial';ctx.fillText(`${arcPct()}% ARC PROGRESS`,80,330);ctx.font='600 32px Arial';ctx.fillStyle='#d8ece1';ctx.fillText(`${s.completed} total wins · 🔥 ${s.best} best streak`,80,390);ctx.fillStyle='#7bd29b';ctx.fillRect(80,440,920,28);ctx.fillStyle='#fff';ctx.fillRect(80,440,920*arcPct()/100,28);ctx.fillStyle='#fff';ctx.font='900 54px Arial';ctx.fillText(`${score}/100 ARC SCORE`,80,590);ctx.font='800 28px Arial';ctx.fillText(data.name||'My Arc',80,730);ctx.font='500 24px Arial';ctx.fillStyle='#cbe4d8';ctx.fillText('Small wins become your story.',80,780);ctx.fillText(WEBSITE.replace(/^https?:\/\//,''),80,1230);const blob=await new Promise(r=>c.toBlob(r,'image/png',.95));const file=new File([blob],'winter-arc-v22.1.png',{type:'image/png'});const text=`My Winter Arc progress: Day ${s.day}/${ARC_DAYS} · ${arcPct()}% · ${s.completed} wins 🔥`;if(navigator.share){if(navigator.canShare?.({files:[file]})){await navigator.share({title:'My Winter Arc',text,files:[file]});return}await navigator.share({title:'My Winter Arc',text,url:WEBSITE});return}const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='winter-arc-v22.1.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);showToast('Share card saved ↗');
+  const c=document.createElement('canvas');c.width=1080;c.height=1350;const ctx=c.getContext('2d');ctx.fillStyle='#173f3a';ctx.fillRect(0,0,1080,1350);ctx.fillStyle='#bfe8ca';ctx.font='700 30px Arial';ctx.fillText('WINTER ARC 2026',80,110);ctx.fillStyle='#fff';ctx.font='900 86px Arial';ctx.fillText(`DAY ${s.day} / ${ARC_DAYS}`,80,240);ctx.font='800 58px Arial';ctx.fillText(`${arcPct()}% ARC PROGRESS`,80,330);ctx.font='600 32px Arial';ctx.fillStyle='#d8ece1';ctx.fillText(`${s.completed} total wins · 🔥 ${s.best} best streak`,80,390);ctx.fillStyle='#7bd29b';ctx.fillRect(80,440,920,28);ctx.fillStyle='#fff';ctx.fillRect(80,440,920*arcPct()/100,28);ctx.fillStyle='#fff';ctx.font='900 54px Arial';ctx.fillText(`${score}/100 ARC SCORE`,80,590);ctx.font='800 28px Arial';ctx.fillText(data.name||'My Arc',80,730);ctx.font='500 24px Arial';ctx.fillStyle='#cbe4d8';ctx.fillText('Small wins become your story.',80,780);ctx.fillText('Credit by '+(data.creatorName||'Vashu Sharmaa'),80,1180);ctx.fillText(WEBSITE.replace(/^https?:\/\//,''),80,1230);const blob=await new Promise(r=>c.toBlob(r,'image/png',.95));const file=new File([blob],'winter-arc-v24.png',{type:'image/png'});const text=`My Winter Arc progress: Day ${s.day}/${ARC_DAYS} · ${arcPct()}% · ${s.completed} wins 🔥`;if(navigator.share){if(navigator.canShare?.({files:[file]})){await navigator.share({title:'My Winter Arc',text,files:[file]});return}await navigator.share({title:'My Winter Arc',text,url:WEBSITE});return}const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='winter-arc-v24.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);showToast('Share card saved ↗');
  }catch(e){try{await navigator.clipboard?.writeText(`My Winter Arc progress: Day ${s.day}/${ARC_DAYS} · ${arcPct()}% · ${s.completed} wins 🔥\n${WEBSITE}`);showToast('Progress link copied ↗')}catch(_){showToast('Sharing is not available here')}}
 }
 async function syncCloud(){if(!data.cloudOptIn||!window.CLOUD_CFG?.url||!window.CLOUD_CFG?.anonKey)return false;try{const u=String(CLOUD_CFG.url).replace(/\/$/,'');const id=data.cloudUserId||crypto.randomUUID();data.cloudUserId=id;const s=stats();const body={id,display_name:data.name||'Anonymous',instagram_handle:data.profileInstagram||'',arc_day:s.day,total_arc_days:ARC_DAYS,arc_progress:arcPct(),today_completed:s.todayDone,total_habits:data.habits.length,total_wins:s.completed,best_streak:s.best,public_profile:!!data.publicProfile,week_score:weeklyScore(),rank_score:arcScore(),league:league(arcScore()),week_key:today(),last_seen:new Date().toISOString()};const r=await fetch(u+'/rest/v1/arc_users',{method:'POST',headers:{apikey:CLOUD_CFG.anonKey,Authorization:'Bearer '+CLOUD_CFG.anonKey,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},body:JSON.stringify(body)});if(!r.ok)throw new Error(String(r.status));data.cloudLastSync=new Date().toISOString();data.cloudStatus='Synced ✓';save();return true}catch(e){data.cloudStatus='Sync failed';save();return false}}
@@ -355,12 +294,11 @@ function render(){document.body.classList.toggle('dark',!!data.dark);if(locked()
 
 // Single delegated event system keeps the UI responsive and avoids the duplicate listener layers of older builds.
 document.addEventListener('click',async e=>{
- const b=e.target.closest('button,a,[data-action],[data-nav],[data-more]');if(!b)return;if(b.classList?.contains('overlay')&&e.target!==b)return;
+ const b=e.target.closest('button,a');if(!b)return;
  if(b.tagName==='A'&&b.getAttribute('href')?.startsWith('http'))return;
  const nav=b.dataset.nav,more=b.dataset.more,action=b.dataset.action;
  if(more){e.preventDefault();tab='more';morePanel=more;menuOpen=false;selectedHabit=null;render();if(more==='rank')loadRank();return}
- if(nav){e.preventDefault();tab=nav;morePanel='';menuOpen=false;selectedHabit=null;render();if(tab==='rank'&&rankState==='idle')loadRank();return}
- if(action==='login'){const pin=$('#loginPin')?.value.trim()||'';if(!/^\d{4,6}$/.test(pin))return showToast('Enter your 4–6 digit PIN');const h=await hashPin(pin);if(h!==data.pinHash)return showToast('Wrong PIN');sessionUnlocked=true;data.lastLogin=today();save();render();showToast('Welcome back 👋');if(data.cloudOptIn)syncCloud(false);return}
+ if(nav){e.preventDefault();tab=nav;morePanel='';menuOpen=false;selectedHabit=null;render();if(tab==='rank'&&(rankState==='idle'||rankState==='error'||rankState==='offline'))loadRank();return}
  if(action==='on-next'){if(onboardingStep===1){const n=$('#onName')?.value.trim();if(!n)return showToast('Enter your name first');data.name=n;data.goal=onboardingGoal;save()}onboardingStep=Math.min(3,onboardingStep+1);render();return}
  if(action==='on-back'){onboardingStep=Math.max(0,onboardingStep-1);render();return}
  if(action==='on-tour'){showToast('Today → Week → Rank → More. Start simple.');return}
@@ -368,8 +306,6 @@ document.addEventListener('click',async e=>{
  if(action==='finish-onboarding'){if(onboardingSelected.length!==3)return showToast('Pick exactly 3 habits');data.name=data.name.trim();data.goal=onboardingGoal;data.habits=[];onboardingSelected.forEach(n=>addHabit(n));data.profileCreated=true;data.onboardingDone=true;data.journeyStart=today();data.lastLogin=today();save();tab='today';render();showToast('Your Arc is live 🚀');return}
  if(action==='toggle'){const h=data.habits.find(x=>x.id===b.dataset.id);if(h)toggleHabit(h,today());return}
  if(action==='toggle-date'){const h=data.habits.find(x=>x.id===b.dataset.id);if(h)toggleHabit(h,b.dataset.date);return}
- if(action==='month-set'){const m=b.dataset.month;if(['2026-10','2026-11','2026-12'].includes(m)){monthCursor=m;render()}return}
- if(action==='account'){tab='profile';morePanel='';menuOpen=false;selectedHabit=null;render();return}
  if(action==='menu'){menuOpen=true;render();return}
  if(action==='menu-close'){menuOpen=false;render();return}
  if(action==='habit-close'){selectedHabit=null;render();return}
@@ -394,7 +330,7 @@ document.addEventListener('click',async e=>{
  if(action==='pin-save'){const a=$('#pinA')?.value.trim(),bb=$('#pinB')?.value.trim(),n=$('#pinName')?.value.trim();if(!/^\d{4,6}$/.test(a)||a!==bb)return showToast('PIN must be 4–6 digits and match');if(n)data.name=n;data.pinHash=await hashPin(a);sessionUnlocked=true;save();render();showToast('PIN saved 🔒');return}
  if(action==='pin-remove'){data.pinHash='';sessionUnlocked=true;save();render();showToast('PIN removed');return}
  if(action==='generic-close'){b.closest('.overlay')?.remove();return}
- if(action==='backup'){const blob=new Blob([JSON.stringify(Object.assign({},data,{schema:22,backupVersion:'V22.1',backupCreated:new Date().toISOString()}),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`winter-arc-v22.1-backup-${today()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);showToast('Latest backup exported 💾');return}
+ if(action==='backup'){const blob=new Blob([JSON.stringify(Object.assign({},data,{schema:24,backupVersion:'V24.0',backupCreated:new Date().toISOString()}),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`winter-arc-v24-backup-${today()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);showToast('Latest backup exported 💾');return}
  if(action==='reset-profile'){if(!confirm('Reset this local profile and delete local tracker data?'))return;[KEY,...OLD_KEYS].forEach(k=>localStorage.removeItem(k));location.href=location.pathname;return}
  if(action==='install'){if(vStandalone())return showToast('Already installed 📱');if(installPrompt){await installPrompt.prompt();installPrompt=null;return}showToast('Browser menu → Install app / Add to Home screen');return}
  if(action==='share'){await shareArc();return}

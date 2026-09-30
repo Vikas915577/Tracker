@@ -1,22 +1,22 @@
-# Winter Arc V22 backend
+# Winter Arc Tracker V24 — Supabase setup
 
-Run `backend-schema.sql` in Supabase SQL Editor.
+V24 keeps the V21 Supabase shape and adds exact-rank + active-member RPCs for the public Arc League.
 
-Then set this in `cloud-config.js` using your project's public anon key:
+## 1. Create the tables
+Open `backend-schema.sql` in Supabase SQL Editor and run it.
 
-```js
-window.WINTER_ARC_CLOUD = {
-  url: 'https://YOUR-PROJECT.supabase.co',
-  anonKey: 'YOUR_PUBLIC_ANON_KEY'
-};
-```
+## 2. Configure the web app
+Open `cloud-config.js` and set:
+- `url`: your Supabase project URL
+- `anonKey`: your Supabase anon key
 
-V22 also exposes the same object as `window.CLOUD_CFG` for compatibility, so the V21 naming mismatch is fixed.
+Do not put a service-role key in the website.
 
-Rank behavior:
-- Top 20 query: public profiles only, ordered by rank score, last_seen and id, max 20 rows.
-- Exact rank: separate count queries, so a user can correctly be #47 even though only 20 leaderboard rows are displayed.
-- Active Now: public users seen in the last 15 minutes.
-- Active Today: exact public-user count seen in the last 24 hours.
+## 3. Top 20 requirements
+The leaderboard uses `get_public_leaderboard()` for a maximum of 20 public rows. `get_public_rank()` returns a user's exact global rank, including ranks outside Top 20. `get_active_public_members()` returns active public names with their exact rank. The app has a REST fallback when the RPCs are not installed, but the V24 SQL is recommended for exact results at scale.
 
-Only public display information is intended for the leaderboard. Private habit names, journal, sleep, mood, PIN and local notes stay on the device.
+## 4. Local-first privacy
+Community sync is optional. Private habit names, journal, sleep, mood and local PIN are not included in the public leaderboard request.
+
+## 5. Creator dashboard
+`creator-dashboard.html` uses the same Supabase project. Keep the creator email placeholder in the SQL/RPC configured before using that dashboard in a real deployment.
