@@ -1,5 +1,5 @@
-const CACHE_NAME = "progress-tracker-v11-shell";
-const SHELL = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.json"];
+const CACHE_NAME = "progress-tracker-v12-shell";
+const SHELL = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", event => {
   event.waitUntil(
