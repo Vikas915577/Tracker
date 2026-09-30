@@ -1,9 +1,9 @@
 (function(){
 'use strict';
 
-const VERSION='V11';
-const KEY='progress_tracker_v11';
-const OLD_KEYS=['progress_tracker_v10','progress_tracker_v9','progress_tracker_v8','progress_tracker_v6','progress_tracker_v5','progress_tracker_v4','progress_tracker_v3_plain'];
+const VERSION='V12';
+const KEY='progress_tracker_v12';
+const OLD_KEYS=['progress_tracker_v11','progress_tracker_v10','progress_tracker_v9','progress_tracker_v8','progress_tracker_v6','progress_tracker_v5','progress_tracker_v4','progress_tracker_v3_plain'];
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);
@@ -72,13 +72,13 @@ const DAY_MESSAGES={
 };
 
 function defaults(){return {
- schema:11,name:'',month:currentMonth(),habits:[],checks:{},freezes:{},freezeUsed:{},xpEvents:{},bonusEvents:{},sleep:{},notes:{},habitNotes:{},
+ schema:12,name:'',month:currentMonth(),habits:[],checks:{},freezes:{},freezeUsed:{},xpEvents:{},bonusEvents:{},sleep:{},notes:{},habitNotes:{},
  goal:'',target:7,achieved:0,win:'',barrier:'',ifThen:'',dark:false,xp:0,onboardingDone:false,journeyStart:'',mood:{},energy:{},planner:{},
  routines:[],activeRoutine:null,goalLinks:[],reminders:{},pinHash:'',profileCreated:false,lastLogin:'',coachEnabled:true,installHint:true
 }};
 
 let data=load();
-let tab='home';
+let tab='today';
 let morePanel='';
 let selectedHabit=null;
 let quickOpen=false;
@@ -113,7 +113,7 @@ function normalize(x){
  d.month=/^\d{4}-\d{2}$/.test(d.month)?d.month:currentMonth();
  d.pinHash=String(d.pinHash||'');
  d.lastLogin=String(d.lastLogin||'');
- d.schema=11;
+ d.schema=12;
  return d;
 }
 
@@ -131,6 +131,7 @@ function load(){
     m.onboardingDone=!!(old.onboardingDone||old.name);
     m.name=old.name||m.name;
     m.journeyStart=old.journeyStart||m.journeyStart||today();
+    m.schema=12;
     saveObj(m);
     return m;
    }
@@ -387,7 +388,7 @@ function panelHtml(){return {goals:goalsHtml,routine:routineHtml,planner:planner
 
 function quickModal(){return `<div class="overlay" data-close-overlay><div class="modal"><div class="section"><h2>⚡ Quick add</h2><button class="btn small" data-close-quick>Close</button></div><div class="drawer-grid"><button class="more-tile" data-quick="habit"><span>✅</span><b>Habit</b><small>Add something to repeat.</small></button><button class="more-tile" data-quick="goals"><span>🎯</span><b>Goal</b><small>Set a target.</small></button><button class="more-tile" data-quick="routine"><span>🔁</span><b>Routine</b><small>Group habits.</small></button><button class="more-tile" data-quick="journal"><span>✍️</span><b>Journal</b><small>Write one line.</small></button></div></div></div>`}
 
-function onboarding(){return `<div class="overlay"><div class="modal"><div class="kicker">V11 SETUP</div><h2>👋 Build your system.</h2><p class="muted smalltext">Start with a realistic group of habits. You can change everything later.</p><label class="smalltext muted">Your name</label><input id="onName" value="${escapeHtml(data.name)}" placeholder="Enter your name"><div class="section" style="margin-top:13px"><h2>Choose habits</h2><span class="badge" id="onCount">0 selected</span></div><div class="preset-grid" id="onPresets">${PRESETS.filter(p=>!p.private).map((p,i)=>`<button class="preset ${i<4?'selected':''}" data-onpreset="${escapeHtml(p.name)}"><div class="line"><input type="checkbox" ${i<4?'checked':''}><span style="font-size:22px">${p.icon}</span><div><b>${escapeHtml(p.name)}</b><div class="muted">${escapeHtml(p.cat)}</div></div></div></button>`).join('')}</div><div class="private-section"><div class="section"><h2>🔒 Private habit</h2><span class="muted smalltext">Optional</span></div><button class="preset" style="width:100%" data-onpreset="Masturbation"><div class="line"><input type="checkbox"><span style="font-size:22px">🔒</span><div><b>Masturbation</b><div class="muted">Discreet label</div></div></div></button></div><label class="smalltext muted" style="display:block;margin-top:12px">Add a custom habit</label><div class="search-row" style="margin-top:6px"><input id="onCustom" placeholder="e.g. Stretch"><button class="btn" data-on-custom>Add</button></div><div id="customSetupList" style="display:grid;gap:6px;margin-top:7px"></div><div class="note" style="margin-top:10px">💡 You do not need a perfect routine. Pick habits you can realistically repeat.</div><button class="btn primary block" data-finish-onboarding style="margin-top:12px;padding:12px">Save My System 🚀</button></div></div>`}
+function onboarding(){return `<div class="overlay"><div class="modal"><div class="kicker">V12 SETUP</div><h2>👋 Build your system.</h2><p class="muted smalltext">Start with a realistic group of habits. You can change everything later.</p><label class="smalltext muted">Your name</label><input id="onName" value="${escapeHtml(data.name)}" placeholder="Enter your name"><div class="section" style="margin-top:13px"><h2>Choose habits</h2><span class="badge" id="onCount">0 selected</span></div><div class="preset-grid" id="onPresets">${PRESETS.filter(p=>!p.private).map((p,i)=>`<button class="preset ${i<4?'selected':''}" data-onpreset="${escapeHtml(p.name)}"><div class="line"><input type="checkbox" ${i<4?'checked':''}><span style="font-size:22px">${p.icon}</span><div><b>${escapeHtml(p.name)}</b><div class="muted">${escapeHtml(p.cat)}</div></div></div></button>`).join('')}</div><div class="private-section"><div class="section"><h2>🔒 Private habit</h2><span class="muted smalltext">Optional</span></div><button class="preset" style="width:100%" data-onpreset="Masturbation"><div class="line"><input type="checkbox"><span style="font-size:22px">🔒</span><div><b>Masturbation</b><div class="muted">Discreet label</div></div></div></button></div><label class="smalltext muted" style="display:block;margin-top:12px">Add a custom habit</label><div class="search-row" style="margin-top:6px"><input id="onCustom" placeholder="e.g. Stretch"><button class="btn" data-on-custom>Add</button></div><div id="customSetupList" style="display:grid;gap:6px;margin-top:7px"></div><div class="note" style="margin-top:10px">💡 You do not need a perfect routine. Pick habits you can realistically repeat.</div><button class="btn primary block" data-finish-onboarding style="margin-top:12px;padding:12px">Save My System 🚀</button></div></div>`}
 
 function habitOverlay(){const h=data.habits.find(x=>x.id===selectedHabit);if(!h)return '';const hs=habitStats(h),ds=makeDays(data.month);return `<div class="overlay"><div class="modal"><div class="section"><div><div class="kicker">HABIT DETAILS</div><h2 style="margin:3px 0 0">${escapeHtml(h.icon)} ${escapeHtml(h.name)}</h2></div><button class="btn small" data-close-habit>Close</button></div><div class="grid three"><div class="stat"><small>Current</small><b>${hs.run} 🔥</b></div><div class="stat"><small>Longest</small><b>${hs.longest}</b></div><div class="stat"><small>Total</small><b>${hs.total}</b></div></div><div class="form" style="margin-top:10px"><div class="field"><label>Icon</label><input id="habitIcon" value="${escapeHtml(h.icon)}" maxlength="3"></div><div class="field"><label>Difficulty</label><select id="habitDifficulty"><option ${h.difficulty==='Easy'?'selected':''}>Easy</option><option ${h.difficulty==='Medium'?'selected':''}>Medium</option><option ${h.difficulty==='Hard'?'selected':''}>Hard</option></select></div><div class="field"><label>Private label</label><select id="habitPrivate"><option value="0" ${!h.private?'selected':''}>No</option><option value="1" ${h.private?'selected':''}>Yes</option></select></div></div><div class="form" style="margin-top:10px"><div class="field"><label>Best time</label><input id="habitTime" type="time" value="${escapeHtml(h.time||'')}"></div><div class="field"><label>Smallest action</label><input id="habitAction" value="${escapeHtml(h.action||'')}"></div><div class="field"><label>Why</label><input id="habitWhy" value="${escapeHtml(h.why||'')}"></div></div><label class="smalltext muted" style="display:block;margin-top:10px">Habit note</label><textarea id="habitNote">${escapeHtml(data.habitNotes[h.id]||'')}</textarea><button class="btn primary block" data-save-habit style="margin-top:10px">Save settings ✅</button><div class="section" style="margin-top:15px"><h2>📅 Monthly history</h2><span class="muted smalltext">${escapeHtml(data.month)}</span></div><div class="matrix-wrap"><table class="matrix"><thead><tr><th>Habit</th>${ds.map(d=>`<th>${Number(d.slice(-2))}</th>`).join('')}</tr></thead><tbody><tr><td class="habit-cell">${escapeHtml(h.name)}</td>${ds.map(d=>{const future=d>today(),fr=frozen(h,d);return `<td><button class="daycheck ${done(h,d)?'done':''} ${fr?'freeze':''} ${future?'future-day':''} ${d===today()?'today':''}" data-toggle="${h.id}|${d}" ${future?'disabled':''}>${done(h,d)?'✓':fr?'🛡':future?'·':''}</button></td>`}).join('')}</tr></tbody></table></div><div class="quick-actions"><button class="btn" data-rename-habit>Rename</button><button class="btn" data-delete-habit>Delete</button></div><div class="note" style="margin-top:9px">🛡 Monthly freeze: ${freezeAvailable()?'available':'used this month'}. Future dates stay locked.</div></div></div>`}
 
@@ -432,7 +433,7 @@ document.addEventListener('click',async e=>{
  if(b.dataset.toggle){const [id,d]=b.dataset.toggle.split('|');const h=data.habits.find(x=>x.id===id);if(h)toggleHabit(h,d);return}
  if(b.dataset.freeze){const [id,d]=b.dataset.freeze.split('|');const h=data.habits.find(x=>x.id===id);if(h)toggleFreeze(h,d);return}
  if(b.dataset.openHabit){selectedHabit=b.dataset.openHabit;render();return}
- if(b.dataset.closeHabit){selectedHabit=null;render();return}
+ if(b.hasAttribute('data-close-habit')){selectedHabit=null;render();return}
  if(b.dataset.addPreset){const p=preset(b.dataset.addPreset);if(p&&addHabit(p.name,p.icon,!!p.private,p.difficulty,p.action)){render();showToast(`${p.name} added ✅`)}return}
  if(b.dataset.addCustom!==undefined){const v=prompt('Enter habit name');if(v&&addHabit(v.trim())){render();showToast('Habit added ✅')}return}
  if(b.dataset.habitFilter){habitFilter=b.dataset.habitFilter;render();return}
@@ -503,6 +504,393 @@ function reminderTick(){
 setInterval(reminderTick,30000);
 
 try{if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').then(r=>r.update()).catch(()=>{})}catch(e){}
+
+/* ========================= V12 COMPACT UI ========================= */
+
+function finishOnboarding(){const name=$('#onName')?.value.trim()||'';if(!name){alert('Please enter your name.');return}const chosen=[];$$('[data-onpreset]').forEach(b=>{const cb=$('input',b);if(cb?.checked){const p=preset(b.dataset.onpreset);chosen.push({name:b.dataset.onpreset,icon:p?.icon||'✅',private:!!p?.private,difficulty:p?.difficulty||'Medium',action:p?.action||'Do the smallest useful version'})}});customSetup.forEach(n=>chosen.push({name:n,icon:'✅',private:false,difficulty:'Medium',action:'Do the smallest useful version'}));if(!chosen.length){alert('Select at least one habit.');return}data.name=name;data.habits=chosen.slice(0,15).map(x=>Object.assign({id:uid(),created:currentMonth(),time:'',smallWin:x.action,why:''},x));data.onboardingDone=true;data.profileCreated=true;data.journeyStart=today();data.lastLogin=today();save();tab='today';morePanel='';selectedHabit=null;focusMode=false;quickOpen=false;render();showToast('Your V12 system is ready 🚀')}
+
+
+function habitOverlay(){
+  const h=data.habits.find(x=>x.id===selectedHabit);
+  if(!h)return '';
+  const hs=habitStats(h),ds=makeDays(data.month);
+  return `<div class="overlay" data-close-overlay><div class="modal v12-detail-modal">
+    <div class="section"><div><div class="kicker">HABIT</div><h2 style="margin:3px 0 0">${escapeHtml(h.icon)} ${escapeHtml(h.name)}</h2></div><button class="btn small" data-close-habit>Close</button></div>
+    <div class="v12-number-grid" style="grid-template-columns:repeat(3,1fr)"><div><b>${hs.run}</b><span>Current streak</span></div><div><b>${hs.longest}</b><span>Best streak</span></div><div><b>${hs.total}</b><span>Total wins</span></div></div>
+    <div class="form" style="margin-top:10px"><div class="field"><label>Difficulty</label><select id="habitDifficulty"><option ${h.difficulty==='Easy'?'selected':''}>Easy</option><option ${h.difficulty==='Medium'?'selected':''}>Medium</option><option ${h.difficulty==='Hard'?'selected':''}>Hard</option></select></div><div class="field"><label>Best time</label><input id="habitTime" type="time" value="${escapeHtml(h.time||'')}"></div><div class="field"><label>Private</label><select id="habitPrivate"><option value="0" ${!h.private?'selected':''}>No</option><option value="1" ${h.private?'selected':''}>Yes</option></select></div></div>
+    <label class="smalltext muted" style="display:block;margin-top:10px">Smallest useful action</label><input id="habitAction" value="${escapeHtml(h.action||'')}">
+    <label class="smalltext muted" style="display:block;margin-top:10px">Why this habit?</label><input id="habitWhy" value="${escapeHtml(h.why||'')}">
+    <label class="smalltext muted" style="display:block;margin-top:10px">Private note</label><textarea id="habitNote">${escapeHtml(data.habitNotes[h.id]||'')}</textarea>
+    <div class="quick-actions" style="margin-top:10px"><button class="btn primary" data-save-habit>Save</button><button class="btn" data-freeze="${h.id}|${today()}" ${(!frozen(h,today())&&!freezeAvailable())?'disabled':''}>${frozen(h,today())?'Undo today freeze':freezeAvailable()?'🛡 Protect today':'🛡 Used this month'}</button><button class="btn" data-rename-habit>Rename</button><button class="btn" data-delete-habit>Delete</button></div>
+    <div class="note" style="margin-top:10px">🛡 One freeze per month. You can use it for today or yesterday; undoing it does not restore the monthly allowance.</div>
+    <div class="section" style="margin-top:15px"><h2>Month</h2><span class="muted smalltext">${escapeHtml(data.month)}</span></div>
+    <div class="matrix-wrap"><table class="matrix"><thead><tr><th>Day</th>${ds.map(d=>`<th>${Number(d.slice(-2))}</th>`).join('')}</tr></thead><tbody><tr><td class="habit-cell">${escapeHtml(h.name)}</td>${ds.map(d=>{const future=d>today();return `<td><button class="daycheck ${done(h,d)?'done':''} ${frozen(h,d)?'freeze':''} ${future?'future-day':''} ${d===today()?'today':''}" data-toggle="${h.id}|${d}" ${future?'disabled':''}>${done(h,d)?'✓':frozen(h,d)?'🛡':future?'':''}</button></td>`}).join('')}</tr></tbody></table></div>
+  </div></div>`;
+}
+
+function v12Tone(h){
+  const n=Math.max(0,data.habits.indexOf(h));
+  return ['sun','blue','green','rose','purple','orange','teal'][n%7];
+}
+
+function v12DayLabel(d){
+  return dateObj(d).toLocaleDateString(undefined,{weekday:'short'}).slice(0,3);
+}
+
+function v12MiniDays(){
+  return Array.from({length:7},(_,i)=>addDays(today(),i-6));
+}
+
+function v12ProgressPercent(){
+  return data.habits.length
+    ? Math.round(stats().todayDone/data.habits.length*100)
+    : 0;
+}
+
+function v12StatusLabel(h,d){
+  if(done(h,d)) return 'Done';
+  if(frozen(h,d)) return 'Protected';
+  if(d>today()) return 'Later';
+  return 'Open';
+}
+
+function v12HabitCard(h,mode='today'){
+  const hs=habitStats(h);
+  const days=mode==='week'
+    ? v12MiniDays()
+    : v12MiniDays();
+  const d=today();
+  const isDone=done(h,d);
+  const tone=v12Tone(h);
+
+  return `<article class="v12-habit tone-${tone}">
+    <div class="v12-habit-top">
+      <div class="v12-icon">${escapeHtml(h.icon||'✅')}</div>
+      <div class="v12-habit-main">
+        <div class="v12-habit-name">
+          ${escapeHtml(h.name)}
+          ${h.private?'<span class="v12-private">🔒</span>':''}
+        </div>
+        <div class="v12-streak">🔥 ${hs.run} day${hs.run===1?'':'s'}</div>
+      </div>
+      <button class="v12-edit" data-open-habit="${h.id}" aria-label="Edit ${escapeHtml(h.name)}">✎</button>
+      <button class="v12-main-check ${isDone?'is-done':''}" data-toggle="${h.id}|${d}" aria-label="${isDone?'Undo':'Complete'} ${escapeHtml(h.name)}">
+        ${isDone?'✓':'○'}
+      </button>
+    </div>
+    <div class="v12-action">${escapeHtml(h.action||'Do the smallest useful version')}</div>
+    <div class="v12-week">
+      ${days.map(x=>{
+        const future=x>d;
+        const state=done(h,x)?'done':frozen(h,x)?'freeze':future?'future':'open';
+        return `<div class="v12-day-cell">
+          <span>${v12DayLabel(x)}</span>
+          <button class="v12-dot ${state} ${x===d?'is-today':''}" data-toggle="${h.id}|${x}" ${future?'disabled':''} aria-label="${v12StatusLabel(h,x)} ${formatDay(x)}">
+            ${done(h,x)?'✓':frozen(h,x)?'🛡':future?'':''}
+          </button>
+        </div>`;
+      }).join('')}
+    </div>
+  </article>`;
+}
+
+function v12ProgressCard(title,sub){
+  const pct=v12ProgressPercent();
+  return `<section class="v12-progress-card">
+    <div class="v12-ring" style="--p:${pct}"><div><b>${pct}%</b><span>today</span></div></div>
+    <div class="v12-progress-copy">
+      <div class="v12-made">Progress</div>
+      <h2>${escapeHtml(title)}</h2>
+      <p>${escapeHtml(sub)}</p>
+      <div class="v12-progress-bar"><i style="width:${pct}%"></i></div>
+    </div>
+  </section>`;
+}
+
+function v12CoachCard(){
+  const [head,msg]=coach();
+  const f=focusHabit();
+  return `<section class="v12-coach">
+    <div class="v12-coach-head"><span>${head}</span><small>Next best action</small></div>
+    <div class="v12-coach-text">${escapeHtml(msg)}</div>
+    ${f?`<button class="v12-coach-action" data-toggle="${f.id}|${today()}">${done(f,today())?'✓ Completed':'Complete'} · ${escapeHtml(f.name)}</button>`:''}
+  </section>`;
+}
+
+function v12TodayPage(){
+  const s=stats();
+  const f=focusHabit();
+  const day=journeyDay();
+  const pct=v12ProgressPercent();
+  return `<div class="v12-page">
+    ${v12ProgressCard(
+      `${s.todayDone} of ${data.habits.length} scheduled`,
+      s.todayDone===data.habits.length&&data.habits.length ? 'All scheduled habits are complete.' : 'One small win at a time.'
+    )}
+
+    ${f?`<section class="v12-focus">
+      <div class="v12-focus-kicker">TODAY'S FOCUS</div>
+      <div class="v12-focus-row">
+        <div class="v12-focus-icon">${escapeHtml(f.icon)}</div>
+        <div class="v12-focus-copy">
+          <h2>${escapeHtml(f.name)}</h2>
+          <p>${escapeHtml(f.smallWin||f.action||'Do the smallest useful version')}</p>
+          <small>${escapeHtml(recovery(f))}</small>
+        </div>
+        <button class="v12-focus-btn ${done(f,today())?'done':''}" data-toggle="${f.id}|${today()}">${done(f,today())?'✓':'→'}</button>
+      </div>
+      <button class="v12-link-btn" data-action="smallwin" data-habit-id="${f.id}">Make it smaller</button>
+    </section>`:''}
+
+    ${v12CoachCard()}
+
+    <section class="v12-section-head">
+      <div><div class="kicker">TODAY · DAY ${day}</div><h2>Your habits</h2></div>
+      <span class="badge">${pct}%</span>
+    </section>
+
+    <div class="v12-list">
+      ${data.habits.length?data.habits.map(h=>v12HabitCard(h,'today')).join(''):'<div class="v12-empty">Add your first habit with the + button.</div>'}
+    </div>
+
+    ${s.todayDone===data.habits.length&&data.habits.length?`<section class="v12-celebrate"><b>🔥 Today complete</b><span>Protect tomorrow by choosing the easiest first action.</span></section>`:''}
+
+    <section class="v12-journey-mini">
+      <div><span>YOUR ARC</span><b>Day ${day}</b></div>
+      <p>${escapeHtml(dayMessage(day))}</p>
+      <small>Next milestone · Day ${nextMilestone(day)}</small>
+    </section>
+  </div>`;
+}
+
+function v12WeekPage(){
+  const s=stats();
+  const ds=v12MiniDays();
+  return `<div class="v12-page">
+    ${v12ProgressCard(`This week's progress`,`Active days include streak protection · ${s.score}%`)}
+    <section class="v12-simple-card">
+      <div class="v12-section-head"><div><div class="kicker">7 DAYS</div><h2>Week at a glance</h2></div><span class="badge">${s.score}%</span></div>
+      <div class="v12-week-summary">
+        ${ds.map(d=>{
+          const eligible=data.habits.filter(h=>canUseHabitOn(h,d)).length;
+          const n=data.habits.filter(h=>active(h,d)).length;
+          const pct=eligible?Math.round(n/eligible*100):0;
+          return `<div class="v12-week-day ${d===today()?'today':''}"><b>${v12DayLabel(d)}</b><div class="v12-week-pillar" style="--h:${Math.max(8,pct)}%"><i></i></div><small>${pct}%</small></div>`;
+        }).join('')}
+      </div>
+    </section>
+    <div class="v12-list">
+      ${data.habits.map(h=>v12HabitCard(h,'week')).join('')||'<div class="v12-empty">Add a habit to see your week.</div>'}
+    </div>
+  </div>`;
+}
+
+function v12MonthGrid(h){
+  const ds=makeDays(data.month);
+  const first=dateObj(ds[0]).getDay();
+  const cells=[];
+  for(let i=0;i<first;i++)cells.push({blank:true});
+  ds.forEach(d=>cells.push({d}));
+  return `<div class="v12-month-grid">
+    ${['S','M','T','W','T','F','S'].map(x=>`<div class="v12-month-label">${x}</div>`).join('')}
+    ${cells.map(c=>c.blank?'<div class="v12-month-blank"></div>':(()=>{
+      const future=c.d>today();
+      const state=done(h,c.d)?'done':frozen(h,c.d)?'freeze':future?'future':'open';
+      return `<button class="v12-month-dot ${state} ${c.d===today()?'today':''}" data-toggle="${h.id}|${c.d}" ${future?'disabled':''} title="${formatDay(c.d)}">${done(h,c.d)?'✓':frozen(h,c.d)?'🛡':future?'':''}</button>`;
+    })()).join('')}
+  </div>`;
+}
+
+function v12MonthPage(){
+  const s=stats();
+  return `<div class="v12-page">
+    ${v12ProgressCard(`${s.completed} of ${s.total} completed`,`${formatMonthName(data.month)} · future days are locked`)}
+    <section class="v12-month-picker">
+      <button class="btn small" data-month-shift="-1">‹</button>
+      <input id="monthPicker" type="month" value="${escapeHtml(data.month)}" aria-label="Month">
+      <button class="btn small" data-month-shift="1">›</button>
+    </section>
+    <div class="v12-list">
+      ${data.habits.map(h=>`<article class="v12-month-card tone-${v12Tone(h)}">
+        <div class="v12-month-head"><div class="v12-icon">${escapeHtml(h.icon)}</div><div><h2>${escapeHtml(h.name)}</h2><span>🔥 ${habitStats(h).run} days · ${habitStats(h).monthPct}% this month</span></div><button class="v12-edit" data-open-habit="${h.id}">✎</button></div>
+        <div class="v12-calendar-title"><span>S M T W T F S</span></div>
+        ${v12MonthGrid(h)}
+      </article>`).join('')||'<div class="v12-empty">Add a habit first.</div>'}
+    </div>
+  </div>`;
+}
+
+function formatMonthName(m){
+  return dateObj(m+'-01').toLocaleDateString(undefined,{month:'long',year:'numeric'});
+}
+
+function v12ArcPage(){
+  const day=journeyDay();
+  const target=nextMilestone(day);
+  const s=stats();
+  const pct=Math.min(100,Math.round(day/Math.max(1,target)*100));
+  const goal=data.goal||'Your next personal goal';
+  return `<div class="v12-page">
+    <section class="v12-arc-hero">
+      <div class="v12-arc-kicker">PERSONAL ARC</div>
+      <div class="v12-arc-number">Day ${day}</div>
+      <p>${escapeHtml(dayMessage(day))}</p>
+      <div class="v12-arc-progress"><i style="width:${Math.max(4,pct)}%"></i></div>
+      <div class="v12-arc-meta"><span>Next · Day ${target}</span><span>${s.completed} total wins</span></div>
+    </section>
+
+    <section class="v12-simple-card">
+      <div class="v12-section-head"><div><div class="kicker">GOAL</div><h2>${escapeHtml(goal)}</h2></div><button class="btn small" data-more="goals">Edit</button></div>
+      <div class="v12-goal-row"><b>${Math.min(data.target,goalProgress())}/${data.target}</b><div class="v12-progress-bar"><i style="width:${Math.min(100,Math.round(goalProgress()/Math.max(1,data.target)*100))}%"></i></div></div>
+    </section>
+
+    <section class="v12-simple-card">
+      <div class="v12-section-head"><div><div class="kicker">MILESTONES</div><h2>Keep the next one visible.</h2></div></div>
+      <div class="v12-milestone-row">${[3,7,14,21,30,45,60,75,90,100].map(m=>`<div class="v12-milestone ${day>=m?'on':''}"><b>${m}</b><span>${day>=m?'✓':'🔒'}</span></div>`).join('')}</div>
+    </section>
+
+    <section class="v12-simple-card">
+      <div class="v12-section-head"><div><div class="kicker">YOUR NUMBERS</div><h2>Only what matters.</h2></div></div>
+      <div class="v12-number-grid">
+        <div><b>${s.fullStreak}</b><span>Full-day streak</span></div>
+        <div><b>${Math.max(0,...data.habits.map(h=>habitStats(h).longest))}</b><span>Best habit streak</span></div>
+        <div><b>${data.xp}</b><span>XP</span></div>
+        <div><b>${level()}</b><span>Level</span></div>
+      </div>
+    </section>
+  </div>`;
+}
+
+function v12Drawer(){
+  return `<div class="v12-drawer-backdrop" data-close-drawer></div><aside class="v12-drawer">
+    <div class="v12-drawer-brand"><div class="kicker">PROGRESS TRACKER V12</div><h2>Simple. Personal. Yours.</h2><p>Everything is here, but only when you need it.</p></div>
+    <button class="v12-drawer-item active" data-tab="today">🏠 <span>Progress</span></button>
+    <button class="v12-drawer-item" data-tab="week">📅 <span>Week</span></button>
+    <button class="v12-drawer-item" data-tab="month">🗓️ <span>Month</span></button>
+    <button class="v12-drawer-item" data-tab="arc">❄️ <span>Arc</span></button>
+    <div class="v12-drawer-line"></div>
+    <div class="v12-drawer-label">TOOLS</div>
+    <button class="v12-drawer-item" data-more="manage">✅ <span>Manage habits</span></button>
+    <button class="v12-drawer-item" data-more="goals">🎯 <span>Goals</span></button>
+    <button class="v12-drawer-item" data-more="routine">🔁 <span>Routines</span></button>
+    <button class="v12-drawer-item" data-more="planner">🗓️ <span>Day planner</span></button>
+    <button class="v12-drawer-item" data-more="checkin">🌤️ <span>Mood & energy</span></button>
+    <button class="v12-drawer-item" data-more="sleep">😴 <span>Sleep</span></button>
+    <button class="v12-drawer-item" data-more="journal">✍️ <span>Journal</span></button>
+    <button class="v12-drawer-item" data-more="reminders">⏰ <span>Reminders</span></button>
+    <button class="v12-drawer-item" data-more="security">🔐 <span>Privacy</span></button>
+    <button class="v12-drawer-item" data-more="settings">⚙️ <span>Settings & data</span></button>
+    <div class="v12-drawer-bottom"><span>Made for small wins.</span><b>❄️ V12</b></div>
+  </aside>`;
+}
+
+function v12Topbar(){
+  const labels={today:'Today',week:'Week',month:'Month',arc:'Arc'};
+  return `<header class="v12-topbar">
+    <button class="v12-menu-btn" data-open-drawer aria-label="Open menu">☰</button>
+    <div class="v12-brand"><strong>Progress Tracker</strong> <span>V12</span></div>
+    <div class="v12-top-actions">
+      <button class="v12-round-btn" data-dark title="Theme">${data.dark?'☀️':'◔'}</button>
+      <button class="v12-round-btn frost" data-tab="arc" title="Arc">❄️</button>
+    </div>
+  </header>
+  <nav class="v12-tabs">
+    ${Object.entries(labels).map(([n,l])=>`<button data-tab="${n}" class="${tab===n?'active':''}">${l}</button>`).join('')}
+  </nav>`;
+}
+
+function v12Shell(){
+  const body=tab==='today'?v12TodayPage():tab==='week'?v12WeekPage():tab==='month'?v12MonthPage():tab==='more'?morePage():v12ArcPage();
+  const s=stats();
+  return `<div class="v12-app">
+    ${v12Topbar()}
+    <div class="v12-global-line"><span>${data.name?`Hi, ${escapeHtml(data.name)} 👋`:'Your progress'}</span><span>${s.todayDone}/${data.habits.length} today</span></div>
+    <main class="v12-main">${body}</main>
+    <button class="v12-fab" data-fab aria-label="Add">${quickOpen?'×':'+'}</button>
+    ${quickOpen?`<div class="v12-fab-menu"><button data-quick="habit">✅ Add habit</button><button data-quick="goals">🎯 Goal</button><button data-quick="routine">🔁 Routine</button></div>`:''}
+    ${selectedHabit?habitOverlay():''}
+    ${!data.onboardingDone&&!data.pinHash?onboarding():''}
+    ${window.__v11QuickModal?quickModal():''}
+  </div>`;
+}
+
+function appShell(){return v12Shell()}
+function nav(){return [['today','Today'],['week','Week'],['month','Month'],['arc','Arc']]}
+function bottomNav(){return ''}
+function morePage(){return v12Drawer()}
+
+function routeMore(which){
+  tab='more';morePanel=which;selectedHabit=null;quickOpen=false;window.__v11QuickModal=false;render();
+}
+
+function toggleFreeze(h,d){
+  if(!canEdit(d)){showToast('Future dates cannot be frozen.');return}
+  const k=key(h,d);
+  if(done(h,d)){showToast('Undo the completion first.');return}
+  if(frozen(h,d)){delete data.freezes[k];save();showToast('Freeze removed 🛡️');render();return}
+  if(d!==today()&&d!==addDays(today(),-1)){
+    showToast('Freeze is only available for today or yesterday.');return;
+  }
+  if(!freezeAvailable()){showToast('This month’s freeze is already used 🛡️');return}
+  data.freezes[k]=true;
+  data.freezeUsed[freezeMonthKey()]=true;
+  save();showToast('Monthly freeze used 🛡️');render();
+}
+
+function routineCurrent(r){
+  const items=routineItems(r);
+  if(!items.length)return null;
+  const start=Math.max(0,Math.min(r.step||0,items.length));
+  for(let i=start;i<items.length;i++) if(!done(items[i],today())) return items[i];
+  for(let i=0;i<start;i++) if(!done(items[i],today())) return items[i];
+  return null;
+}
+function startRoutine(id){const r=data.routines.find(x=>x.id===id);if(!r)return;const items=routineItems(r);r.step=items.findIndex(h=>!done(h,today()));if(r.step<0)r.step=items.length;data.activeRoutine=id;save();tab='today';morePanel='';render();showToast(`${r.name} started ▶`)}
+
+function manageHabitsHtml(){
+  const list=data.habits.filter(h=>habitMatches(h));
+  return `<section class="v12-manage"><div class="v12-simple-card"><div class="v12-section-head"><div><div class="kicker">MANAGE</div><h2>Your habits</h2></div><button class="btn small" data-close-more>Close</button></div><div class="search-row"><input id="habitSearch" value="${escapeHtml(habitSearch)}" placeholder="Search habits"></div></div><div class="v12-list">${list.map(h=>`<div class="v12-manage-row tone-${v12Tone(h)}"><span class="v12-icon">${escapeHtml(h.icon)}</span><div><b>${escapeHtml(h.name)}</b><small>${escapeHtml(h.action||'')}</small></div><button class="v12-edit" data-open-habit="${h.id}">✎</button></div>`).join('')||'<div class="v12-empty">No matching habits.</div>'}</div><div class="v12-simple-card"><button class="btn primary block" data-add-custom>＋ Add custom habit</button></div></section>`;
+}
+
+function morePage(){
+  if(morePanel==='manage')return manageHabitsHtml();
+  return `<div class="v12-tool-page">${panelHtml()}</div>`;
+}
+
+/* V12 direct menu routing: capture phase keeps drawer buttons reliable after re-renders. */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button');
+  if(!b||!b.hasAttribute('data-more'))return;
+  const which=b.getAttribute('data-more')||'';
+  e.stopImmediatePropagation();
+  tab='more';morePanel=which;selectedHabit=null;quickOpen=false;window.__v11QuickModal=false;
+  document.body.classList.remove('drawer-open');
+  render();
+},{capture:true});
+
+/* V12 drawer + month shift + small-win interactions */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button');
+  if(!b)return;
+  if(b.dataset.openDrawer!==undefined){document.body.classList.add('drawer-open');if(!document.querySelector('.v12-drawer'))document.body.insertAdjacentHTML('beforeend',v12Drawer());return}
+  if(b.dataset.closeDrawer!==undefined){document.body.classList.remove('drawer-open');document.querySelector('.v12-drawer')?.remove();document.querySelector('.v12-drawer-backdrop')?.remove();return}
+  if(b.dataset.monthShift){
+    const cur=dateObj(data.month+'-01');cur.setMonth(cur.getMonth()+Number(b.dataset.monthShift));data.month=localDate(cur).slice(0,7);save();render();return;
+  }
+  if(b.dataset.action==='smallwin'){
+    const h=data.habits.find(x=>x.id===b.dataset.habitId);if(h&&!done(h,today()))toggleHabit(h,today());return;
+  }
+  if(b.dataset.tab&&document.body.classList.contains('drawer-open')){
+    const n=b.dataset.tab;document.body.classList.remove('drawer-open');document.querySelector('.v12-drawer')?.remove();document.querySelector('.v12-drawer-backdrop')?.remove();tab=n;morePanel='';selectedHabit=null;render();return;
+  }
+});
+
+/* Keep month/date inputs and search behaving after V12 renders. */
+document.addEventListener('input',e=>{
+  if(e.target.id==='habitSearch'){
+    habitSearch=e.target.value;if(morePanel==='manage')render();return;
+  }
+});
 
 render();
 
