@@ -1,0 +1,18 @@
+# V18.1 Test Report
+
+## Static / logic checks
+- app.js JavaScript syntax: PASS (`node --check app.js`)
+- index.html references app.js + styles.css: PASS
+- Service worker cache bumped to V18.1: PASS
+- Week renderer replaced with compact seven-column day controls: PASS
+- Week completion data attribute uses `data-v181-toggle`: PASS
+- Existing completion path calls `toggleHabit(h,d)`: PASS
+- Pre-Arc date guard sets Arc start to 2026-10-01: PASS
+- PWA `?tab=` routing added for today/week/profile/arc/more: PASS
+- Focus Sprint 5/10/25 minute controls present: PASS
+- New-user creator credit remains in first screen: PASS
+- Creator modal retains 4 creator image choices: PASS
+- 4:5 share canvas remains 1080x1350: PASS
+
+## Browser limitation
+A live Chromium/mobile tap-through could not be executed in this environment. The package is therefore not claimed as fully device-tested here.

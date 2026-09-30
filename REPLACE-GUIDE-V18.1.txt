@@ -1,0 +1,23 @@
+WINTER ARC TRACKER V18.1 — REPLACE GUIDE
+
+1. In GitHub repository Vikas915577/Tracker, replace the existing production files with:
+   app.js
+   styles.css
+   index.html
+   manifest.json
+   sw.js
+
+2. Keep these assets in the same folder:
+   creator-profile.jpg
+   creator-photo-1.jpg
+   creator-photo-2.jpg
+   creator-photo-3.jpg
+   icon-192.png
+   icon-512.png
+   cloud-config.js
+
+3. Do NOT deploy preview-new-user.html or preview-flow.html as index.html.
+
+4. After deployment, hard-refresh / reopen the PWA so the V18.1 service-worker cache can activate.
+
+Main fix in this build: the Week page no longer uses the broken stacked/default browser controls shown in the screenshot.
