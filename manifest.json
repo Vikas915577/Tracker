@@ -1,6 +1,6 @@
 {
-  "name": "Progress Tracker V13",
-  "short_name": "Progress Tracker",
+  "name": "Winter Arc Tracker",
+  "short_name": "Winter Arc Tracker",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
