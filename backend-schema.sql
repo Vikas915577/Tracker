@@ -1,79 +1,102 @@
--- Winter Arc Tracker V14.1 — Supabase backend
--- 1) Create a Supabase project.
--- 2) Replace YOUR_CREATOR_EMAIL below with the email you use for the creator dashboard.
--- 3) Run this SQL in Supabase SQL Editor.
--- 4) Enable Email/Password Auth for the creator dashboard.
+-- Winter Arc Tracker V15 backend
+-- Supabase SQL. Run in Supabase SQL Editor.
+-- Frontend uses only the public anon key. Never expose service_role in the site.
 
-create table if not exists public.arc_users (
-  id uuid primary key,
-  display_name text not null default 'Anonymous Hustler',
-  instagram_handle text default '',
+create extension if not exists pgcrypto;
+
+create table if not exists public.community_users (
+  client_id text primary key,
+  display_name text not null default 'Anonymous',
+  instagram_handle text,
   arc_day integer not null default 0,
-  total_arc_days integer not null default 92,
   arc_progress integer not null default 0,
-  today_completed integer not null default 0,
-  total_habits integer not null default 0,
+  today_done integer not null default 0,
   total_wins integer not null default 0,
   best_streak integer not null default 0,
+  week_score integer not null default 0,
+  joined_at timestamptz not null default now(),
   last_seen timestamptz not null default now(),
-  public_profile boolean not null default false,
-  created_at timestamptz not null default now()
+  app_version text not null default 'V15.0'
 );
 
-create table if not exists public.arc_daily (
-  user_id uuid not null references public.arc_users(id) on delete cascade,
-  progress_date date not null,
-  completed integer not null default 0,
-  total_habits integer not null default 0,
-  progress_pct integer not null default 0,
-  best_streak integer not null default 0,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  primary key(user_id, progress_date)
+create table if not exists public.creator_admins (
+  email text primary key
 );
 
-alter table public.arc_users enable row level security;
-alter table public.arc_daily enable row level security;
+alter table public.community_users enable row level security;
+alter table public.creator_admins enable row level security;
 
--- The app currently uses a random device id for opt-in aggregate sync.
--- For a production deployment, move writes behind an Edge Function or authenticated user flow.
--- These policies intentionally allow INSERT/UPDATE but do NOT allow public SELECT.
-drop policy if exists arc_users_insert on public.arc_users;
-create policy arc_users_insert on public.arc_users for insert to anon, authenticated with check (true);
-drop policy if exists arc_users_update on public.arc_users;
-create policy arc_users_update on public.arc_users for update to anon, authenticated using (id = id) with check (id = id);
-drop policy if exists arc_daily_insert on public.arc_daily;
-create policy arc_daily_insert on public.arc_daily for insert to anon, authenticated with check (true);
-
-grant insert, update on public.arc_users to anon, authenticated;
-grant insert on public.arc_daily to anon, authenticated;
-
--- Creator-only dashboard RPC.
-create or replace function public.creator_dashboard()
-returns table(
-  id uuid,
-  display_name text,
-  instagram_handle text,
-  arc_day integer,
-  total_arc_days integer,
-  arc_progress integer,
-  today_completed integer,
-  total_habits integer,
-  total_wins integer,
-  best_streak integer,
-  last_seen timestamptz,
-  public_profile boolean
-)
+create or replace function public.is_creator_admin()
+returns boolean
 language sql
 security definer
-set search_path = public, auth
+set search_path = public
 as $$
-  select u.id,u.display_name,u.instagram_handle,u.arc_day,u.total_arc_days,
-         u.arc_progress,u.today_completed,u.total_habits,u.total_wins,
-         u.best_streak,u.last_seen,u.public_profile
-  from public.arc_users u
-  where (select email from auth.users where id = auth.uid()) = 'YOUR_CREATOR_EMAIL'
-  order by u.last_seen desc;
+  select exists(select 1 from public.creator_admins a where lower(a.email)=lower(coalesce(auth.jwt()->>'email','')));
 $$;
 
-grant execute on function public.creator_dashboard() to authenticated;
+-- Community sync is opt-in. Anonymous clients may upsert only the summary rows sent by the app.
+drop policy if exists community_insert_anon on public.community_users;
+create policy community_insert_anon on public.community_users
+for insert to anon, authenticated
+with check (
+  length(client_id) between 10 and 120
+  and arc_day between 0 and 92
+  and arc_progress between 0 and 100
+  and today_done between 0 and 100
+  and total_wins between 0 and 100000
+  and best_streak between 0 and 1000
+  and week_score between 0 and 100
+);
+
+drop policy if exists community_update_anon on public.community_users;
+create policy community_update_anon on public.community_users
+for update to anon, authenticated
+using (client_id is not null)
+with check (
+  length(client_id) between 10 and 120
+  and arc_day between 0 and 92
+  and arc_progress between 0 and 100
+  and today_done between 0 and 100
+  and total_wins between 0 and 100000
+  and best_streak between 0 and 1000
+  and week_score between 0 and 100
+);
+
+drop policy if exists community_select_admin on public.community_users;
+create policy community_select_admin on public.community_users
+for select to authenticated
+using (public.is_creator_admin());
+
+-- No public reads of creator admin emails.
+drop policy if exists admin_no_public_read on public.creator_admins;
+create policy admin_no_public_read on public.creator_admins
+for select to authenticated
+using (public.is_creator_admin());
+
+-- After creating your Supabase Auth user, insert your email, for example:
+-- insert into public.creator_admins(email) values ('you@example.com');
+
+create table if not exists public.community_events (
+  id bigint generated always as identity primary key,
+  client_id text not null,
+  event_type text not null,
+  event_date date not null default current_date,
+  meta jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+create index if not exists community_events_type_idx on public.community_events(event_type, created_at desc);
+alter table public.community_events enable row level security;
+
+drop policy if exists events_insert_anon on public.community_events;
+create policy events_insert_anon on public.community_events
+for insert to anon, authenticated
+with check (
+  length(client_id) between 10 and 120
+  and event_type in ('progress_shared','compare_created','compare_shared','compare_opened','invite_created','invite_opened')
+);
+
+drop policy if exists events_select_admin on public.community_events;
+create policy events_select_admin on public.community_events
+for select to authenticated
+using (public.is_creator_admin());
