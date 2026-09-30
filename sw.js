@@ -1,5 +1,5 @@
-const CACHE_NAME = "winter-arc-tracker-v13-3-shell";
-const SHELL = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.json", "./icon-192.png", "./icon-512.png"];
+const CACHE_NAME = "winter-arc-tracker-v14-shell";
+const SHELL = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./creator-profile.jpg"];
 
 self.addEventListener("install", event => {
   event.waitUntil(
