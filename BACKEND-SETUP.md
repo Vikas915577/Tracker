@@ -1,45 +1,48 @@
-# Winter Arc V14.1 backend setup
+# Winter Arc Tracker V15 — Backend Setup
 
-The app is offline-first. Cloud/community sync is **opt-in** and disabled by default.
+## 1) Create Supabase project
+Create a Supabase project and keep the project URL and public anon key.
 
-## 1. Create Supabase
-Create a Supabase project and copy the Project URL + public anon key.
+## 2) Run the SQL
+Open Supabase → SQL Editor → paste `backend-schema.sql` → Run.
 
-## 2. Run SQL
-Open SQL Editor and run `backend-schema.sql`.
-Before running it, replace `YOUR_CREATOR_EMAIL` with the email you will use for the creator dashboard.
+## 3) Create the creator admin account
+Supabase → Authentication → Users → create an email/password user for your admin account.
 
-## 3. Configure the app
+Then in SQL Editor:
+
+```sql
+insert into public.creator_admins(email)
+values ('YOUR_ADMIN_EMAIL');
+```
+
+Use the same email as the Supabase Auth user.
+
+## 4) Configure frontend
 Open `cloud-config.js` and set:
 
 ```js
 window.WINTER_ARC_CLOUD = {
-  url: 'https://YOUR-PROJECT.supabase.co',
+  url: 'https://YOUR_PROJECT.supabase.co',
   anonKey: 'YOUR_PUBLIC_ANON_KEY'
 };
 ```
 
-Use only the **anon/public** key in the app. Never put a service-role key in GitHub Pages.
+Only use the public anon key. Never add the service-role key to GitHub Pages.
 
-## 4. Creator dashboard
-Open `creator-dashboard.html`, set `SUPABASE_URL` and `SUPABASE_ANON_KEY`, upload it to GitHub Pages, and sign in with the creator account.
+## 5) Frontend behavior
+Community Sync is OFF by default. A user explicitly turns it ON to send a summary row to `community_users`.
 
-The SQL RPC checks the creator email before returning the user list.
+The following are not sent by the app's community sync:
+- Private Wellness habit names
+- Journal
+- Sleep
+- Mood / energy
+- PIN
 
-## 5. What is synced
-Only when a user explicitly enables Community Sync:
-- display name
-- Instagram handle (if present)
-- Arc day / total days
-- Arc progress
-- today's completed count
-- habit count
-- total wins
-- best streak
-- last seen
-- public-profile preference
+## 6) Admin
+Open:
 
-Private habit names, journal, sleep, mood, PIN and full local history are not uploaded by this V14.1 sync flow.
+`https://YOUR-GITHUB-PAGES-URL/creator-dashboard.html`
 
-## 6. Important production note
-The current prototype uses a random device UUID for opt-in writes. For a public production launch, move write operations behind a Supabase Edge Function or authenticated anonymous/user sessions and add rate limiting. The creator dashboard itself should never use a service-role key in browser code.
+Sign in with the creator Supabase Auth account. Only emails inserted into `creator_admins` can view the community table.
