@@ -1,11 +1,25 @@
 {
-  "name": "Progress Tracker V11",
+  "name": "Progress Tracker V12",
   "short_name": "Progress Tracker",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f5f7fb",
-  "theme_color": "#635bff",
-  "description": "Offline-first personal growth and habit tracker"
+  "background_color": "#f7f5ef",
+  "theme_color": "#3da35d",
+  "description": "Simple, offline-first personal growth and habit tracker",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
