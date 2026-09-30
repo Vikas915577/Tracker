@@ -1,13 +1,13 @@
 {
   "name": "Winter Arc Tracker",
-  "short_name": "Winter Arc Tracker",
+  "short_name": "Winter Arc",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f7f5ef",
   "theme_color": "#3da35d",
-  "description": "Simple, offline-first personal growth and habit tracker with a visual Arc journey",
+  "description": "Simple, offline-first personal growth and habit tracker with Arc journey, sharing and creator profile",
   "icons": [
     {
       "src": "icon-192.png",
