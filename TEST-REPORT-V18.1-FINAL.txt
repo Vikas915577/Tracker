@@ -1,0 +1,56 @@
+# Winter Arc Tracker V18.1 — Final Test Report
+
+## Test environment
+- Package: Winter-Arc-V18.1-Fixed-Package
+- JavaScript runtime: Node.js 22
+- Browser: real Chromium/mobile tap-through NOT available in this environment
+- Logic tests executed with a lightweight DOM/browser harness
+
+## Pass 1 — Build / static checks
+1. app.js syntax — PASS
+2. sw.js syntax — PASS
+3. index.html references app.js — PASS
+4. index.html references styles.css — PASS
+5. manifest.json valid JSON — PASS
+6. SW cache is V18.1 — PASS
+7. required creator images exist — PASS
+8. required icons exist — PASS
+9. app.js backup exists — PASS
+10. V18.1 patch has no sibling-IIFE v18Render reference — PASS
+11. V18.1 patch uses outer render integration — PASS
+12. V18.1 week renderer uses data-v181-toggle — PASS
+13. no native checkbox input in new Week renderer — PASS
+14. Week renderer produces 7 day controls per habit — PASS (harness)
+15. PWA ?tab routing exists for today/week/profile/arc/more — PASS
+16. pre-Arc date guard exists — PASS
+17. Focus Sprint 5/10/25 controls exist — PASS
+18. first-screen creator credit exists — PASS
+19. creator modal keeps four photo choices — PASS
+20. 1080x1350 share card exists — PASS
+
+## Pass 2 — Logic / workflow checks
+21. App boot with browser stubs — PASS (no runtime ReferenceError)
+22. Fresh profile defaults load — PASS
+23. Winter Arc start resolves to 1 Oct 2026 under India timezone — PASS
+24. Arc day on 1 Oct resolves to Day 1 — PASS
+25. 92-day Arc length — PASS
+26. Habit completion writes completion state — PASS
+27. Habit completion awards XP through existing toggle path — PASS (+50 with first/full-day bonuses for a one-habit harness case)
+28. Habit undo removes completion and XP — PASS (direct logic test)
+29. Habit normalization/migration retains habits — PASS
+30. Week UI has 21 completion controls for 3 habits / 7 days — PASS (harness)
+31. Week UI has no native checkbox control — PASS (harness)
+32. Week completion uses the V18.1 event attribute — PASS (harness)
+
+## Important fix found during testing
+The first V18.1 package had a runtime scoping problem: a sibling IIFE tried to access V18-private `v18Render` and sprint state. That could cause a blank page at startup even though `node --check` passed. The package was corrected to integrate through the outer `render()` function and to use V18.1-owned menu/sprint state.
+
+## Not verified here
+- Real Android/Chrome tap-through
+- Visual rendering on multiple physical screen sizes
+- Native Web Share UI
+- Service-worker install/update lifecycle on a real device
+- Supabase/community backend with real credentials
+
+## Conclusion
+Static and logic coverage for the package passes. A physical-browser test is still required before calling the build fully device-verified.

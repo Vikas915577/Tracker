@@ -2383,6 +2383,7 @@ if(data.profileCreated||data.onboardingDone)save();
 
 /* ========================= V18.1 PATCH =========================
    Mobile week cleanup + interaction stability.
+   Important: this patch lives beside the V18 IIFE, so it only uses outer-scope APIs.
 */
 (function(){
   'use strict';
@@ -2418,6 +2419,8 @@ if(data.profileCreated||data.onboardingDone)save();
       .v181-menu-sheet{width:min(760px,100%);background:var(--card,#fff);color:var(--ink,#202522);border-radius:24px 24px 0 0;padding:15px;box-shadow:0 22px 80px rgba(0,0,0,.28)}
       .v181-menu-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.v181-menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:11px}.v181-menu-grid button{appearance:none;border:1px solid var(--line,#e5e6df);background:var(--card,#fff);color:inherit;border-radius:16px;padding:13px;text-align:left;display:grid;gap:4px;min-height:76px}.v181-menu-grid b{font-size:13px}.v181-menu-grid small{font-size:9px;color:var(--muted,#70766f)}
       .v181-sprint-options{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:6px 0 10px}.v181-sprint-options button{min-height:40px}.v181-sprint-options button.selected{background:var(--green,#3da35d);border-color:var(--green,#3da35d);color:#fff}
+      .v181-sprint-overlay{position:fixed;inset:0;z-index:145;background:rgba(9,14,11,.52);display:flex;align-items:flex-end;justify-content:center;padding:10px}.v181-sprint-sheet{width:min(760px,100%);background:var(--card,#fff);color:var(--ink,#202522);border-radius:24px 24px 0 0;padding:15px;box-shadow:0 22px 80px rgba(0,0,0,.28)}
+      .v181-sprint-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.v181-sprint-timer{text-align:center;font-size:54px;font-weight:950;letter-spacing:-.05em;padding:10px 0}.v181-sprint-mins{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.v181-sprint-mins button{min-height:42px}.v181-sprint-mins button.selected{background:var(--green,#3da35d);border-color:var(--green,#3da35d);color:#fff}
       @media(max-width:430px){.v181-week-strip{gap:4px}.v181-week-day{padding:7px 2px}.v181-week-day.today{padding:6px 1px}.v181-days{gap:4px}.v181-day-btn{padding:5px 1px}.v181-day-btn .check{width:25px;height:25px}.v181-week-top h1{font-size:27px}}
       @media(min-width:900px){.v181-habits-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.v181-habit-card{margin:0}}
       body.dark .v181-week-day b::after{background:var(--card,#171d18)}
@@ -2434,85 +2437,73 @@ if(data.profileCreated||data.onboardingDone)save();
 
   function v181WeekHabit(h,ds){
     const hs=habitStats(h),p=v181WeeklyPct(h,ds);
-    return `<article class="v181-habit-card">
-      <div class="v181-habit-head"><div class="v181-habit-icon">${escapeHtml(h.icon||'✅')}</div><div class="v181-habit-copy"><b>${escapeHtml(h.name)}</b><span>🔥 ${hs.run} day${hs.run===1?'':'s'} · ${p}% this week</span></div><div class="v181-habit-total">${hs.total} wins</div></div>
-      <div class="v181-days">${ds.map(d=>{const future=d>today(),is=done(h,d),fr=frozen(h,d);return `<button type="button" class="v181-day-btn ${is?'done':''} ${fr?'freeze':''} ${future?'future':''} ${d===today()?'today':''}" data-v181-toggle="${escapeHtml(h.id)}|${d}" ${future?'disabled':''} aria-label="${escapeHtml(h.name)} ${formatDay(d)}"><span class="dlabel">${v12DayLabel(d)}</span><span class="check">${is?'✓':fr?'🛡':'○'}</span></button>`;}).join('')}</div>
-      <div class="v181-note"><span>${formatDay(ds[0])} → ${formatDay(ds[ds.length-1])}</span><b>${p}% complete</b></div>
-    </article>`;
+    return `<article class="v181-habit-card"><div class="v181-habit-head"><div class="v181-habit-icon">${escapeHtml(h.icon||'✅')}</div><div class="v181-habit-copy"><b>${escapeHtml(h.name)}</b><span>🔥 ${hs.run} day${hs.run===1?'':'s'} · ${p}% this week</span></div><div class="v181-habit-total">${hs.total} wins</div></div><div class="v181-days">${ds.map(d=>{const future=d>today(),is=done(h,d),fr=frozen(h,d);return `<button type="button" class="v181-day-btn ${is?'done':''} ${fr?'freeze':''} ${future?'future':''} ${d===today()?'today':''}" data-v181-toggle="${escapeHtml(h.id)}|${d}" ${future?'disabled':''} aria-label="${escapeHtml(h.name)} ${formatDay(d)}"><span class="dlabel">${v12DayLabel(d)}</span><span class="check">${is?'✓':fr?'🛡':'○'}</span></button>`;}).join('')}</div><div class="v181-note"><span>${formatDay(ds[0])} → ${formatDay(ds[ds.length-1])}</span><b>${p}% complete</b></div></article>`;
   }
 
   v14WeekPage=function(){
     v181Style();
-    const s=stats(),ds=v12MiniDays(),best=Math.max(0,...data.habits.map(h=>habitStats(h).longest));
-    return `<div class="v14-page">
-      <section class="v181-week-hero"><div class="v181-week-top"><div><span class="v14-kicker" style="color:#bfe8ca">THIS WEEK</span><h1>${s.score}% complete</h1><p>Seven days. Small actions. One clear view.</p></div><div class="v181-week-score">${s.todayDone}<span>today</span></div></div></section>
-      <section class="v181-week-strip">${ds.map(d=>{const eligible=data.habits.filter(h=>canUseHabitOn(h,d)).length,n=data.habits.filter(h=>active(h,d)).length,p=eligible?Math.round(n/eligible*100):0;return `<div class="v181-week-day ${d===today()?'today':''}"><small>${v12DayLabel(d)}</small><b style="--p:${p}%"><span>${p}</span></b><em>${n}/${eligible}</em></div>`;}).join('')}</section>
-      <section class="v14-section"><div class="v14-section-head"><div><span class="v14-kicker">HABITS</span><h2>Your week</h2></div><button class="v14-pill-btn" data-share-progress>Share ↗</button></div><div class="v181-habits-grid">${data.habits.map(h=>v181WeekHabit(h,ds)).join('')||'<div class="v14-empty-card"><b>Add a habit to see your week.</b></div>'}</div></section>
-      <section class="v14-card v14-insight"><span>💡</span><div><b>Weekly insight</b><p>${v13BestWeek()?`Your best week so far reached ${v13BestWeek().score}%. Keep the next action easy.`:'Your first full week will create a useful baseline here.'}</p></div></section>
-    </div>`;
+    const s=stats(),ds=v12MiniDays();
+    return `<div class="v14-page"><section class="v181-week-hero"><div class="v181-week-top"><div><span class="v14-kicker" style="color:#bfe8ca">THIS WEEK</span><h1>${s.score}% complete</h1><p>Seven days. Small actions. One clear view.</p></div><div class="v181-week-score">${s.todayDone}<span>today</span></div></div></section><section class="v181-week-strip">${ds.map(d=>{const eligible=data.habits.filter(h=>canUseHabitOn(h,d)).length,n=data.habits.filter(h=>active(h,d)).length,p=eligible?Math.round(n/eligible*100):0;return `<div class="v181-week-day ${d===today()?'today':''}"><small>${v12DayLabel(d)}</small><b style="--p:${p}%"><span>${p}</span></b><em>${n}/${eligible}</em></div>`;}).join('')}</section><section class="v14-section"><div class="v14-section-head"><div><span class="v14-kicker">HABITS</span><h2>Your week</h2></div><button class="v14-pill-btn" data-share-progress>Share ↗</button></div><div class="v181-habits-grid">${data.habits.map(h=>v181WeekHabit(h,ds)).join('')||'<div class="v14-empty-card"><b>Add a habit to see your week.</b></div>'}</div></section><section class="v14-card v14-insight"><span>💡</span><div><b>Weekly insight</b><p>${v13BestWeek()?`Your best week so far reached ${v13BestWeek().score}%. Keep the next action easy.`:'Your first full week will create a useful baseline here.'}</p></div></section></div>`;
   };
-
-  v181Style();
 
   /* New-user setup date: 30 Sep is setup day, 1 Oct is Day 1. */
   if(today()<WINTER_ARC_START && (data.profileCreated||data.onboardingDone)){
-    data.arcStart=WINTER_ARC_START;
-    data.arcLength=WINTER_ARC_LENGTH;
+    data.arcStart=WINTER_ARC_START;data.arcLength=WINTER_ARC_LENGTH;
     if(!data.journeyStart || data.journeyStart===today())data.journeyStart=WINTER_ARC_START;
     save();
   }
 
   /* PWA shortcuts / shared links. */
-  try{
-    const requested=new URL(location.href).searchParams.get('tab');
-    if(['today','week','profile','arc','more'].includes(requested))tab=requested;
-  }catch(e){}
+  try{const requested=new URL(location.href).searchParams.get('tab');if(['today','week','profile','arc','more'].includes(requested))tab=requested;}catch(e){}
 
-  /* Wrap the V18 renderer so auxiliary modals and menu state survive clean re-renders. */
-  const v18BaseRender=v18Render;
+  /* Outer-scope render is the stable integration point. Never access sibling-IIFE internals. */
+  const baseRender=render;
   let v181MenuOpen=false;
+  let v181SprintOpen=false,v181SprintRunning=false,v181SprintMinutes=10,v181SprintEndsAt=0,v181SprintTimer=null;
+
   const v181Menu=()=>`<div class="v181-menu-overlay" data-v181-menu-close><div class="v181-menu-sheet" role="dialog" aria-modal="true"><div class="v181-menu-head"><div><div class="v18-kicker">WINTER ARC</div><h2 style="margin:3px 0">Go somewhere</h2></div><button class="v18-iconbtn" data-v181-menu-close>×</button></div><div class="v181-menu-grid"><button data-v181-nav="today">🏠 <b>Today</b><small>Your next action.</small></button><button data-v181-nav="week">📅 <b>Week</b><small>This week's pattern.</small></button><button data-v181-nav="profile">👤 <b>Profile</b><small>Your Arc identity.</small></button><button data-v181-nav="arc">❄️ <b>Arc</b><small>The full 92-day journey.</small></button><button data-v181-nav="more">••• <b>More</b><small>Tools & settings.</small></button></div></div></div>`;
 
-  function v181AddSprintOptions(){
-    if(!v18SprintOpen||v18SprintRunning)return;
-    const sheet=document.querySelector('.v18-overlay');if(!sheet||sheet.querySelector('.v181-sprint-options'))return;
-    const actions=sheet.querySelector('.v18-actions');if(!actions)return;
-    const row=document.createElement('div');row.className='v181-sprint-options';
-    row.innerHTML=[5,10,25].map(m=>`<button type="button" class="v18-btn ${v18SprintMinutes===m?'selected':''}" data-v181-sprint-min="${m}">${m} min</button>`).join('');
-    actions.parentNode.insertBefore(row,actions);
+  function v181SprintModal(){
+    const left=v181SprintRunning?Math.max(0,v181SprintEndsAt-Date.now()):v181SprintMinutes*60000;
+    const sec=Math.ceil(left/1000),mm=String(Math.floor(sec/60)).padStart(2,'0'),ss=String(sec%60).padStart(2,'0');
+    return `<div class="v181-sprint-overlay" data-v181-sprint-close><div class="v181-sprint-sheet" role="dialog" aria-modal="true"><div class="v181-sprint-head"><div><div class="v18-kicker">FOCUS SPRINT</div><h2 style="margin:3px 0">One focused block.</h2></div><button class="v18-iconbtn" data-v181-sprint-close>×</button></div><div class="v181-sprint-timer" id="v181SprintTimer">${mm}:${ss}</div>${v181SprintRunning?'':`<div class="v181-sprint-mins">${[5,10,25].map(m=>`<button class="v18-btn ${v181SprintMinutes===m?'selected':''}" data-v181-sprint-min="${m}">${m} min</button>`).join('')}</div>`}<div class="v18-actions" style="margin-top:10px">${v181SprintRunning?`<button class="v18-btn primary" data-v181-sprint-stop>Finish sprint ✓</button>`:`<button class="v18-btn primary" data-v181-sprint-start>Start ${v181SprintMinutes}-min sprint →</button>`}<button class="v18-btn" data-v181-sprint-close>Not now</button></div><p class="v18-sub" style="margin-top:10px">A temporary timer for one task. It does not change tracker history.</p></div></div>`;
   }
 
-  v18Render=function(){
-    v18BaseRender();
+  function v181OpenSprint(){v181SprintRunning=false;if(v181SprintTimer)clearInterval(v181SprintTimer);v181SprintTimer=null;v181SprintOpen=true;render();}
+  function v181StartSprint(){v181SprintRunning=true;v181SprintEndsAt=Date.now()+v181SprintMinutes*60000;v181SprintOpen=true;if(v181SprintTimer)clearInterval(v181SprintTimer);v181SprintTimer=setInterval(()=>{const left=Math.max(0,v181SprintEndsAt-Date.now());const el=document.getElementById('v181SprintTimer');if(el){const sec=Math.ceil(left/1000);el.textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')}if(left<=0){clearInterval(v181SprintTimer);v181SprintTimer=null;v181SprintRunning=false;v181SprintOpen=false;render();showToast('Focus sprint complete 🎯');}},250);render();}
+  function v181StopSprint(){if(v181SprintTimer)clearInterval(v181SprintTimer);v181SprintTimer=null;v181SprintRunning=false;v181SprintOpen=false;render();showToast('Sprint finished 🎯');}
+
+  render=function(){
+    baseRender();
     v181Style();
     const menuBtn=document.querySelector('[data-v18-menu]');
     if(menuBtn){menuBtn.removeAttribute('data-v18-menu');menuBtn.setAttribute('data-v181-menu','1');}
-    if(window.__v14Cloud){
-      const holder=document.createElement('div');holder.innerHTML=v14CloudModal();const el=holder.firstElementChild;if(el)document.body.appendChild(el);
-    }
+    const sprintBtns=document.querySelectorAll('[data-v18-sprint]');
+    sprintBtns.forEach(b=>{b.removeAttribute('data-v18-sprint');b.setAttribute('data-v181-sprint','1');});
+    if(window.__v14Cloud){const holder=document.createElement('div');holder.innerHTML=v14CloudModal();const el=holder.firstElementChild;if(el)document.body.appendChild(el);}
     if(v181MenuOpen){const holder=document.createElement('div');holder.innerHTML=v181Menu();const el=holder.firstElementChild;if(el)document.body.appendChild(el);}
-    v181AddSprintOptions();
+    if(v181SprintOpen){const holder=document.createElement('div');holder.innerHTML=v181SprintModal();const el=holder.firstElementChild;if(el)document.body.appendChild(el);}
+    bindDomState();
   };
 
-  /* V18.1 listeners only use new data attributes, so the older V18 click handler cannot steal them. */
+  /* New controls use unique attributes, so the older V18 click handler will ignore them. */
   window.addEventListener('click',e=>{
     const b=e.target.closest('button,a');if(!b)return;
     if(b.dataset.v181Toggle!==undefined){e.preventDefault();e.stopImmediatePropagation();const [id,d]=String(b.dataset.v181Toggle).split('|');const h=data.habits.find(x=>x.id===id);if(h)toggleHabit(h,d);return;}
-    if(b.dataset.v181SprintMin!==undefined){e.preventDefault();e.stopImmediatePropagation();if(!v18SprintRunning){v18SprintMinutes=Number(b.dataset.v181SprintMin)||10;render();}return;}
     if(b.dataset.v181Menu!==undefined){e.preventDefault();e.stopImmediatePropagation();v181MenuOpen=true;render();return;}
     if(b.dataset.v181MenuClose!==undefined || (v181MenuOpen&&e.target.closest('.v181-menu-overlay')===e.target)){e.preventDefault();e.stopImmediatePropagation();v181MenuOpen=false;render();return;}
     if(b.dataset.v181Nav!==undefined){e.preventDefault();e.stopImmediatePropagation();tab=b.dataset.v181Nav;morePanel='';v181MenuOpen=false;render();return;}
+    if(b.dataset.v181Sprint!==undefined){e.preventDefault();e.stopImmediatePropagation();v181OpenSprint();return;}
+    if(b.dataset.v181SprintMin!==undefined){e.preventDefault();e.stopImmediatePropagation();if(!v181SprintRunning){v181SprintMinutes=Number(b.dataset.v181SprintMin)||10;render();}return;}
+    if(b.dataset.v181SprintStart!==undefined){e.preventDefault();e.stopImmediatePropagation();v181StartSprint();return;}
+    if(b.dataset.v181SprintStop!==undefined){e.preventDefault();e.stopImmediatePropagation();v181StopSprint();return;}
+    if(b.dataset.v181SprintClose!==undefined || (v181SprintOpen&&e.target.closest('.v181-sprint-overlay')===e.target)){e.preventDefault();e.stopImmediatePropagation();if(v181SprintTimer)clearInterval(v181SprintTimer);v181SprintTimer=null;v181SprintRunning=false;v181SprintOpen=false;render();return;}
   },{capture:true});
 
-  /* Ensure the new-user community button opens the existing community sheet. */
-  window.addEventListener('click',()=>{
-    if(window.__v14Cloud){setTimeout(()=>{const x=document.querySelector('[data-close-cloud],[data-v14-cloud-close],.v14-cloud-overlay');if(x)x.scrollIntoView({block:'nearest'});},0);}
-  },{capture:false});
-
+  v181Style();
   data.schema=181;
   save();
 })();
-
 
 communityCheckin();
 render();
