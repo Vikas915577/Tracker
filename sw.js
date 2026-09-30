@@ -1,4 +1,4 @@
-const CACHE_NAME = "progress-tracker-v13-shell";
+const CACHE_NAME = "winter-arc-tracker-v13-1-shell";
 const SHELL = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", event => {
