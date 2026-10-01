@@ -1,22 +1,13 @@
-# Winter Arc Tracker V24.1 — Supabase setup
 
-V24.1 keeps the V21 Supabase shape and adds exact-rank + active-member RPCs for the public Arc League.
+# Winter Arc Tracker V24.1 backend setup
 
-## 1. Create the tables
-Open `backend-schema.sql` in Supabase SQL Editor and run it.
+1. Create/keep your Supabase project.
+2. Enable **Anonymous Sign-Ins** in Authentication so the website can create an authenticated session without asking users for email/password.
+3. Run `backend-schema.sql` in the Supabase SQL Editor.
+4. Put only the project URL and public anon key in `cloud-config.js`. Never put a service-role key in the frontend.
+5. Public Rank reads only public + community-opted-in rows. The public RPC does not return Instagram handles to the player UI.
+6. User writes require an authenticated UID that matches the row owner. Anonymous direct clients cannot update another user's row.
+7. Community OFF deletes the user's cloud row when the authenticated session is available; Public Profile OFF keeps the row private.
+8. Creator dashboard uses the creator-only `creator_dashboard()` RPC and still requires the configured creator email placeholder.
 
-## 2. Configure the web app
-Open `cloud-config.js` and set:
-- `url`: your Supabase project URL
-- `anonKey`: your Supabase anon key
-
-Do not put a service-role key in the website.
-
-## 3. Top 20 requirements
-The leaderboard uses `get_public_leaderboard()` for a maximum of 20 public rows. `get_public_rank()` returns a user's exact global rank, including ranks outside Top 20. `get_active_public_members()` returns active public names with their exact rank. The app has a REST fallback when the RPCs are not installed, but the V24.1 SQL is recommended for exact results at scale.
-
-## 4. Local-first privacy
-Community sync is optional. Private habit names, journal, sleep, mood and local PIN are not included in the public leaderboard request.
-
-## 5. Creator dashboard
-`creator-dashboard.html` uses the same Supabase project. Keep the creator email placeholder in the SQL/RPC configured before using that dashboard in a real deployment.
+Local tracker behavior does not depend on Supabase. If cloud config, network, or Supabase is unavailable, Today/Week/Month/Arc/More continue locally and Rank shows an explicit offline state.
