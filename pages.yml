@@ -1,0 +1,30 @@
+name: Deploy Winter Arc Web Core
+
+on:
+  workflow_run:
+    workflows: ["Winter Arc Build"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload web core
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: assets/webcore
+      - name: Deploy
+        uses: actions/deploy-pages@v4

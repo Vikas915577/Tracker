@@ -1,0 +1,16 @@
+/* V25 readability/touch polish - loaded after the legacy V24.1 style. */
+button,input,textarea,select{font-size:13px!important;line-height:1.3!important}
+.smalltext,.muted,.note,.badge{font-size:11px!important;line-height:1.4!important}
+.kicker,.eyebrow{font-size:10px!important;line-height:1.25!important}
+button,.btn,.v24-pill-btn,.v18-btn,.v20-refresh,.v24-iconbtn,.v24-profile-btn{min-height:44px}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid color-mix(in srgb,var(--green,#3da35d) 55%,white);outline-offset:2px}
+.v24-app,.v13-page,.v18-wrap{line-height:1.45}
+.v24-app .habit-title,.v24-app h1,.v24-app h2,.v24-app h3{line-height:1.15}
+.v24-app .v24-week-cell,.v24-app .daycheck,.v24-app .v20-smallcheck{min-width:44px;min-height:44px}
+.v24-app .v24-tool-tile{min-height:64px}
+.v24-app .v24-page,.v13-page{padding-bottom:28px}
+@media(max-width:520px){
+  .v24-app .v24-page{padding-left:12px;padding-right:12px}
+  .v24-app .v24-calendar button{min-height:48px}
+}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
