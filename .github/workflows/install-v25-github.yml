@@ -29,6 +29,10 @@ jobs:
 
           unzip -q "Winter-Arc-V25.4-Production-Ready.zip" -d __v25_install
 
+          # Do not replace GitHub workflow files.
+          # GitHub App currently does not have workflow-write permission.
+          rm -rf "__v25_install/.github/workflows"
+
           cp -a __v25_install/. ./
 
           rm -rf __v25_install
@@ -40,7 +44,6 @@ jobs:
 
           echo "Checking Winter Arc V25.4 structure..."
 
-          test -d ".github"
           test -d "assets"
           test -d "backend"
           test -d "lib"
@@ -63,6 +66,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "Install Winter Arc V25.4 production structure"
+            git commit -m "Install Winter Arc V25.4 production files"
             git push
           fi
