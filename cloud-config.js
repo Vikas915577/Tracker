@@ -1,7 +1,6 @@
-/* V14.1 cloud configuration.
-   Replace the empty values only after creating your own Supabase project.
-   Never put a Supabase service-role key here. Use the public anon key only. */
+/* Winter Arc Tracker V25.4 — public Supabase client configuration.
+   This file contains only a public publishable key. Never put a secret/service-role key here. */
 window.WINTER_ARC_CLOUD = {
-  url: '',
-  anonKey: ''
+  url: 'https://nyahevumoflvzfbxxpbv.supabase.co',
+  anonKey: 'sb_publishable_tsju0yCnlYUEPPRYNi_wng_FoUDeBcZ'
 };

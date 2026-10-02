@@ -6,6 +6,7 @@ if not p.exists():
 s = p.read_text()
 perm = '<uses-permission android:name="android.permission.INTERNET" />'
 if perm not in s:
+    marker = '<manifest '
     i = s.find('>')
     if i < 0:
         raise SystemExit('Could not find manifest opening tag')

@@ -244,6 +244,19 @@ function weeklyScore(){
  for(const d of ds){for(const h of data.habits){if(canUseHabitOn(h,d)){eligible++;if(active(h,d))doneN++}}}
  return eligible?Math.min(100,Math.round(doneN/eligible*100)):0;
 }
+function weeklyWins(){
+ const ds=allDates().slice(-7);
+ let n=0;
+ for(const d of ds){for(const h of data.habits){if(canUseHabitOn(h,d)&&active(h,d))n++;}}
+ return n;
+}
+function arcScore(){
+ const week=weeklyScore();
+ const best=Math.max(0,...data.habits.map(h=>habitStats(h).longest));
+ const wins=weeklyWins();
+ return Math.min(100,Math.round(week*.75+Math.min(15,(best/30)*15)+Math.min(10,(wins/21)*10)));
+}
+
 function personalScore(){
  if(!data.habits.length)return 0;
  const s=stats();
@@ -1523,19 +1536,14 @@ function v14Drawer(){
 const CLOUD_CFG=window.WINTER_ARC_CLOUD||{url:'',anonKey:''};
 function cloudReady(){return /^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(CLOUD_CFG.url||'')&&String(CLOUD_CFG.anonKey||'').length>20;}
 function cloudHeaders(token){return {'apikey':CLOUD_CFG.anonKey,'Authorization':'Bearer '+(token||CLOUD_CFG.anonKey),'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'};}
-function cloudSnapshot(){const s=stats(),day=v13ArcDay(),L=v13ArcLength(),best=Math.max(0,...data.habits.map(h=>habitStats(h).longest));return {display_name:data.name||'Anonymous Hustler',arc_day:day,total_arc_days:L,arc_progress:v13ArcProgress(),today_completed:s.todayDone,total_habits:data.habits.length,total_wins:v13TotalWins(),best_streak:best,last_seen:new Date().toISOString(),public_profile:!!data.publicProfile};}
-async function cloudSync(){
- if(!data.cloudOptIn){showToast('Turn on community sync first');return;}
- if(!cloudReady()){data.cloudStatus='Backend not configured';save();render();showToast('Add Supabase config first');return;}
- try{
-   data.cloudStatus='Syncing…';render();
-   const id=data.cloudUserId||crypto.randomUUID();data.cloudUserId=id;
-   const snap=cloudSnapshot();snap.id=id;
-   const r=await fetch(CLOUD_CFG.url+'/rest/v1/arc_users',{method:'POST',headers:cloudHeaders(),body:JSON.stringify(snap)});
-   if(!r.ok)throw new Error('sync '+r.status);
-   data.cloudLastSync=new Date().toISOString();data.cloudStatus='Synced ✓';save();render();showToast('Progress synced ☁️');
- }catch(e){data.cloudStatus='Sync failed — local data is safe';save();render();showToast('Cloud sync failed');}
+async function rankFetch(fn,params={}){
+ if(!cloudReady())throw new Error('Backend not configured');
+ const r=await fetch(CLOUD_CFG.url+'/rest/v1/rpc/'+encodeURIComponent(fn),{method:'POST',headers:{apikey:CLOUD_CFG.anonKey,Authorization:'Bearer '+CLOUD_CFG.anonKey,'Content-Type':'application/json'},body:JSON.stringify(params||{})});
+ if(!r.ok){let msg='RPC '+fn+' failed ('+r.status+')';try{const j=await r.json();if(j?.message)msg+=': '+j.message;}catch(_){}throw new Error(msg)}
+ return await r.json();
 }
+
+function cloudSnapshot(){const s=stats(),day=v13ArcDay(),L=v13ArcLength(),best=Math.max(0,...data.habits.map(h=>habitStats(h).longest)),week=weeklyScore(),score=arcScore(),league=score>=90?'Diamond':score>=75?'Gold':score>=60?'Silver':score>=40?'Bronze':'Starter';return {display_name:data.name||'Anonymous Hustler',instagram_handle:data.profileInstagram||'',arc_day:day,total_arc_days:L,arc_progress:v13ArcProgress(),today_completed:s.todayDone,total_habits:data.habits.length,total_wins:v13TotalWins(),best_streak:best,last_seen:new Date().toISOString(),public_profile:!!data.publicProfile,community_opt_in:!!data.cloudOptIn,week_score:week,rank_score:score,league,week_key:today().slice(0,10)}}
 function compareSnapshot(){const s=stats(),day=v13ArcDay(),L=v13ArcLength(),best=Math.max(0,...data.habits.map(h=>habitStats(h).longest));return {name:data.name||'You',day:day||0,totalDays:L,progress:v13ArcProgress(),today:s.todayDone,total:data.habits.length,wins:v13TotalWins(),best};}
 function encodeCompare(obj){try{return btoa(unescape(encodeURIComponent(JSON.stringify(obj)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}catch(e){return ''}}
 function decodeCompare(x){try{return JSON.parse(decodeURIComponent(escape(atob(x.replace(/-/g,'+').replace(/_/g,'/')))))}catch(e){return null}}
@@ -1719,24 +1727,8 @@ document.addEventListener('click',async e=>{
  if(b.dataset.closeCompare!==undefined){e.preventDefault();e.stopImmediatePropagation();window.__v14Compare=false;render();return;}
  if(b.dataset.openCloud!==undefined){e.preventDefault();e.stopImmediatePropagation();window.__v14Cloud=true;render();return;}
  if(b.dataset.closeCloud!==undefined){e.preventDefault();e.stopImmediatePropagation();window.__v14Cloud=false;render();return;}
- if(b.dataset.saveCloud!==undefined){
-   e.preventDefault();e.stopImmediatePropagation();
-   const nextOpt=!!$('#cloudOptIn')?.checked,nextPublic=!!$('#publicProfile')?.checked;
-   const hadRemote=!!data.cloudUserId;
-   data.cloudOptIn=nextOpt;data.publicProfile=nextPublic;save();window.__v14Cloud=false;
-   let ok=true;
-   if(nextOpt&&nextPublic) ok=await cloudSync();
-   else if(hadRemote) ok=await cloudDeactivate();
-   render();
-   showToast(nextOpt&&nextPublic?(ok?'Community sync enabled ☁️':'Saved locally; cloud sync needs attention'):(hadRemote?'Community sharing removed/private':'Community Sync off'));
-   return;
- }
- if(b.dataset.cloudSync!==undefined){
-   e.preventDefault();e.stopImmediatePropagation();
-   data.cloudOptIn=!!$('#cloudOptIn')?.checked || data.cloudOptIn;data.publicProfile=!!$('#publicProfile')?.checked || data.publicProfile;save();
-   if(data.cloudOptIn&&data.publicProfile) await cloudSync(); else if(data.cloudUserId) await cloudDeactivate();
-   return;
- }
+ if(b.dataset.saveCloud!==undefined){e.preventDefault();e.stopImmediatePropagation();data.cloudOptIn=!!$('#cloudOptIn')?.checked;data.publicProfile=!!$('#publicProfile')?.checked;save();window.__v14Cloud=false;render();showToast(data.cloudOptIn?'Community sync enabled ☁️':'Community sync off');return;}
+ if(b.dataset.cloudSync!==undefined){e.preventDefault();e.stopImmediatePropagation();data.cloudOptIn=!!$('#cloudOptIn')?.checked || data.cloudOptIn;data.publicProfile=!!$('#publicProfile')?.checked || data.publicProfile;save();await cloudSync();return;}
 },{capture:true});
 window.addEventListener('hashchange',()=>{if(compareFromHash()){window.__v14Compare=true;render();}});
 window.addEventListener('popstate',()=>{if(compareFromHash()){window.__v14Compare=true;render();}});
@@ -2583,7 +2575,7 @@ if(data.profileCreated||data.onboardingDone)save();
       v19BoardState={status:'offline',rows:[],error:'Community is not connected yet.',updatedAt:Date.now()};render();return;
     }
     try{
-      const q='select=id,display_name,arc_day,total_arc_days,arc_progress,total_wins,best_streak,last_seen,public_profile,week_score,rank_score,league,week_key&public_profile=eq.true&community_opt_in=eq.true&order=rank_score.desc,best_streak.desc,total_wins.desc,id.asc&limit=20';
+      const q='select=id,display_name,instagram_handle,arc_day,total_arc_days,arc_progress,total_wins,best_streak,last_seen,public_profile,week_score,rank_score,league,week_key&public_profile=eq.true&order=rank_score.desc,best_streak.desc,total_wins.desc&limit=100';
       const r=await fetch(CLOUD_CFG.url+'/rest/v1/arc_users?'+q,{headers:cloudHeaders()});
       if(!r.ok)throw new Error('leaderboard '+r.status);
       const rows=(await r.json()).filter(x=>x&&x.public_profile).map(x=>Object.assign({},x,{rankScore:Number(x.rank_score??x.arc_progress??0)}));
@@ -2633,7 +2625,7 @@ if(data.profileCreated||data.onboardingDone)save();
   }
   let v19ChallengeState={status:'idle',members:[]};
   async function v19ChallengeBackendUpsert(ch){
-    if(!cloudReady()||!data.cloudOptIn||!data.publicProfile||!ch)return false;
+    if(!cloudReady()||!data.cloudOptIn||!ch)return false;
     try{
       const id=data.cloudUserId||crypto.randomUUID();data.cloudUserId=id;
       const p=v19ChallengeProgress(ch);
@@ -2654,7 +2646,7 @@ if(data.profileCreated||data.onboardingDone)save();
       v19ChallengeState={status:'ready',members:await r.json()};render();
     }catch(e){v19ChallengeState={status:'error',members:[]};render();}
   }
-  async function v19SyncActiveChallenge(){const ch=data.v19Challenges[0];if(ch&&data.cloudOptIn&&data.publicProfile)await v19ChallengeBackendUpsert(ch);}
+  async function v19SyncActiveChallenge(){const ch=data.v19Challenges[0];if(ch&&data.cloudOptIn)await v19ChallengeBackendUpsert(ch);}
 
   function v19ChallengePanel(){
     const activeCh=data.v19Challenges[0],members=v19ChallengeState.members||[];
@@ -2712,7 +2704,7 @@ if(data.profileCreated||data.onboardingDone)save();
     if(b.dataset.v19Refresh!==undefined){e.preventDefault();e.stopImmediatePropagation();v19LoadLeaderboard();return;}
     if(b.dataset.v19Community!==undefined){e.preventDefault();e.stopImmediatePropagation();window.__v14Cloud=true;render();return;}
     if(b.dataset.v19ShareRank!==undefined){e.preventDefault();e.stopImmediatePropagation();await v19ShareRank();return;}
-    if(b.dataset.v19ChallengeCreate!==undefined){e.preventDefault();e.stopImmediatePropagation();const title=prompt('Challenge name','7-Day Small Wins');if(!title)return;const d=Number(prompt('How many days?','7'))||7;const ch={code:uid().toUpperCase(),title:title.trim().slice(0,60),days:Math.max(2,Math.min(90,d)),start:today(),description:'Show up once a day and keep the streak alive.',creator:data.name||'My Arc'};data.v19Challenges.unshift(ch);data.v19Challenges=data.v19Challenges.slice(0,3);save();render();if(data.cloudOptIn&&data.publicProfile){const ok=await v19ChallengeBackendUpsert(ch);showToast(ok?'Challenge synced ⚔️':'Challenge saved locally ⚔️');}else showToast('Challenge created ⚔️');return;}
+    if(b.dataset.v19ChallengeCreate!==undefined){e.preventDefault();e.stopImmediatePropagation();const title=prompt('Challenge name','7-Day Small Wins');if(!title)return;const d=Number(prompt('How many days?','7'))||7;const ch={code:uid().toUpperCase(),title:title.trim().slice(0,60),days:Math.max(2,Math.min(90,d)),start:today(),description:'Show up once a day and keep the streak alive.',creator:data.name||'My Arc'};data.v19Challenges.unshift(ch);data.v19Challenges=data.v19Challenges.slice(0,3);save();render();if(data.cloudOptIn){const ok=await v19ChallengeBackendUpsert(ch);showToast(ok?'Challenge synced ⚔️':'Challenge saved locally ⚔️');}else showToast('Challenge created ⚔️');return;}
     if(b.dataset.v19ChallengeShare!==undefined){e.preventDefault();e.stopImmediatePropagation();const ch=data.v19Challenges[0];if(!ch)return;const url=v19ChallengeUrl(ch);try{if(navigator.share){await navigator.share({title:ch.title,text:'Join my Winter Arc challenge ⚔️',url});return;}if(navigator.clipboard){await navigator.clipboard.writeText(url);showToast('Challenge link copied ↗');return;}}catch(err){}showToast('Challenge link ready');return;}
     if(b.dataset.v19ChallengeRefresh!==undefined){e.preventDefault();e.stopImmediatePropagation();await v19LoadChallengeMembers(data.v19Challenges[0]);return;}
     if(b.dataset.v19ChallengeClear!==undefined){e.preventDefault();e.stopImmediatePropagation();data.v19Challenges.shift();save();render();return;}
@@ -2721,7 +2713,7 @@ if(data.profileCreated||data.onboardingDone)save();
   /* Auto-save a rankable snapshot only when the user has opted into community sync. */
   const baseToggleHabitV19=toggleHabit;
   let v19SyncTimer=null;
-  toggleHabit=function(h,d){const before=done(h,d);baseToggleHabitV19(h,d);if(!before&&data.cloudOptIn&&data.publicProfile){clearTimeout(v19SyncTimer);v19SyncTimer=setTimeout(()=>{try{cloudSync()}catch(e){}},1200);}};
+  toggleHabit=function(h,d){const before=done(h,d);baseToggleHabitV19(h,d);if(!before&&data.cloudOptIn){clearTimeout(v19SyncTimer);v19SyncTimer=setTimeout(()=>{try{cloudSync()}catch(e){}},1200);}};
 
   const baseCloudSyncV19=cloudSync;
   cloudSync=async function(){await baseCloudSyncV19();await v19SyncActiveChallenge();};
@@ -2794,15 +2786,15 @@ render();
   }
   function v20League(league){return String(league||'Starter')}
   function v20Top20(){return v20RankRows.slice(0,20)}
-  function v20Filtered(){const q=v20RankQuery.trim().toLowerCase();return v20Top20().filter(x=>String(x.display_name||'').toLowerCase().includes(q))}
+  function v20Filtered(){const q=v20RankQuery.trim().toLowerCase();if(!q)return v20Top20();return v20Top20().filter(x=>String(x.display_name||'').toLowerCase().includes(q))}
   function v20RankMy(){const id=data.cloudUserId||'';const i=v20RankRows.findIndex(x=>x.id===id);return i>=0?{rank:i+1,row:v20RankRows[i]}:{rank:null,row:null}}
   async function v20LoadRank(){
     if(v20RankStatus==='loading')return;
     v20RankStatus='loading';v20RankError='';renderV20();
     if(!(typeof cloudReady==='function'&&cloudReady())){v20RankStatus='offline';v20RankError='Community sync is not configured yet. Your local score is still available.';renderV20();return;}
     try{
-      if(data.cloudOptIn&&data.publicProfile&&typeof cloudSync==='function')await cloudSync();
-      const q='select=id,display_name,arc_day,total_arc_days,arc_progress,total_wins,best_streak,week_score,rank_score,league,week_key,last_seen,public_profile&public_profile=eq.true&community_opt_in=eq.true&order=rank_score.desc,best_streak.desc,total_wins.desc,id.asc&limit=20';
+      if(data.cloudOptIn&&typeof cloudSync==='function')await cloudSync();
+      const q='select=id,display_name,arc_day,total_arc_days,arc_progress,total_wins,best_streak,week_score,rank_score,league,week_key,last_seen,public_profile&public_profile=eq.true&order=rank_score.desc,best_streak.desc,total_wins.desc&limit=100';
       const r=await fetch(CLOUD_CFG.url+'/rest/v1/arc_users?'+q,{headers:typeof cloudHeaders==='function'?cloudHeaders():{}});
       if(!r.ok)throw new Error('rank '+r.status);
       v20RankRows=(await r.json()).filter(x=>x&&x.public_profile).map(x=>Object.assign({},x,{rankScore:Number(x.rank_score??0)}));
@@ -2977,27 +2969,6 @@ function v20More(){
     for(const d of ds)for(const h of data.habits){if(!canUseHabitOn(h,d))continue;eligible++;if(active(h,d))n++;}
     return eligible?Math.min(100,Math.round(n/eligible*100)):0;
   };
-  function currentArcWeekDates(){
-    const t=today();
-    if(t<WINTER_ARC_START)return Array.from({length:7},(_,i)=>addDays(WINTER_ARC_START,i));
-    const anchor=t>WINTER_ARC_END?WINTER_ARC_END:t;
-    const start=dateDiff(WINTER_ARC_START,anchor)<6?WINTER_ARC_START:addDays(anchor,-6);
-    return Array.from({length:7},(_,i)=>addDays(start,i));
-  }
-  weeklyWins=function(){
-    const ds=currentArcWeekDates().filter(d=>d>=WINTER_ARC_START&&d<=WINTER_ARC_END&&d<=today());
-    let n=0;
-    for(const d of ds)for(const h of data.habits)if(canUseHabitOn(h,d)&&done(h,d))n++;
-    return n;
-  };
-  arcScore=function(){
-    const completion=weeklyScore();
-    const best=Math.max(0,...data.habits.map(h=>habitStats(h).longest));
-    const wins=weeklyWins();
-    const streakPts=Math.min(15,Math.round(Math.min(best,30)/30*15));
-    const winPts=Math.min(10,Math.round(Math.min(wins,21)/21*10));
-    return Math.min(100,Math.round(completion*.75+streakPts+winPts));
-  };
   stats=function(){
     const ds=allDates(); let total=0,completed=0;
     for(const d of ds)for(const h of data.habits){if(canUseHabitOn(h,d)){total++;if(done(h,d))completed++;}}
@@ -3072,13 +3043,13 @@ function v20More(){
     recalcBonus(d);
     if(data.activeRoutine){
       const r=data.routines.find(x=>x.id===data.activeRoutine);
-      if(r){const items=routineItems(r),next=routineCurrent(r);r.step=next?Math.max(0,items.indexOf(next)):items.length;save();}
+      if(r){r.step=routineProgress(r).doneCount;save();}
     }
     save();
     if(!before){celebrate();showToast('Nice! +10 XP 🔥');}
     else showToast('Check removed');
     render();
-    if(data.cloudOptIn&&data.publicProfile)cloudSync({silent:true}).catch(()=>{});
+    if(data.cloudOptIn)cloudSync({silent:true}).catch(()=>{});
   };
 
   toggleFreeze=function(h,d){
@@ -3184,15 +3155,15 @@ function v20More(){
   }
 
   function v24Week(){
-    const ds=currentArcWeekDates();
+    const ds=Array.from({length:7},(_,i)=>addDays(today(),i-6));
     return `<div class="v24-page"><section class="v24-page-head"><span class="kicker">WEEK</span><h1>Your 7-day pattern.</h1><p>Tap a day to update completion. Future dates stay locked.</p></section><section class="v24-week-summary"><div><b>${weeklyScore()}%</b><span>weekly completion</span></div><div><b>${weeklyWins()}</b><span>wins this week</span></div><div><b>🔥 ${stats().best}</b><span>best streak</span></div></section><section class="v24-week-grid"><div class="v24-week-labels"><span>Habit</span>${ds.map(d=>`<span>${d<WINTER_ARC_START?'—':dateObj(d).toLocaleDateString(undefined,{weekday:'short'}).slice(0,2)}</span>`).join('')}</div>${data.habits.map(h=>`<div class="v24-week-row"><div class="v24-week-habit"><span>${escapeHtml(h.icon||'✅')}</span><b>${escapeHtml(h.name)}</b></div>${ds.map(d=>{const eligible=canUseHabitOn(h,d),future=d>today(),is=done(h,d),fr=frozen(h,d);return `<button class="v24-week-cell ${is?'done':''} ${fr?'freeze':''} ${d===today()?'today':''} ${future||!eligible?'disabled':''}" data-toggle="${h.id}|${d}" ${future||!eligible?'disabled':''} aria-label="${escapeHtml(h.name)} ${dateObj(d).toLocaleDateString()} ${is?'complete':fr?'frozen':future||!eligible?'unavailable':'open'}">${is?'✓':fr?'🛡':future||!eligible?'·':'○'}</button>`}).join('')}</div>`).join('')||'<div class="v24-empty"><b>No habits yet.</b><span>Add your first habit in More → Manage habits.</span></div>'}</section></div>`;
   }
 
   function v24Month(){
     const m=data.month||'2026-10',ds=makeDays(m),first=new Date(Number(m.slice(0,4)),Number(m.slice(5,7))-1,1).getDay();
     let eligible=0,doneN=0;for(const d of ds)for(const h of data.habits){if(canUseHabitOn(h,d)&&d<=today()){eligible++;if(done(h,d))doneN++;}}
-    const pct=eligible?Math.round(doneN/eligible*100):0;const monthNames={"2026-10":'October 2026',"2026-11":'November 2026',"2026-12":'December 2026'};const elapsedDays=m<today().slice(0,7)?ds.length:(m===today().slice(0,7)?Number(today().slice(-2)):0);
-    return `<div class="v24-page"><section class="v24-page-head"><span class="kicker">MONTH</span><div class="v24-head-actions"><div><h1>${monthNames[m]||m}</h1><p>Monthly pattern inside the Winter Arc.</p></div><div class="v24-month-nav"><button class="btn" data-month-shift="-1" ${m==='2026-10'?'disabled':''}>‹</button><button class="btn" data-month-shift="1" ${m==='2026-12'?'disabled':''}>›</button></div></div></section><section class="v24-month-summary"><div><b>${pct}%</b><span>completion</span></div><div><b>${doneN}</b><span>wins</span></div><div><b>${elapsedDays}</b><span>elapsed days</span></div></section><section class="v24-calendar"><div class="v24-weekdays">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(x=>`<span>${x}</span>`).join('')}</div><div class="v24-cal-grid">${Array.from({length:first},()=>'<i></i>').join('')}${ds.map(d=>{const future=d>today(),isToday=d===today();const dayDone=data.habits.length>0&&data.habits.every(h=>!canUseHabitOn(h,d)||done(h,d));const dayCount=data.habits.filter(h=>canUseHabitOn(h,d)&&done(h,d)).length;return `<button class="v24-cal-cell ${isToday?'today':''} ${future?'future':''} ${dayDone&&!future?'complete-day':''}" ${future?'disabled':''} title="${d}"><b>${Number(d.slice(-2))}</b><span>${future?'·':dayCount+'/'+data.habits.filter(h=>canUseHabitOn(h,d)).length}</span></button>`}).join('')}</div><div class="v24-legend"><span><i class="dot done"></i>Complete</span><span><i class="dot today"></i>Today</span><span><i class="dot future"></i>Future</span></div></section><section class="v24-section"><div class="v20-head"><h2>Monthly habit breakdown</h2><span>${data.habits.length} habits</span></div><div class="v24-breakdown">${data.habits.map(h=>{const el=ds.filter(d=>canUseHabitOn(h,d)&&d<=today()),dn=el.filter(d=>done(h,d)).length,p=el.length?Math.round(dn/el.length*100):0;return `<div class="v24-break-row"><div><b>${escapeHtml(h.icon||'✅')} ${escapeHtml(h.name)}</b><span>${dn}/${el.length} days · ${p}%</span></div><div class="progress"><i style="width:${p}%"></i></div></div>`}).join('')||'<div class="v24-empty"><span>Add habits to see monthly patterns.</span></div>'}</div></section></div>`;
+    const pct=eligible?Math.round(doneN/eligible*100):0;const monthNames={"2026-10":'October 2026',"2026-11":'November 2026',"2026-12":'December 2026'};
+    return `<div class="v24-page"><section class="v24-page-head"><span class="kicker">MONTH</span><div class="v24-head-actions"><div><h1>${monthNames[m]||m}</h1><p>Monthly pattern inside the Winter Arc.</p></div><div class="v24-month-nav"><button class="btn" data-month-shift="-1" ${m==='2026-10'?'disabled':''}>‹</button><button class="btn" data-month-shift="1" ${m==='2026-12'?'disabled':''}>›</button></div></div></section><section class="v24-month-summary"><div><b>${pct}%</b><span>completion</span></div><div><b>${doneN}</b><span>wins</span></div><div><b>${Math.max(0,Math.min(ds.length,dateDiff(WINTER_ARC_START,today())+1-(m==='2026-10'?0:m==='2026-11'?31:61)))}</b><span>elapsed days</span></div></section><section class="v24-calendar"><div class="v24-weekdays">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(x=>`<span>${x}</span>`).join('')}</div><div class="v24-cal-grid">${Array.from({length:first},()=>'<i></i>').join('')}${ds.map(d=>{const future=d>today(),isToday=d===today();const dayDone=data.habits.length>0&&data.habits.every(h=>!canUseHabitOn(h,d)||done(h,d));const dayCount=data.habits.filter(h=>canUseHabitOn(h,d)&&done(h,d)).length;return `<button class="v24-cal-cell ${isToday?'today':''} ${future?'future':''} ${dayDone&&!future?'complete-day':''}" ${future?'disabled':''} title="${d}"><b>${Number(d.slice(-2))}</b><span>${future?'·':dayCount+'/'+data.habits.filter(h=>canUseHabitOn(h,d)).length}</span></button>`}).join('')}</div><div class="v24-legend"><span><i class="dot done"></i>Complete</span><span><i class="dot today"></i>Today</span><span><i class="dot future"></i>Future</span></div></section><section class="v24-section"><div class="v20-head"><h2>Monthly habit breakdown</h2><span>${data.habits.length} habits</span></div><div class="v24-breakdown">${data.habits.map(h=>{const el=ds.filter(d=>canUseHabitOn(h,d)&&d<=today()),dn=el.filter(d=>done(h,d)).length,p=el.length?Math.round(dn/el.length*100):0;return `<div class="v24-break-row"><div><b>${escapeHtml(h.icon||'✅')} ${escapeHtml(h.name)}</b><span>${dn}/${el.length} days · ${p}%</span></div><div class="progress"><i style="width:${p}%"></i></div></div>`}).join('')||'<div class="v24-empty"><span>Add habits to see monthly patterns.</span></div>'}</div></section></div>`;
   }
 
   function v24Arc(){
@@ -3280,7 +3251,7 @@ function v20More(){
   }
 
   cloudSync=async function(opts={}){
-    if(!data.cloudOptIn||!data.publicProfile){data.cloudStatus='Community sharing off';save();return false;}
+    if(!data.cloudOptIn){data.cloudStatus='Community Sync off';save();return false;}
     if(!cloudReady()){data.cloudStatus='Backend not configured';save();if(!opts.silent)showToast('Community backend is not configured');return false;}
     try{
       data.cloudStatus='Syncing…';save();if(!opts.silent)renderV20();
@@ -3289,35 +3260,11 @@ function v20More(){
       const r=await fetch(CLOUD_CFG.url+'/rest/v1/arc_users',{method:'POST',headers:{apikey:CLOUD_CFG.anonKey,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},body:JSON.stringify(snap)});
       if(!r.ok)throw new Error('sync '+r.status);
       data.cloudLastSync=new Date().toISOString();data.cloudStatus='Synced ✓';save();if(typeof v19SyncActiveChallenge==='function'){try{await v19SyncActiveChallenge();}catch(_){}}if(!opts.silent)renderV20();if(!opts.silent)showToast('Progress synced ☁️');return true;
-    }catch(e){data.cloudStatus='Sync failed — local data is safe';save();if(!opts.silent)showToast('Cloud sync failed — local tracker still works');return false;}
+    }catch(e){data.cloudStatus=String(e?.message||e).toLowerCase().includes('anonymous')?'Enable Anonymous Sign-Ins in Supabase':'Sync failed — local data is safe';save();if(!opts.silent)showToast(data.cloudStatus);return false;}
   };
   async function cloudDeactivate(){
     if(!data.cloudUserId||!cloudReady())return false;
-    try{
-      const session=await v24CloudSession();
-      const headers={apikey:CLOUD_CFG.anonKey,Authorization:'Bearer '+session.access_token};
-      const id=encodeURIComponent(session.user.id);
-      // Remove optional challenge membership/ownership first, then public profile row.
-      const member=await fetch(CLOUD_CFG.url+'/rest/v1/arc_challenge_members?user_id=eq.'+id,{method:'DELETE',headers});
-      if(!member.ok&&member.status!==404)throw new Error('member cleanup '+member.status);
-      const challenges=await fetch(CLOUD_CFG.url+'/rest/v1/arc_challenges?creator_id=eq.'+id,{method:'DELETE',headers});
-      if(!challenges.ok&&challenges.status!==404)throw new Error('challenge cleanup '+challenges.status);
-      const profile=await fetch(CLOUD_CFG.url+'/rest/v1/arc_users?id=eq.'+id,{method:'DELETE',headers});
-      if(!profile.ok&&profile.status!==404){
-        // Safe fallback when an older schema lacks DELETE policy: make the row private.
-        const patch=await fetch(CLOUD_CFG.url+'/rest/v1/arc_users?id=eq.'+id,{method:'PATCH',headers:Object.assign({},headers,{'Content-Type':'application/json','Prefer':'return=minimal'}),body:JSON.stringify({public_profile:false,community_opt_in:false})});
-        if(!patch.ok)throw new Error('profile cleanup '+profile.status);
-      }
-      data.cloudUserId='';data.cloudLastSync='';data.cloudStatus='Community sharing off';save();return true;
-    }catch(e){data.cloudStatus='Remote cleanup could not be verified';save();return false;}
-  }
-
-  async function rankFetch(fn,params={}){
-    if(!cloudReady())throw new Error('Community backend is not configured');
-    const r=await fetch(CLOUD_CFG.url+'/rest/v1/rpc/'+encodeURIComponent(fn),{method:'POST',headers:{apikey:CLOUD_CFG.anonKey,Authorization:'Bearer '+(v24AccessToken||CLOUD_CFG.anonKey),'Content-Type':'application/json'},body:JSON.stringify(params||{})});
-    if(!r.ok)throw new Error('rpc '+fn+' '+r.status);
-    const j=await r.json();
-    return Array.isArray(j)?j:(j==null?[]:[j]);
+    try{const session=await v24CloudSession();const r=await fetch(CLOUD_CFG.url+'/rest/v1/arc_users?id=eq.'+encodeURIComponent(session.user.id),{method:'DELETE',headers:{apikey:CLOUD_CFG.anonKey,Authorization:'Bearer '+session.access_token}});if(!r.ok)throw new Error(String(r.status));data.cloudUserId='';data.cloudLastSync='';data.cloudStatus='Community Sync off';save();return true;}catch(e){data.cloudStatus='Remote cleanup could not be verified';save();return false;}
   }
 
   // Exact Top 20 RPC + exact own rank. No Instagram is returned to the player UI.

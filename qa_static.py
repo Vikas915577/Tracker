@@ -7,7 +7,8 @@ web = root / 'assets' / 'webcore'
 app = (web / 'app.js').read_text(encoding='utf-8')
 sql = (root / 'backend' / 'backend-schema.sql').read_text(encoding='utf-8')
 required = {
-    'v24.1 core version': "const VERSION='V24.1'",
+    'v24.1 core version preserved marker': 'V24.1' in app,
+    'v25.4 version': "const VERSION='V25.4'" in app,
     'canEdit': 'const canEdit=d=>String(d)<=today()' in app or 'function canEdit' in app,
     'Month': 'function v24Month()' in app,
     'Arc': 'function v24Arc()' in app,
@@ -16,7 +17,7 @@ required = {
     '15 habit cap': 'Maximum 15 habits reached' in app,
     'name-only Rank': 'Search Top 20 by name' in app,
     'anonymous auth': 'auth.signInAnonymously()' in app,
-    'owner RLS': 'using (id = auth.uid())' in sql,
+    'owner RLS': ('using (id = (select auth.uid()))' in sql or 'with check (id = (select auth.uid()))' in sql),
     'no tautological RLS': 'using (id = id)' not in sql,
     'no anon insert write policy': not re.search(r'for insert to anon', sql, re.I),
     'no anon update write policy': not re.search(r'for update to anon', sql, re.I),

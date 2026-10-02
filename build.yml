@@ -1,48 +1,44 @@
-name: Winter Arc Build
+name: Winter Arc Android Build
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  apk:
+  build-apk:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-
-      - name: Generate native platform folders
-        run: bash tool/prepare_platforms.sh
-
+      - name: Prepare Flutter platforms
+        run: bash ./tool/prepare_platforms.sh
       - name: Get packages
         run: flutter pub get
-
       - name: Analyze
         run: flutter analyze
-
-      - name: Build release APK
-        run: flutter build apk --release
-
+      - name: Build debug APK
+        run: flutter build apk --debug
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: winter-arc-v25-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: winter-arc-v25-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
 
-  web-core:
+  pages-artifact:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Publish web core artifact
+      - name: Upload Web Core
         uses: actions/upload-pages-artifact@v3
         with:
           path: assets/webcore
