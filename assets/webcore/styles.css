@@ -1,0 +1,29 @@
+:root{--bg:#f5f3ed;--card:#fff;--ink:#202522;--muted:#727a73;--line:#e3e8e2;--green:#3da35d;--green2:#256e3e;--danger:#b44040;--soft:#eef6f0;--soft2:#f7faf7;--shadow:0 12px 30px rgba(20,30,24,.08);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink)}button,input,textarea,select{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.45}.dark{--bg:#121712;--card:#1a211b;--soft:#213124;--soft2:#171d18;--ink:#f3f6f2;--muted:#9ca89f;--line:#2c382e;--green:#55b970;--green2:#8ee1a3;--danger:#ef7a7a}body{overflow-x:hidden}#app{min-height:100dvh}.file-btn{display:flex;justify-content:center;align-items:center;min-height:44px;border:1px solid var(--line);border-radius:13px;background:var(--card);font-weight:900;font-size:10px;cursor:pointer}.file-btn input{display:none}
+
+/* V24.1 stable readability + accessibility pass */
+html{scroll-behavior:smooth}
+body{font-size:14px;line-height:1.45;overflow-x:hidden}
+button,input,textarea,select{font-size:13px;line-height:1.35}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid color-mix(in srgb,var(--green) 45%,white);outline-offset:2px}
+button,.file-btn{min-height:44px}
+small{font-size:11px}
+.v24-app .v20-page,.v24-app .v24-page{gap:15px}
+.v24-app p,.v24-app .muted,.v24-app .note,.v24-app .v20-note{font-size:13px;line-height:1.45}
+.v24-app .kicker,.v24-app .v20-kicker,.v24-app .v20-next-label{font-size:11px}
+.v24-app .v24-priority-copy b,.v24-app .v24-rank-row b,.v24-app .v24-tool-tile b{font-size:13px}
+.v24-app .v24-priority-copy span,.v24-app .v24-priority-copy small,.v24-app .v24-rank-row small,.v24-app .v24-tool-tile small{font-size:11px;line-height:1.35}
+.v24-app .v24-week-labels span,.v24-app .v24-week-cell{font-size:11px}
+.v24-app .v24-calendar .v24-cal-cell{min-height:48px}
+.v24-app .v24-cal-cell b{font-size:14px}
+.v24-app .v24-cal-cell span{font-size:11px}
+.v24-app .v24-legend{font-size:12px}
+.v24-app .v24-creator-compact small{font-size:11px}
+.v24-modal-open{overscroll-behavior:none}
+.v24-app [disabled]{filter:none}
+@media(max-width:520px){
+  .v24-app .v24-main{padding-inline:10px}
+  .v24-app .v24-check{min-width:48px;min-height:48px}
+  .v24-app .v24-week-cell{min-width:38px;min-height:48px}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
