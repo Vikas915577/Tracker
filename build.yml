@@ -27,14 +27,14 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
-      - name: Build debug APK
-        run: flutter build apk --debug
+      - name: Build release APK
+        run: flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: winter-arc-v25-debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: winter-arc-v25-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
 
   web-core:
     runs-on: ubuntu-latest

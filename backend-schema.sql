@@ -106,6 +106,20 @@ grant insert on public.arc_challenges to authenticated;
 grant select on public.arc_challenge_members to anon, authenticated;
 grant insert, update on public.arc_challenge_members to authenticated;
 
+drop policy if exists arc_challenge_members_owner_delete on public.arc_challenge_members;
+drop policy if exists arc_challenges_owner_delete on public.arc_challenges;
+
+create policy arc_challenge_members_owner_delete on public.arc_challenge_members
+  for delete to authenticated
+  using (user_id = auth.uid());
+
+create policy arc_challenges_owner_delete on public.arc_challenges
+  for delete to authenticated
+  using (creator_id = auth.uid());
+
+grant delete on public.arc_challenge_members to authenticated;
+grant delete on public.arc_challenges to authenticated;
+
 create or replace function public.get_public_leaderboard(p_limit integer default 20)
 returns table(
   rank bigint,

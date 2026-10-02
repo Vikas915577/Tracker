@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
-const String appVersion = 'V25.3';
+const String appVersion = 'V25.4';
 const String localWebRoot = 'assets';
 const String localWebEntry = 'webcore/index.html';
 final InAppLocalhostServer _localhostServer = InAppLocalhostServer(documentRoot: localWebRoot);

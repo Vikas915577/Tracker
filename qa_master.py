@@ -10,7 +10,7 @@ main=(root/'lib'/'main.dart').read_text(encoding='utf-8')
 pub=(root/'pubspec.yaml').read_text(encoding='utf-8')
 html=(web/'index.html').read_text(encoding='utf-8')
 checks=[
- ('V25.3 release version', "const VERSION='V25.3'" in app),
+ ('V25.4 release version', "const VERSION='V25.4'" in app),
  ('V24.1 feature core preserved', 'function v24Month()' in app and 'function v24Arc()' in app and 'function routineHtml()' in app),
  ('canEdit present', bool(re.search(r'canEdit\s*=',app))),
  ('Month preserved', 'function v24Month()' in app),
