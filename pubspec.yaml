@@ -1,7 +1,7 @@
 name: winter_arc_tracker
 publish_to: 'none'
 description: Winter Arc Tracker V25 master - feature-preserving Flutter mobile shell with the stable tracker web core.
-version: 25.0.0+1
+version: 25.3.0+4
 
 environment:
   sdk: ">=3.10.0 <4.0.0"

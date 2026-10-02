@@ -1,6 +1,6 @@
-# Winter Arc Tracker V25 — Master / No-NPM
+# Winter Arc Tracker V25.3 — UI + Bug Fix + Stability / No-NPM
 
-This package is the **architecture migration** requested for Winter Arc.
+This package is the **stability and UI improvement pass** requested for Winter Arc.
 
 ## What is actually inside
 
@@ -48,3 +48,16 @@ Owner writes require `auth.uid() = id`. Public Rank is exposed through aggregate
 ## QA status
 
 Static checks and JavaScript syntax checks are included. This environment does not have the Flutter SDK installed, so the final Flutter APK compile must be verified by the included GitHub Actions workflow.
+
+
+## V25.3 fixes
+- Preserved legacy tools now have a consistent mobile UI instead of raw browser controls.
+- Creator page is implemented and shows all four bundled creator images.
+- Today keeps a compact creator credit at the top.
+- Add custom habit opens the real modal instead of a browser prompt.
+- Added an Audience panel showing anonymous tracker opens and opt-in public member names.
+- Public names are shown only when users explicitly enable Community Sync + Public Profile.
+- Visitor analytics are labelled as anonymous page opens, not a verified unique-user count.
+
+## V25.3 — Total Users
+More → Audience now has one clear **TOTAL USERS** metric. It uses an anonymous CounterAPI counter with a persistent browser/device flag so the same browser is not intentionally registered again on every page load. This is an approximate visitor count, not an Instagram/GitHub follower count.

@@ -3,15 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
-const String appVersion = 'V25.0';
-const String legacyAsset = 'assets/webcore/index.html';
+const String appVersion = 'V25.3';
+const String localWebRoot = 'assets';
+const String localWebEntry = 'webcore/index.html';
+final InAppLocalhostServer _localhostServer = InAppLocalhostServer(documentRoot: localWebRoot);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // This app intentionally does not require Node/npm. The Flutter shell loads
-  // the feature-preserving web core from bundled assets on Android/iOS.
-  // Supabase is used by the web core only when Community Sync is enabled.
+  // No Node/npm is required. Serve bundled web assets through localhost so
+  // relative CSS/JS/image paths work reliably inside the WebView.
+  if (!kIsWeb) {
+    await _localhostServer.start();
+  }
   runApp(const WinterArcApp());
 }
 
@@ -49,7 +53,7 @@ class _WinterArcHostState extends State<WinterArcHost> {
 
   InAppWebViewSettings get _settings => InAppWebViewSettings(
         javaScriptEnabled: true,
-        javaScriptCanOpenWindowsAutomatically: true,
+        javaScriptCanOpenWindowsAutomatically: false,
         transparentBackground: false,
         mediaPlaybackRequiresUserGesture: false,
         allowsInlineMediaPlayback: true,
@@ -64,6 +68,10 @@ class _WinterArcHostState extends State<WinterArcHost> {
         thirdPartyCookiesEnabled: false,
         clearCache: false,
         safeBrowsingEnabled: true,
+        allowFileAccess: false,
+        allowContentAccess: false,
+        allowFileAccessFromFileURLs: false,
+        allowUniversalAccessFromFileURLs: false,
       );
 
   Future<void> _load() async {
@@ -74,7 +82,11 @@ class _WinterArcHostState extends State<WinterArcHost> {
       _error = '';
     });
     try {
-      await _controller?.loadFile(assetFilePath: legacyAsset);
+      if (kIsWeb) {
+        await _controller?.loadUrl(urlRequest: URLRequest(url: WebUri('./assets/webcore/index.html')));
+      } else {
+        await _controller?.loadUrl(urlRequest: URLRequest(url: WebUri('http://localhost:8080/$localWebEntry')));
+      }
     } catch (e) {
       setState(() {
         _failed = true;
@@ -91,6 +103,14 @@ class _WinterArcHostState extends State<WinterArcHost> {
       return false;
     }
     return true;
+  }
+
+  @override
+  void dispose() {
+    if (!kIsWeb) {
+      _localhostServer.close();
+    }
+    super.dispose();
   }
 
   @override

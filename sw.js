@@ -1,4 +1,4 @@
-const CACHE='winter-arc-v24.1';
+const CACHE='winter-arc-v25.3';
 const CORE=['./','./index.html','./styles.css','./app.js','./manifest.json','./cloud-config.js','./icon-192.png','./icon-512.png','./creator-profile.jpg','./creator-photo-1.jpg','./creator-photo-2.jpg','./creator-photo-3.jpg'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(async c=>{const results=await Promise.allSettled(CORE.map(u=>c.add(u)));return results}).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('winter-arc-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});

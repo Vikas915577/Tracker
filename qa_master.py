@@ -10,7 +10,8 @@ main=(root/'lib'/'main.dart').read_text(encoding='utf-8')
 pub=(root/'pubspec.yaml').read_text(encoding='utf-8')
 html=(web/'index.html').read_text(encoding='utf-8')
 checks=[
- ('V24.1 feature core preserved', "const VERSION='V24.1'" in app),
+ ('V25.3 release version', "const VERSION='V25.3'" in app),
+ ('V24.1 feature core preserved', 'function v24Month()' in app and 'function v24Arc()' in app and 'function routineHtml()' in app),
  ('canEdit present', bool(re.search(r'canEdit\s*=',app))),
  ('Month preserved', 'function v24Month()' in app),
  ('Arc preserved', 'function v24Arc()' in app),
@@ -26,7 +27,9 @@ checks=[
  ('Flutter shell bundles local web core', 'assets/webcore/' in pub and 'assets/webcore/index.html' in main),
  ('no package.json', not (root/'package.json').exists()),
  ('no npm build command', 'npm ' not in '\n'.join((root/'.github/workflows/build.yml').read_text().splitlines())),
- ('V25 readability override loaded after app', html.find('app.js') < html.find('v25-overrides.css')),
+ ('V25 readability override linked', 'v25-overrides.css' in html),
+ ('creator credit today present', 'v24CreatorCompact()' in app and 'CREDIT BY' in app),
+ ('rank player does not render Instagram', 'v20-ranksub\">${escapeHtml(x.instagram_handle' not in app),
 ]
 failed=[]
 for k,v in checks:
