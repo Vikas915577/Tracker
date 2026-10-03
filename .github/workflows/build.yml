@@ -26,11 +26,24 @@ jobs:
         run: bash ./tool/prepare_platforms.sh
 
       - name: Remove default Flutter sample test
-        run: |
-          rm -f test/widget_test.dart
+        run: rm -f test/widget_test.dart
 
       - name: Get packages
         run: flutter pub get
+
+      - name: Fix flutter_inappwebview Android ProGuard config for AGP 9+
+        shell: bash
+        run: |
+          set -euo pipefail
+          matches=$(find "$HOME/.pub-cache" -type f -path '*/flutter_inappwebview_android-*/android/build.gradle' 2>/dev/null || true)
+          if [ -z "$matches" ]; then
+            echo "flutter_inappwebview_android build.gradle not found"
+            exit 1
+          fi
+          while IFS= read -r f; do
+            echo "Patching $f"
+            sed -i "s/proguard-android\.txt/proguard-android-optimize.txt/g" "$f"
+          done <<< "$matches"
 
       - name: Analyze Flutter project
         run: flutter analyze
