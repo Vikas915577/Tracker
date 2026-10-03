@@ -75,25 +75,31 @@ class _WinterArcHostState extends State<WinterArcHost> {
       );
 
   Future<void> _load() async {
+  Future<void> _load() async {
+  if (!mounted) return;
+
+  setState(() {
+    _failed = false;
+    _loading = true;
+    _progress = 0;
+    _error = '';
+  });
+
+  try {
+    await _controller?.loadUrl(
+      urlRequest: URLRequest(
+        url: WebUri('https://vikas915577.github.io/Tracker/'),
+      ),
+    );
+  } catch (e) {
+    if (!mounted) return;
+
     setState(() {
-      _failed = false;
-      _loading = true;
-      _progress = 0;
-      _error = '';
+      _failed = true;
+      _loading = false;
+      _error = '$e';
     });
-    try {
-      if (kIsWeb) {
-        await _controller?.loadUrl(urlRequest: URLRequest(url: WebUri('./assets/webcore/index.html')));
-      } else {
-        await _controller?.loadUrl(urlRequest: URLRequest(url: WebUri('http://localhost:8080/$localWebEntry')));
-      }
-    } catch (e) {
-      setState(() {
-        _failed = true;
-        _loading = false;
-        _error = '$e';
-      });
-    }
+  }
   }
 
   Future<bool> _handleBack() async {
