@@ -75,7 +75,6 @@ class _WinterArcHostState extends State<WinterArcHost> {
       );
 
   Future<void> _load() async {
-  Future<void> _load() async {
   if (!mounted) return;
 
   setState(() {
