@@ -25,6 +25,10 @@ jobs:
       - name: Prepare Flutter platforms
         run: bash ./tool/prepare_platforms.sh
 
+      - name: Remove default Flutter sample test
+        run: |
+          rm -f test/widget_test.dart
+
       - name: Get packages
         run: flutter pub get
 
