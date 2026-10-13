@@ -1,0 +1,195 @@
+name: Repair Winter Arc Website
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  repair-web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Repair the deployed web core, app page and APK deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check app.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          root_path = Path('app.js')
+          web_path = Path('assets/webcore/app.js')
+          root = root_path.read_bytes()
+          web = web_path.read_bytes()
+
+          # The verified live bug: deployed webcore is app.js without its final IIFE closure.
+          # Refuse any unexpected differences instead of overwriting unknown work.
+          if root == web:
+              pass
+          elif root.startswith(web) and root[len(web):] == b'\n})();\n':
+              web_path.write_bytes(root)
+          else:
+              raise SystemExit('Safety stop: root app.js and deployed webcore differ beyond the known missing final closure. No source was changed.')
+
+          apk_paragraph_old = '<p class="muted">APK Releases button official repository ke Releases page par le jaata hai. Wahan real APK release asset available ho to download kar sakte ho. Website version ko APK ke bina bhi normally use kiya ja sakta hai.</p>'
+          apk_paragraph_new = '<p class="muted">Android APK ko yahin se download karo. Ye GitHub Actions se banne wala debug/test build hai; Play Store signing alag hoti hai.</p>'
+          apk_link_old = '<a class="v14-pill-btn primary v16-wide-link" href="${V16_APK_RELEASES_URL}" target="_blank" rel="noopener">Open APK Releases ↗</a>'
+          apk_link_new = '<a class="v14-pill-btn primary v16-wide-link" href="./downloads/winter-arc-tracker.apk" download="winter-arc-tracker.apk">Download Android APK ↓</a>\n      <a class="v14-pill-btn v16-link-btn" href="${V16_APK_RELEASES_URL}" target="_blank" rel="noopener">Other APK builds ↗</a>'
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'Safety stop: expected exactly one {label}, found {count}. No commit will be made.')
+              return text.replace(old, new, 1)
+
+          for path in (root_path, web_path):
+              text = path.read_text(encoding='utf-8')
+              broken_call = "morePanel==='getapp'?getAppPage()"
+              if broken_call not in text and "morePanel==='getapp'?v16GetAppPage()" not in text:
+                  raise SystemExit(f'Safety stop: Get the App handler not found in {path}.')
+              text = text.replace(broken_call, "morePanel==='getapp'?v16GetAppPage()")
+              if apk_paragraph_old in text:
+                  text = replace_once(text, apk_paragraph_old, apk_paragraph_new, f'APK paragraph in {path}')
+              elif apk_paragraph_new not in text:
+                  raise SystemExit(f'Safety stop: expected APK panel text missing in {path}.')
+              if apk_link_old in text:
+                  text = replace_once(text, apk_link_old, apk_link_new, f'APK link in {path}')
+              elif './downloads/winter-arc-tracker.apk' not in text:
+                  raise SystemExit(f'Safety stop: expected APK link missing in {path}.')
+              path.write_text(text, encoding='utf-8', newline='\n')
+
+          if root_path.read_bytes() != web_path.read_bytes():
+              raise SystemExit('Safety stop: root and deployed app.js copies do not match after repair.')
+
+          # Refresh only the service-worker cache; localStorage and tracker records are untouched.
+          for name in ('sw.js', 'assets/webcore/sw.js'):
+              path = Path(name)
+              sw = path.read_text(encoding='utf-8')
+              old_cache = "const CACHE='winter-arc-v25.3';"
+              new_cache = "const CACHE='winter-arc-v25.5';"
+              if old_cache in sw:
+                  sw = replace_once(sw, old_cache, new_cache, f'cache version in {name}')
+              elif new_cache not in sw:
+                  raise SystemExit(f'Safety stop: unexpected service-worker version in {name}.')
+              old_core = "'./styles.css','./app.js'"
+              new_core = "'./styles.css','./v25-overrides.css','./app.js'"
+              if old_core in sw:
+                  sw = replace_once(sw, old_core, new_core, f'core asset list in {name}')
+              elif './v25-overrides.css' not in sw:
+                  raise SystemExit(f'Safety stop: override CSS asset list missing in {name}.')
+              path.write_text(sw, encoding='utf-8', newline='\n')
+
+          # Ensure the APK made by build-apk is also published under the website URL.
+          wf_path = Path('.github/workflows/build.yml')
+          wf = wf_path.read_text(encoding='utf-8')
+          checkout = '      - name: Checkout repository\n        uses: actions/checkout@v4\n\n      - name: Setup Flutter'
+          checkout_new = (
+              '      - name: Checkout repository\n'
+              '        uses: actions/checkout@v4\n\n'
+              '      - name: Validate tracker JavaScript\n'
+              '        run: |\n'
+              '          node --check app.js\n'
+              '          node --check assets/webcore/app.js\n'
+              '          node --check assets/webcore/sw.js\n'
+              '          grep -q "morePanel===\'getapp\'?v16GetAppPage()" assets/webcore/app.js\n\n'
+              '      - name: Setup Flutter'
+          )
+          if checkout in wf:
+              wf = replace_once(wf, checkout, checkout_new, 'workflow syntax-check insertion point')
+          elif 'Validate tracker JavaScript' not in wf:
+              raise SystemExit('Safety stop: cannot locate a known insertion point in build workflow.')
+
+          deploy_job = '  deploy-pages:\n    runs-on: ubuntu-latest'
+          if deploy_job in wf:
+              wf = replace_once(wf, deploy_job, '  deploy-pages:\n    needs: build-apk\n    runs-on: ubuntu-latest', 'Pages build dependency')
+          elif '  deploy-pages:\n    needs: build-apk\n' not in wf:
+              raise SystemExit('Safety stop: cannot locate Pages job in build workflow.')
+
+          old_upload = (
+              '      - name: Upload Winter Arc web core\n'
+              '        uses: actions/upload-pages-artifact@v3\n'
+              '        with:\n'
+              '          path: assets/webcore'
+          )
+          new_upload = (
+              '      - name: Download Android APK artifact\n'
+              '        uses: actions/download-artifact@v4\n'
+              '        with:\n'
+              '          name: winter-arc-v25-debug-apk\n'
+              '          path: .apk-artifact\n\n'
+              '      - name: Assemble website and APK download\n'
+              '        shell: bash\n'
+              '        run: |\n'
+              '          set -euo pipefail\n'
+              '          mkdir -p _site/downloads\n'
+              '          cp -a assets/webcore/. _site/\n'
+              '          cp .apk-artifact/app-debug.apk _site/downloads/winter-arc-tracker.apk\n\n'
+              '      - name: Upload Winter Arc web core\n'
+              '        uses: actions/upload-pages-artifact@v3\n'
+              '        with:\n'
+              '          path: _site'
+          )
+          if old_upload in wf:
+              wf = replace_once(wf, old_upload, new_upload, 'Pages upload block')
+          elif 'path: _site' not in wf or 'winter-arc-tracker.apk' not in wf:
+              raise SystemExit('Safety stop: cannot locate Pages upload block.')
+          wf_path.write_text(wf, encoding='utf-8', newline='\n')
+
+          print('Repair prepared. User data and backend schema were not opened or changed.')
+          PY
+
+          node --check app.js
+          node --check assets/webcore/app.js
+          node --check sw.js
+          node --check assets/webcore/sw.js
+          cmp app.js assets/webcore/app.js
+          grep -q "morePanel==='getapp'?v16GetAppPage()" assets/webcore/app.js
+          grep -q './downloads/winter-arc-tracker.apk' assets/webcore/app.js
+          grep -q "winter-arc-v25.5" assets/webcore/sw.js
+          grep -q 'needs: build-apk' .github/workflows/build.yml
+          grep -q 'path: _site' .github/workflows/build.yml
+          echo 'PASS: source syntax, app copies, Get the App link, cache and APK deployment configuration.'
+
+      - name: Commit repair to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app.js assets/webcore/app.js sw.js assets/webcore/sw.js .github/workflows/build.yml
+          if git diff --cached --quiet; then
+            echo 'Repair files already match the expected fixed state.'
+          else
+            git commit -m 'Fix blank website and add Android APK download'
+            git push origin HEAD:main
+          fi
+
+      - name: Trigger the normal APK build and Pages deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          started="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          gh workflow run build.yml --ref main
+          run_id=''
+          for attempt in $(seq 1 30); do
+            run_id="$(gh run list --workflow build.yml --branch main --limit 10 --json databaseId,event,createdAt --jq "[.[] | select(.event == \"workflow_dispatch\" and .createdAt >= \"$started\")][0].databaseId // empty")"
+            if [ -n "$run_id" ]; then break; fi
+            sleep 2
+          done
+          if [ -z "$run_id" ]; then
+            echo 'Repair commit exists. Open Actions and run Winter Arc Build manually to finish deployment.'
+            exit 1
+          fi
+          echo "Watching Winter Arc Build run $run_id"
+          gh run watch "$run_id" --exit-status

@@ -1,0 +1,11 @@
+Exact intended changes after the GitHub Actions repair succeeds:
+- Fix missing final wrapper in assets/webcore/app.js (the GitHub Pages runtime source).
+- Point More > Get the App to the existing v16GetAppPage() renderer.
+- Add a direct /downloads/winter-arc-tracker.apk link.
+- Bump service worker cache version to winter-arc-v25.5; cache v25-overrides.css.
+- Add JS parse checks to the build workflow.
+- Make deploy-pages depend on build-apk; copy the built APK into the published Pages directory.
+- Commit the repair to main, dispatch the regular build and watch the run.
+
+No habit data, browser localStorage, backups, Supabase rows or backend SQL are touched by the repair workflow.
+The workflow must be manually installed into .github/workflows/repair-web.yml and run once from Actions. Downloading this ZIP alone does not modify GitHub.
