@@ -1,0 +1,5 @@
+OPTIONAL: HOW TO RUN A SAFE REPAIR USING GITHUB ACTIONS
+
+The current connected GitHub integration is read-only (API writes return 403). If you want to avoid Codespaces, an owner/collaborator with repository write access can add a temporary workflow that checks out main, runs tracker_repair.py --apply, creates a new branch and pushes the five-file repair branch. Do not give a workflow broader permissions than contents: write. Review the branch before merging it.
+
+This kit does not silently push or merge anything. The live website stays unchanged until a repaired commit is merged and Pages deployment succeeds.

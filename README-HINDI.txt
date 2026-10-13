@@ -1,50 +1,74 @@
-WINTER ARC TRACKER V25.4 — SAFE REPAIR KIT
+WINTER ARC TRACKER V25.4 — COMPLETE REPAIR KIT
 
-IMPORTANT STATUS
-The GitHub connection can read Vikas915577/Tracker, but GitHub refused file writes and branch creation with HTTP 403: "Resource not accessible by integration". This kit has NOT changed the live repository. The live site is not considered fixed until these changes are committed to main and the GitHub Actions deployment succeeds.
+ZAROORI BAAT
+Yeh ZIP live GitHub website ko apne-aap publish nahi karti. Connected GitHub integration ne write/branch operations ko 403 se reject kiya tha, isliye live main branch abhi tak change nahi hui. Neeche diye steps existing source ko safe tareeke se repair karne ke liye hain.
 
-WHAT THIS FIX ADDRESSES
-1. Removes the extra closing JavaScript wrapper in root app.js, which can cause a blank screen if GitHub Pages is configured to serve root files.
-2. Fixes the More > Get the App screen. Its current code calls getAppPage(), but the available page function is v16GetAppPage().
-3. Adds a direct Android APK download link: ./downloads/winter-arc-tracker.apk.
-4. Updates the service-worker cache from V25.3 to V25.4 and includes v25-overrides.css so stale cached files are replaced.
-5. Adds JavaScript syntax checks to GitHub Actions and makes the Pages deployment bundle the APK produced by the same successful build.
+YEH KIT KYA FIX KARTA HAI
+1. Root app.js ka extra JavaScript closing wrapper hataata hai.
+2. More > Get the App ka function call sahi karta hai (getAppPage -> v16GetAppPage).
+3. Android APK ke liye direct download link add karta hai: ./downloads/winter-arc-tracker.apk.
+4. PWA service-worker cache V25.3 se V25.4 karta hai aur v25-overrides.css cache karta hai.
+5. GitHub Actions mein JavaScript syntax checks jodta hai.
+6. Website deploy mein APK artifact include karta hai, jab Android build successful ho.
+7. Original files ka timestamped backup banata hai; default mode sirf dry-run hai.
 
 DATA SAFETY
-The script only touches these five source files:
-- app.js
-- assets/webcore/app.js
-- sw.js
-- assets/webcore/sw.js
-- .github/workflows/build.yml
+- Habits, habit completions, localStorage, PIN, JSON backups, Supabase rows ya backend SQL ko delete/modify nahi kiya jata.
+- Reset/Clear Site Data karne ki zarurat nahi.
+- Script sirf ye 5 code files badalta hai: app.js, assets/webcore/app.js, sw.js, assets/webcore/sw.js, .github/workflows/build.yml.
+- Apply ke waqt original files ko .tracker-repair-backup-<timestamp>/ folder mein copy karta hai.
+- Pehle dry-run zaroor karein; koi mismatch ho to script stop karta hai aur changes nahi likhta.
 
-It does NOT modify or delete habit data, localStorage data, backup JSON files, Supabase records, backend SQL, images, or the rest of the app. Before writing, it creates a timestamped backup folder inside the repository. By default it performs a dry run and writes nothing.
+KYA LIVE WEBSITE ABHI FIX HAI?
+Nahi. Jab tak repaired files GitHub ke main branch mein push/merge nahi hoti aur Actions ka deploy-pages job successful nahi hota, live website old version hi dikhayegi. Yeh honesty ke liye clear likha hai.
 
-HOW TO APPLY (REQUIRES REPOSITORY WRITE ACCESS)
-1. Open the Tracker repository in GitHub Codespaces or a local Git checkout.
-2. Put tracker_repair.py in the repository root (same level as app.js and README.md).
-3. Make a separate branch first:
-   git switch -c fix/website-and-apk-download
-4. Run the dry run:
-   python3 tracker_repair.py
-   It validates all expected source anchors before touching any file.
-5. Apply the repair and create backups:
-   python3 tracker_repair.py --apply
-6. Review the result:
+POORA REPAIRED PROJECT ZIP BANANE KA TAREEQA (PC ya Codespaces par)
+1. Python 3 ke saath internet access hona chahiye.
+2. Is ZIP ko extract karein.
+3. Terminal mein is folder ke andar run karein:
+   python3 make_fixed_project_zip.py
+4. Yeh GitHub se current public source download karega, temporary copy mein repair + QA karega, aur `Tracker-FIXED.zip` banayega. Yeh script GitHub par push/deploy nahi karti.
+
+SABSE SAFE TAREEQA (GitHub Codespaces ya PC/Mac par existing repo repair karne ke liye)
+1. Repository kholen: https://github.com/Vikas915577/Tracker
+2. Code menu > Codespaces > Create codespace on main (agar Codespaces available ho).
+3. Is ZIP ko Codespaces workspace mein upload/extract karein. ZIP ki files `winter_arc_tracker_complete_repair/` folder ke andar hongi. Terminal hamesha repository root mein kholen (jahan `app.js` hai).
+4. Pehle dry-run karein:
+   python3 winter_arc_tracker_complete_repair/tracker_repair.py
+5. Agar sirf expected 5 files report hon aur Node syntax check pass ho, tab apply karein:
+   python3 winter_arc_tracker_complete_repair/tracker_repair.py --apply
+6. Post-fix QA chalayein:
+   python3 winter_arc_tracker_complete_repair/qa_after_repair.py
+7. Diff check karein:
    git diff --check
    git diff --stat
-   git diff -- app.js assets/webcore/app.js sw.js assets/webcore/sw.js .github/workflows/build.yml
-7. Commit only the five intended source files:
+8. Separate branch par commit karein:
+   git switch -c fix/website-and-apk-download
    git add app.js assets/webcore/app.js sw.js assets/webcore/sw.js .github/workflows/build.yml
    git commit -m "Fix tracker website and APK download"
    git push -u origin fix/website-and-apk-download
-8. Open a pull request and merge it to main. The active workflow only deploys on main.
-9. In GitHub > Actions, confirm BOTH build-apk and deploy-pages succeed. Then open the site and use More > Get the App > Download Android APK.
+9. GitHub par Pull Request kholen aur review karke main mein merge karein.
+10. Repository > Actions mein “Winter Arc Build” ke build-apk aur deploy-pages jobs dono green hone chahiye.
+11. Successful deploy ke baad website ko Chrome Incognito mein check karein. Normal Chrome mein purana cached tab ho to pehle tab band karke dobara website kholen; apna tracker data clear na karein.
 
-EXPECTED DOWNLOAD URL AFTER A SUCCESSFUL DEPLOY
+ANDROID APK LINK (sirf successful deploy ke baad)
 https://vikas915577.github.io/Tracker/downloads/winter-arc-tracker.apk
+Yeh debug/test APK hai, Play Store-signed release nahi.
 
-The app package in this workflow is currently a debug/test APK intended for direct installation, not a Play Store signed release. The direct download link will not exist until the updated workflow runs successfully on main.
+AGAR WEBSITE ABHI BHI PURANI DIKHE
+1. Pehle GitHub Actions ka sabse naya run aur deploy-pages success check karein.
+2. Check karein ki GitHub Pages ka Source “GitHub Actions” hai.
+3. Website Chrome Incognito mein kholen.
+4. APK link tabhi kaam karega jab build-apk successful ho aur Pages deploy mein artifact include ho.
 
-IF YOU WANT CHATGPT TO PUSH IT DIRECTLY
-Reconnect/re-authorize the GitHub integration with write access for this repository (contents write; Actions/Pages permissions are needed to manage deployment where applicable). Then ask to apply the repair; the current connection has read-only effective access and refuses all writes with 403.
+IS ZIP MEIN
+- make_fixed_project_zip.py: current GitHub source download + repair + complete project ZIP generation (requires network/Python)
+- tracker_repair.py: backup-first repair automation (dry-run by default)
+- run-repair.sh: Linux/macOS/Codespaces helper
+- run-repair.bat: Windows helper
+- qa_after_repair.py: post-fix static QA
+- FIX-SUMMARY.txt: exact file/change summary
+- README-HINDI.txt: instructions
+
+AGAR GITHUB WRITE PERMISSION 403 DE
+Connected integration mein repo write permission enable/re-authorize karni hogi. 403 aane par code live push nahi hua maana jaye; successful commit SHA aur Actions run ke bina site fixed claim na karein.

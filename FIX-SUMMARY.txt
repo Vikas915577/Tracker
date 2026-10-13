@@ -1,0 +1,27 @@
+WINTER ARC TRACKER V25.4 — FIX SUMMARY
+
+Target files (only these 5):
+  app.js
+  assets/webcore/app.js
+  sw.js
+  assets/webcore/sw.js
+  .github/workflows/build.yml
+
+Fixes:
+- Remove the duplicate trailing IIFE closure from the legacy root app.js.
+- Route More > Get the App to the existing v16GetAppPage() function.
+- Add a direct APK link pointing to downloads/winter-arc-tracker.apk.
+- Increment both service-worker cache names to winter-arc-v25.4 and precache v25-overrides.css.
+- Add node --check validation for JS entry files before building.
+- Make Pages deployment wait for the Android APK build; download the artifact and combine it with assets/webcore as _site, then publish _site.
+
+Preserved:
+- Existing UX and features
+- localStorage keys and migration code
+- User habit data and history
+- PIN/profile settings
+- Backup/restore logic
+- Supabase schema/rows and backend configuration
+- Existing app images and other repository files
+
+Never claim the live website is fixed until changes reach main and the newest Pages deployment succeeds.
