@@ -1,0 +1,72 @@
+name: Deploy Winter Arc Tracker Website
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate frontend source
+        run: |
+          set -euo pipefail
+          test -s index.html
+          test -s app.js
+          test -s styles.css
+          test -s v25-overrides.css
+          test -s cloud-config.js
+          test -s sw.js
+          test -s manifest.json
+          node --check app.js
+          node --check sw.js
+          grep -q 'cloud-config.js' index.html
+          grep -q 'supabase-js' index.html
+          grep -q 'app.js' index.html
+          grep -q 'https://nyahevumoflvzfbxxpbv.supabase.co' cloud-config.js
+
+      - name: Prepare website and preserve original photos/icons/styles
+        env:
+          SOURCE_ASSETS: https://raw.githubusercontent.com/Vikas915577/Tracker/main
+        run: |
+          set -euo pipefail
+          mkdir -p site
+          cp index.html app.js cloud-config.js sw.js site/
+          # Download original CSS, PWA icons and the creator photos without altering them.
+          for asset in styles.css v25-overrides.css manifest.json icon-192.png icon-512.png creator-profile.jpg creator-photo-1.jpg creator-photo-2.jpg creator-photo-3.jpg; do
+            echo "Fetching original asset: $asset"
+            curl --fail --silent --show-error --location --retry 3 --retry-delay 2 \
+              "$SOURCE_ASSETS/$asset" -o "site/$asset"
+            test -s "site/$asset"
+          done
+          node --check site/app.js
+          node --check site/sw.js
+          test "$(find site -maxdepth 1 -type f | wc -l)" -ge 13
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload website artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy website
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#3da35d">
-<meta name="description" content="Winter Arc Tracker V25.4 Production Ready — production-ready mobile-first tracker preserving the full feature set.">
+<meta name="description" content="Winter Arc Tracker V25.4 — mobile-first habit tracker preserving the complete feature set.">
 <meta name="application-name" content="Winter Arc Tracker">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Winter Arc Tracker">
@@ -12,9 +12,34 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>Winter Arc Tracker V25.4 Production Ready</title>
+<title>Winter Arc Tracker V25.4</title>
 <link rel="stylesheet" href="styles.css">
-<script src="cloud-config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><link rel="stylesheet" href="v25-overrides.css">
+<script src="cloud-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="v25-overrides.css">
 </head>
-<body><div id="app"></div><script src="app.js"></script></body>
+<body>
+<div id="app" aria-live="polite"></div>
+<noscript>This website needs JavaScript to run. Please enable JavaScript in your browser.</noscript>
+<script>
+/* Preserve the existing creator photos if a fresh repository is missing the image files.
+   The deployment workflow also copies these exact assets into the published website. */
+(function(){
+  const assetNames=new Set(['creator-profile.jpg','creator-photo-1.jpg','creator-photo-2.jpg','creator-photo-3.jpg','icon-192.png','icon-512.png']);
+  const original='https://raw.githubusercontent.com/Vikas915577/Tracker/main/';
+  document.addEventListener('error',function(event){
+    const el=event.target;
+    if(!(el instanceof HTMLImageElement || el instanceof HTMLLinkElement)) return;
+    const raw=el instanceof HTMLLinkElement ? el.getAttribute('href') : el.getAttribute('src');
+    if(!raw) return;
+    const file=raw.split('/').pop().split('?')[0];
+    if(!assetNames.has(file) || el.dataset.originalAssetFallback==='1') return;
+    el.dataset.originalAssetFallback='1';
+    event.stopImmediatePropagation();
+    if(el instanceof HTMLLinkElement) el.href=original+file; else el.src=original+file;
+  },true);
+})();
+</script>
+<script src="app.js"></script>
+</body>
 </html>

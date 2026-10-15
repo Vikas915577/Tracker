@@ -1,63 +1,19 @@
-# Winter Arc Tracker V25.3 — UI + Bug Fix + Stability / No-NPM
+# Supabase backend
 
-This package is the **stability and UI improvement pass** requested for Winter Arc.
+The frontend config in `../cloud-config.js` points to the existing Winter Arc Supabase project and uses only its public publishable key. Do not add a service-role or secret key to the website.
 
-## What is actually inside
+The existing project has these public tables with Row Level Security enabled:
 
-**Flutter/Dart shell** → mobile/desktop packaging, native back button, better WebView/media behavior, no Node/npm requirement.
+- `arc_users`
+- `arc_challenges`
+- `arc_challenge_members`
 
-**Bundled V24.1 feature-preserving web core** → the existing tracker feature set is kept instead of rewriting a smaller app and accidentally removing mature functionality.
+The public leaderboard/rank/active-member RPCs are also present. This package does not modify the live database and does not ask you to rerun the schema.
 
-**Supabase backend SQL** → owner-based RLS, public Rank RPCs, Community Sync and creator dashboard support.
+## One dashboard setting still required
 
-**GitHub Actions** → builds the Android test APK without requiring npm on the phone.
+Community Sync relies on anonymous sign-ins. Open Supabase Dashboard → Authentication → Providers / Auth settings → Anonymous Sign-Ins and enable it. Then test Community Sync from the deployed website.
 
-The app deliberately does **not** add unrelated new product features.
+Supabase URL: `https://nyahevumoflvzfbxxpbv.supabase.co`
 
-## Feature preservation
-
-The bundled core keeps Today, Week, Month, Arc, Profile, More, habits, habit history, streaks, XP, freeze, routines, goals, day planner, mood/energy, journal, sleep, reminders, Rank, Community Sync, public profile, Share & Invite, friend compare, Creator/Credits, Backup/Restore and PWA/web behavior.
-
-The previous V20/V21 sources are retained as migration references in the conversation and the current V24.1 core is bundled as the runtime source, so this package is not a cut-down rewrite.
-
-## Important data migration fact
-
-Chrome/PWA localStorage is sandboxed separately from a newly installed native app. A new Android/iOS app cannot safely copy another app/browser's private localStorage without explicit access. Therefore the safe migration path is:
-
-**Old tracker → Export JSON backup → Install V25 → Restore backup.**
-
-The bundled web core already contains its legacy V17/V18/V19/V20 migration logic for backups and preserves the existing data model.
-
-## Phone-only workflow
-
-1. Upload the contents of this ZIP to the GitHub repository root.
-2. GitHub Actions runs Flutter's toolchain and produces a test APK artifact.
-3. Download/install the APK from the Actions artifact.
-4. The same repo can publish `assets/webcore/` to GitHub Pages for the web/PWA version.
-
-There is no `package.json`, no npm script and no Node build step.
-
-## Backend
-
-Run `backend/backend-schema.sql` in Supabase. Enable Anonymous Sign-Ins for Community Sync. Then configure `assets/webcore/cloud-config.js` with the public project URL and publishable/anon key. Never commit a service-role key.
-
-## Security
-
-Owner writes require `auth.uid() = id`. Public Rank is exposed through aggregate RPCs and player-facing Rank does not display Instagram handles.
-
-## QA status
-
-Static checks and JavaScript syntax checks are included. This environment does not have the Flutter SDK installed, so the final Flutter APK compile must be verified by the included GitHub Actions workflow.
-
-
-## V25.3 fixes
-- Preserved legacy tools now have a consistent mobile UI instead of raw browser controls.
-- Creator page is implemented and shows all four bundled creator images.
-- Today keeps a compact creator credit at the top.
-- Add custom habit opens the real modal instead of a browser prompt.
-- Added an Audience panel showing anonymous tracker opens and opt-in public member names.
-- Public names are shown only when users explicitly enable Community Sync + Public Profile.
-- Visitor analytics are labelled as anonymous page opens, not a verified unique-user count.
-
-## V25.3 — Total Users
-More → Audience now has one clear **TOTAL USERS** metric. It uses an anonymous CounterAPI counter with a persistent browser/device flag so the same browser is not intentionally registered again on every page load. This is an approximate visitor count, not an Instagram/GitHub follower count.
+Keep RLS enabled. Never expose a service-role key in frontend files.
