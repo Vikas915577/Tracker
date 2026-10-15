@@ -1,9 +1,9 @@
-name: Deploy Winter Arc Web Core
+name: Deploy Winter Arc Website
 
 on:
-  workflow_run:
-    workflows: ["Winter Arc Build"]
-    types: [completed]
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -11,20 +11,46 @@ permissions:
   pages: write
   id-token: write
 
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
 jobs:
   deploy:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Configure Pages
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Validate website core
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f assets/webcore/index.html
+          test -f assets/webcore/app.js
+          test -f assets/webcore/styles.css
+          test -f assets/webcore/v25-overrides.css
+          test -f assets/webcore/cloud-config.js
+          test -f assets/webcore/sw.js
+          test -f assets/webcore/manifest.json
+          test -f assets/webcore/icon-192.png
+          test -f assets/webcore/icon-512.png
+          test -f assets/webcore/creator-profile.jpg
+          node --check assets/webcore/app.js
+          grep -q 'cloud-config.js' assets/webcore/index.html
+          grep -q 'supabase-js' assets/webcore/index.html
+
+      - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-      - name: Upload web core
-        uses: actions/upload-pages-artifact@v3
+
+      - name: Upload website files
+        uses: actions/upload-pages-artifact@v4
         with:
           path: assets/webcore
-      - name: Deploy
+
+      - name: Deploy website
+        id: deployment
         uses: actions/deploy-pages@v4
