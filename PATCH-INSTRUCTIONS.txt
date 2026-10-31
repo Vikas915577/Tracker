@@ -1,0 +1,60 @@
+WINTER ARC TRACKER — WHITE SCREEN REPAIR + V26 DEPLOYMENT PACKAGE
+
+WHAT THIS PATCH FIXES
+1. The actual GitHub Pages source folder was assets/webcore.
+2. The root app.js is syntactically valid, but assets/webcore/app.js is truncated and fails
+   JavaScript parsing with "Unexpected end of input".
+3. Root index.html is V26 and references ArcPilot files, while assets/webcore/index.html
+   remained V25.4 and did not include those scripts/styles.
+4. assets/webcore/sw.js was still on the older cache version. The root sw.js is V26.0.
+5. The previous ZIP's build.yml landed in the repository root. GitHub Actions only runs
+   workflows placed under .github/workflows/.
+
+FILES IN THIS ZIP
+- index.html
+  Replace the repository ROOT index.html. Adds a visible loading state and a diagnostic
+  message instead of leaving a blank screen if the application script fails.
+- .github/workflows/build.yml
+  Replace the ACTIVE workflow at this exact path. Do NOT put it at repository root.
+- scripts/prepare_web_bundle.py
+  Copies the known-good root V26 files into assets/webcore without deleting other assets.
+  It also stamps the copied app.js from V25.4 to V26.0.
+- scripts/verify_web_bundle.py
+  Checks the exact website bundle, local HTML resources, manifest icons, original data key,
+  ArcPilot key, service-worker cache version, and V26 assets.
+
+ANDROID UPLOAD STEPS
+A. Extract the ZIP while keeping its folder structure.
+B. In GitHub, replace:
+   - repository root: index.html
+   - .github/workflows/: build.yml
+C. Upload the two scripts into the repository's scripts/ folder:
+   - scripts/prepare_web_bundle.py
+   - scripts/verify_web_bundle.py
+D. Commit all changes to main.
+E. In the repository, open Settings -> Pages -> Build and deployment -> Source.
+   Select "GitHub Actions" because this patch uses a custom Pages workflow.
+F. Open Actions. The new "Winter Arc V26 Build and Deploy" run must show:
+   - validate-web: green
+   - deploy-pages: green
+   - build-apk: green (APK build is separate from website deployment)
+G. Only after deploy-pages succeeds, reopen:
+   https://vikas915577.github.io/Tracker/
+   If the old view persists, close all tabs for this site and reopen it. The V26 service worker is designed to activate the new bundle and remove older `winter-arc-*` caches automatically. Do NOT clear Chrome site storage/cookies: the tracker stores progress in origin-specific localStorage, and clearing site data could erase it. Take a JSON backup before any manual storage cleanup.
+
+IMPORTANT
+- Upload the EXTRACTED FILES at their exact paths. Do not upload this ZIP as a single file.
+- Do not upload this workflow as /build.yml at the repository root.
+- Do not delete app.js, assets, images, Supabase SQL, database tables, or user data.
+- The root app.js is copied into assets/webcore by the workflow. It is never manually reconstructed.
+- The script changes only the copied app.js version label. The root progress_tracker_v17 data
+  key remains unchanged.
+- The Flutter main.dart URL is intentionally not changed in this patch. Switching its WebView
+  from the GitHub Pages origin to localhost would create a different localStorage origin and
+  could make existing on-device progress appear missing until a migration is implemented.
+
+VERIFICATION LIMIT
+The repository source files have been inspected and the root JavaScript files parse.
+This ZIP's scripts/workflow are locally validated. The live site cannot be declared fixed until
+you upload/commit these paths and GitHub Actions confirms deployment. A real Android phone
+test is still required after deployment.

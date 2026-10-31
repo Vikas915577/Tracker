@@ -20,9 +20,62 @@
 <link rel="stylesheet" href="v26-arcpilot.css">
 </head>
 <body>
-<div id="app" aria-live="polite"></div>
+<div id="app" aria-live="polite">
+  <div style="max-width:520px;margin:20vh auto 0;padding:24px;text-align:center;color:#4d5a50;font:600 15px/1.5 system-ui,sans-serif">
+    <div style="font-size:38px">❄️</div>
+    <div>Opening Winter Arc Tracker…</div>
+  </div>
+</div>
 <noscript>This website needs JavaScript to run. Please enable JavaScript in your browser.</noscript>
+
+<!-- Show a useful error instead of an empty white screen if the app bundle fails. -->
 <script>
+(function () {
+  'use strict';
+  function mountStillWaiting() {
+    return !!document.getElementById('app');
+  }
+  function showBootError(message) {
+    var mount = document.getElementById('app');
+    if (!mount) return;
+    mount.innerHTML =
+      '<main style="max-width:520px;margin:12vh auto;padding:24px;font:14px/1.5 system-ui,sans-serif;color:#222">' +
+        '<div style="font-size:38px">⚠️</div>' +
+        '<h1 style="font-size:22px;margin:10px 0">Winter Arc could not start</h1>' +
+        '<p>The website loaded, but its app script did not render the tracker. Your saved progress has not been intentionally reset.</p>' +
+        '<pre id="winter-arc-boot-error" style="white-space:pre-wrap;overflow-wrap:anywhere;background:#f1f3f1;padding:12px;border-radius:10px;color:#7b2828;font-size:12px"></pre>' +
+        '<button id="winter-arc-reload" style="margin-top:14px;min-height:46px;padding:10px 16px;border:0;border-radius:12px;background:#318b4a;color:white;font-weight:800">Reload website</button>' +
+        '<p style="font-size:12px;color:#68736a;margin-top:14px">If this continues after a successful GitHub Actions deployment, clear this website’s cached site data in Chrome and reopen it.</p>' +
+      '</main>';
+    var detail = document.getElementById('winter-arc-boot-error');
+    if (detail) detail.textContent = message || 'The app script did not render a screen.';
+    var reload = document.getElementById('winter-arc-reload');
+    if (reload) reload.addEventListener('click', function () { location.reload(); });
+  }
+
+  window.addEventListener('error', function (event) {
+    if (!mountStillWaiting()) return;
+    var filename = String(event.filename || '');
+    var message = String(event.message || '');
+    var isAppScript = /app\.js|arcpilot\.js/i.test(filename);
+    var isParseFailure = /Unexpected end of input|SyntaxError/i.test(message);
+    if (isAppScript || isParseFailure) {
+      setTimeout(function () {
+        if (mountStillWaiting()) showBootError(message || 'Could not execute ' + filename);
+      }, 50);
+    }
+  }, true);
+
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      if (mountStillWaiting()) showBootError('The tracker did not render within 12 seconds. Check the published JavaScript bundle and service-worker cache.');
+    }, 12000);
+  });
+})();
+</script>
+
+<script>
+/* Preserve original creator photos/icons as a fallback if a fresh repository copy misses an image. */
 (function(){
   const assetNames=new Set(['creator-profile.jpg','creator-photo-1.jpg','creator-photo-2.jpg','creator-photo-3.jpg','icon-192.png','icon-512.png']);
   const original='https://raw.githubusercontent.com/Vikas915577/Tracker/main/';
