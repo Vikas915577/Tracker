@@ -33,7 +33,7 @@
 (function () {
   'use strict';
   function mountStillWaiting() {
-    return !!document.getElementById('app');
+    return !!document.getElementById('app') && window.__WINTER_ARC_BOOTED !== true;
   }
   function showBootError(message) {
     var mount = document.getElementById('app');
@@ -45,7 +45,7 @@
         '<p>The website loaded, but its app script did not render the tracker. Your saved progress has not been intentionally reset.</p>' +
         '<pre id="winter-arc-boot-error" style="white-space:pre-wrap;overflow-wrap:anywhere;background:#f1f3f1;padding:12px;border-radius:10px;color:#7b2828;font-size:12px"></pre>' +
         '<button id="winter-arc-reload" style="margin-top:14px;min-height:46px;padding:10px 16px;border:0;border-radius:12px;background:#318b4a;color:white;font-weight:800">Reload website</button>' +
-        '<p style="font-size:12px;color:#68736a;margin-top:14px">If this continues after a successful GitHub Actions deployment, clear this website’s cached site data in Chrome and reopen it.</p>' +
+        '<p style="font-size:12px;color:#68736a;margin-top:14px">If this continues, close old tabs and reopen the website. Do not clear Chrome site storage or cookies; they may contain your saved progress.</p>' +
       '</main>';
     var detail = document.getElementById('winter-arc-boot-error');
     if (detail) detail.textContent = message || 'The app script did not render a screen.';

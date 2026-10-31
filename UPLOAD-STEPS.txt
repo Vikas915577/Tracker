@@ -1,0 +1,59 @@
+WINTER ARC TRACKER V26 — ONE COMPLETE PATCH ZIP
+
+This ZIP combines the V26 ArcPilot feature files, white-screen diagnostics,
+the cloudSync startup repair, webcore synchronization, and deployment checks.
+
+UPLOAD ALL EXTRACTED FILES, KEEPING THEIR FOLDER STRUCTURE.
+
+FILES AND EXACT DESTINATIONS
+1. `index.html` -> replace the file in the repository ROOT.
+2. `arcpilot.js` -> add/replace in the repository ROOT.
+3. `v26-arcpilot.css` -> add/replace in the repository ROOT.
+4. `sw.js` -> replace the file in the repository ROOT.
+5. `.github/workflows/build.yml` -> replace the file at this EXACT path.
+   Do not put it at `/build.yml` in the repository root.
+6. `scripts/repair_app_boot.py` -> add inside ROOT `scripts/`.
+7. `scripts/prepare_web_bundle.py` -> add inside ROOT `scripts/`.
+8. `scripts/verify_web_bundle.py` -> add inside ROOT `scripts/`.
+9. `V26-CHANGELOG.md`, `UPLOAD-STEPS.txt`, `REPAIR-DETAIL.md` are documentation files.
+   They can remain in the root.
+
+ANDROID UPLOAD
+1. Download this ZIP and extract it using the phone's Files app.
+2. Open `https://github.com/Vikas915577/Tracker`.
+3. For each path above, upload/replace the file at the exact same repository path.
+   Create the `scripts` folder if it does not already exist.
+4. Commit all changes to the `main` branch.
+5. Open Settings -> Pages -> Build and deployment -> Source.
+6. Select `GitHub Actions`.
+7. Open Actions and check the latest `Winter Arc V26 Build and Deploy` run.
+8. Confirm `prepare-and-upload-pages`, `deploy-pages`, and `build-apk` are green.
+9. Then open `https://vikas915577.github.io/Tracker/`.
+
+WHAT THIS PATCH DOES
+- Declares a shared `cloudSync` binding before V19 captures it.
+- V24's real Supabase sync implementation still replaces that binding later.
+- Marks V26 as the app version.
+- Adds a boot-success marker after the V20 UI renders.
+- Shows a useful diagnostic if the app fails to boot instead of a blank screen.
+- Copies the root website source into `assets/webcore` before Pages deploys.
+- Runs JavaScript syntax checks and verifies the exact Pages artifact.
+- Includes ArcPilot, its stylesheet, and V26 service worker.
+- The workflow attempts to save the root app/index hotfix back to `main` using GITHUB_TOKEN.
+  It does not force-push. If repository settings block this, it still deploys the
+  already-patched and validated Pages artifact and reports the warning.
+
+DATA SAFETY
+- Does not delete existing habit entries, XP, streaks, freeze history, PIN or profile.
+- Keeps the existing `progress_tracker_v17` localStorage key.
+- ArcPilot preferences remain under `winter_arc_arcpilot_v1`.
+- Does not modify Supabase SQL, tables, public key, creator images or app icons.
+- Does not change Android WebView from GitHub Pages to localhost, because that would
+  change the localStorage origin and could make existing progress appear missing.
+- Do NOT clear Chrome site storage/cookies as a cache fix. Those can contain saved progress.
+  The V26 service worker is designed to activate and remove old `winter-arc-*` caches.
+
+IMPORTANT
+This patch does not include a replacement `app.js`: the script safely repairs the `app.js`
+already in your repo, preserving all your existing tracker functions. It also never deletes
+files from `assets/webcore`; it copies the canonical root files there.

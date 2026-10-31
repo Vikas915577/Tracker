@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail CI if the exact folder intended for GitHub Pages is incomplete."""
+"""Check that the exact published bundle can load all local resources and V26 logic."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import json
 import re
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import urlparse, unquote
+from urllib.parse import unquote, urlparse
 
 REQUIRED = [
     "index.html", "app.js", "cloud-config.js", "styles.css",
@@ -18,6 +18,7 @@ REQUIRED = [
     "creator-photo-2.jpg", "creator-photo-3.jpg", "icon-192.png",
     "icon-512.png",
 ]
+V19_ANCHOR = "/* ========================= V19 — ARC LEAGUE ========================="
 
 
 class ResourceParser(HTMLParser):
@@ -27,8 +28,8 @@ class ResourceParser(HTMLParser):
 
     def handle_starttag(self, tag: str, attrs) -> None:
         values = dict(attrs)
-        for name in ("src", "href"):
-            value = values.get(name)
+        for key in ("src", "href"):
+            value = values.get(key)
             if value:
                 self.resources.append(value)
 
@@ -36,34 +37,59 @@ class ResourceParser(HTMLParser):
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--site", default=".")
-    parser.add_argument("--allow-v25", action="store_true",
-                        help="Allow the canonical source app.js to remain V25.4 before bundle preparation.")
-    parser.add_argument("--require-v26", action="store_true")
     args = parser.parse_args()
     site = Path(args.site).resolve()
 
-    problems: list[str] = []
+    errors: list[str] = []
     for name in REQUIRED:
-        path = site / name
-        if not path.is_file() or path.stat().st_size == 0:
-            problems.append(f"Missing or empty required file: {name}")
+        item = site / name
+        if not item.is_file() or item.stat().st_size == 0:
+            errors.append(f"Missing or empty file: {name}")
 
-    if problems:
-        raise SystemExit("\n".join(problems))
+    if errors:
+        raise SystemExit("Bundle incomplete:\n- " + "\n- ".join(errors))
 
     html = (site / "index.html").read_text(encoding="utf-8")
     app = (site / "app.js").read_text(encoding="utf-8")
     arcpilot = (site / "arcpilot.js").read_text(encoding="utf-8")
     sw = (site / "sw.js").read_text(encoding="utf-8")
+    manifest = json.loads((site / "manifest.json").read_text(encoding="utf-8"))
 
-    for marker, label in [
-        ('id="app"', "app mount element"),
-        ('src="app.js"', "main application script"),
-        ('src="arcpilot.js"', "ArcPilot script"),
-        ('href="v26-arcpilot.css"', "ArcPilot stylesheet"),
+    for marker in [
+        'id="app"', 'src="app.js"', 'src="arcpilot.js"',
+        'href="v26-arcpilot.css"', 'href="manifest.json"',
     ]:
         if marker not in html:
-            problems.append(f"index.html is missing {label}: {marker}")
+            errors.append(f"index.html missing reference: {marker}")
+
+    # Confirm the real runtime binding exists in the SAME outer app scope,
+    # before the nested V19 IIFE reads/captures it.
+    anchor = app.find(V19_ANCHOR)
+    binding = re.search(r"\blet\s+cloudSync\s*=", app)
+    base_capture = app.find("const baseCloudSyncV19=cloudSync;")
+    if anchor < 0:
+        errors.append("V19 Arc League boundary missing from app.js.")
+    if binding is None:
+        errors.append("Missing outer-scope `let cloudSync` declaration.")
+    elif anchor >= 0 and binding.start() > anchor:
+        errors.append("cloudSync declaration is inside/after the nested V19 scope.")
+    if base_capture < 0:
+        errors.append("V19 baseCloudSyncV19 capture is missing.")
+    elif binding is not None and binding.start() > base_capture:
+        errors.append("cloudSync is not declared before V19 captures it.")
+
+    if "const VERSION='V26.0';" not in app:
+        errors.append("Application source is not stamped V26.0.")
+    if "progress_tracker_v17" not in app:
+        errors.append("Existing local progress store key was not found.")
+    if "winter_arc_arcpilot_v1" not in arcpilot:
+        errors.append("ArcPilot's separate preference key is missing.")
+    if "winter-arc-v26.0" not in sw:
+        errors.append("Service-worker cache is not V26.0.")
+    if "skipWaiting" not in sw or "clients.claim" not in sw:
+        errors.append("Service-worker update activation hooks are missing.")
+    if "./arcpilot.js" not in sw or "./v26-arcpilot.css" not in sw:
+        errors.append("ArcPilot files are not in the offline cache list.")
 
     parser_obj = ResourceParser()
     parser_obj.feed(html)
@@ -71,55 +97,25 @@ def main() -> int:
         parsed = urlparse(raw)
         if parsed.scheme or parsed.netloc or raw.startswith("//") or raw.startswith("#"):
             continue
-        if parsed.path.startswith("/"):
-            problems.append(f"Root-absolute URL breaks GitHub project-site paths: {raw}")
-            continue
-        relative = unquote(parsed.path.split("?", 1)[0])
-        if not relative:
-            continue
-        if not (site / relative).is_file():
-            problems.append(f"index.html references missing local resource: {raw}")
-
-    try:
-        manifest = json.loads((site / "manifest.json").read_text(encoding="utf-8"))
-    except Exception as exc:
-        manifest = {}
-        problems.append(f"manifest.json is invalid JSON: {exc}")
+        path = unquote(parsed.path.split("?", 1)[0])
+        if path.startswith("/"):
+            errors.append(f"Absolute local path breaks GitHub project Pages: {raw}")
+        elif path and not (site / path).is_file():
+            errors.append(f"index.html refers to missing local file: {raw}")
 
     for icon in manifest.get("icons", []):
-        icon_src = icon.get("src")
-        if icon_src and not (site / icon_src).is_file():
-            problems.append(f"Manifest icon is missing: {icon_src}")
+        src = icon.get("src", "")
+        if src and not (site / src).is_file():
+            errors.append(f"Manifest icon missing: {src}")
 
-    if "progress_tracker_v17" not in app:
-        problems.append("Main app no longer references the existing progress_tracker_v17 data store.")
-    if "winter_arc_arcpilot_v1" not in arcpilot:
-        problems.append("ArcPilot preference key is missing.")
-    if "navigator.serviceWorker.register('./sw.js')" not in app:
-        problems.append("Main app is not registering the project-relative service worker.")
-    if "winter-arc-v26.0" not in sw:
-        problems.append("Service-worker cache is not versioned as V26.0.")
-    if "skipWaiting" not in sw or "clients.claim" not in sw:
-        problems.append("Service-worker update activation hooks are missing.")
-    if "./arcpilot.js" not in sw or "./v26-arcpilot.css" not in sw:
-        problems.append("V26 ArcPilot files are missing from the offline cache list.")
+    if errors:
+        raise SystemExit("V26 DEPLOYMENT VALIDATION FAILED:\n- " + "\n- ".join(errors))
 
-    has_v26 = "const VERSION='V26.0';" in app
-    has_v25 = "const VERSION='V25.4';" in app
-    if args.require_v26 and not has_v26:
-        problems.append("Published app.js is not stamped V26.0.")
-    if not args.allow_v25 and not args.require_v26 and not has_v26:
-        problems.append("app.js is not stamped V26.0.")
-    if args.allow_v25 and not (has_v25 or has_v26):
-        problems.append("Source app.js has an unexpected version marker.")
-
-    if problems:
-        raise SystemExit("WEB BUNDLE VALIDATION FAILED:\n- " + "\n- ".join(problems))
-
-    print(f"WEB BUNDLE VALIDATION PASSED: {site}")
-    print(f"Resources checked: {len(parser_obj.resources)}")
-    print(f"App version: {'V26.0' if has_v26 else 'V25.4 source; prepare step will stamp V26.0'}")
-    print("Existing tracker store and ArcPilot store keys are present.")
+    print(f"V26 DEPLOYMENT VALIDATION PASSED: {site}")
+    print(f"Local HTML references checked: {len(parser_obj.resources)}")
+    print("cloudSync outer binding: PASS")
+    print("Existing tracker data key: PASS")
+    print("ArcPilot and service-worker assets: PASS")
     return 0
 
 

@@ -1,16 +1,22 @@
-# Winter Arc Tracker V26.0 — Patch Notes
+# Winter Arc Tracker V26.0 — Combined Repair
 
 ## ArcPilot
-- Adds local-only habit trend signals based on the latest 7 days versus the 7 days before them.
-- Adds a weekly what-if simulator using the observed 14-calendar-day completion rate.
-- Adds a simple rescue suggestion from the habit's saved small-win/action text.
-- Keeps frozen days out of the calculation.
-- Does not call an AI API, upload check-in history, or edit habits automatically.
-- Saves only ArcPilot's selected habit and weekly target under `winter_arc_arcpilot_v1`.
+- Personal habit pattern summaries from recent check-ins.
+- Weekly what-if estimate with sample-size guard.
+- Simple recovery suggestion.
+- Local-only preferences; no external AI API.
 
-## Stability fixes in this patch
-- Aligns root and `assets/webcore` service-worker cache version to V26.0.
-- Includes ArcPilot files in the PWA offline cache.
-- Changes the Android WebView host from the remote GitHub Pages URL to the bundled local page at `http://localhost:8080/webcore/index.html`.
-- Adds CI validation for JavaScript syntax and root/webcore ArcPilot, CSS and service-worker parity.
-- Keeps the existing tracker data key (`progress_tracker_v17`) unchanged.
+## White-screen and deployment repairs
+- Add the missing shared `cloudSync` binding before V19 uses it.
+- Keep V24's real Supabase sync implementation intact.
+- Add a boot-success marker and a real failure screen.
+- Ensure the diagnostic does not falsely trigger after successful rendering.
+- Sync canonical root files to the Pages deployment folder.
+- Validate JavaScript, HTML resources, manifest icons and required V26 files before deploy.
+- Align V26 service-worker assets and offline cache entries.
+
+## Data preservation
+- Keep `progress_tracker_v17`.
+- Keep all existing habits and their completion history.
+- No changes to database schema or Supabase project configuration.
+- Do not clear Chrome site storage to resolve caching issues.
