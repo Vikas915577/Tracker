@@ -1,0 +1,118 @@
+COPY ALL TEXT BELOW INTO THE EXISTING FILE:
+Vikas915577/Tracker/.github/workflows/build.yml
+
+name: Winter Arc V26 Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Prepare Flutter platforms
+        run: bash ./tool/prepare_platforms.sh
+
+      - name: Remove default Flutter sample test
+        run: rm -f test/widget_test.dart
+
+      - name: Get packages
+        run: flutter pub get
+
+      - name: Fix flutter_inappwebview Android ProGuard config for AGP 9+
+        shell: bash
+        run: |
+          set -euo pipefail
+          matches=$(find "$HOME/.pub-cache" -type f -path '*/flutter_inappwebview_android-*/android/build.gradle' 2>/dev/null || true)
+          if [ -z "$matches" ]; then
+            echo "flutter_inappwebview_android build.gradle not found"
+            exit 1
+          fi
+          while IFS= read -r f; do
+            echo "Patching $f"
+            sed -i "s/proguard-android\.txt/proguard-android-optimize.txt/g" "$f"
+          done <<< "$matches"
+
+      - name: Analyze Flutter project
+        run: flutter analyze
+
+      - name: Build Android debug APK
+        run: flutter build apk --debug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: winter-arc-v26-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+
+  deploy-pages:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # The repository's canonical web app lives at the root. Pages deploys
+      # assets/webcore, so always synchronize the exact same release there.
+      - name: Sync canonical V26 website into GitHub Pages bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets/webcore
+          for file in index.html app.js cloud-config.js styles.css v25-overrides.css v26-arcpilot.css arcpilot.js sw.js manifest.json; do
+            test -s "$file" || { echo "Missing required root asset: $file"; exit 1; }
+            cp "$file" "assets/webcore/$file"
+          done
+
+      - name: Validate the exact website that will be deployed
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in index.html app.js cloud-config.js styles.css v25-overrides.css v26-arcpilot.css arcpilot.js sw.js manifest.json; do
+            test -s "assets/webcore/$file" || { echo "Missing Pages asset: $file"; exit 1; }
+          done
+          node --check assets/webcore/app.js
+          node --check assets/webcore/arcpilot.js
+          node --check assets/webcore/sw.js
+          cmp -s app.js assets/webcore/app.js
+          cmp -s index.html assets/webcore/index.html
+          cmp -s arcpilot.js assets/webcore/arcpilot.js
+          cmp -s v26-arcpilot.css assets/webcore/v26-arcpilot.css
+          cmp -s sw.js assets/webcore/sw.js
+          grep -q 'arcpilot.js' assets/webcore/index.html
+          grep -q 'v26-arcpilot.css' assets/webcore/index.html
+          grep -q 'winter-arc-v26.0' assets/webcore/sw.js
+          echo "Pages bundle verified: root and deployed JavaScript/CSS/service worker are in sync."
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Winter Arc web core
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: assets/webcore
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
