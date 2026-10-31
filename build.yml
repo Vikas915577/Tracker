@@ -1,44 +1,122 @@
-name: Winter Arc Android Build
+name: Winter Arc V26 Build and Deploy
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
-  build-apk:
+  validate-web:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Validate JavaScript and PWA bundles
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s index.html
+          test -s app.js
+          test -s arcpilot.js
+          test -s styles.css
+          test -s v25-overrides.css
+          test -s v26-arcpilot.css
+          test -s sw.js
+          test -s assets/webcore/index.html
+          test -s assets/webcore/app.js
+          test -s assets/webcore/arcpilot.js
+          test -s assets/webcore/v26-arcpilot.css
+          test -s assets/webcore/sw.js
+          node --check app.js
+          node --check arcpilot.js
+          node --check sw.js
+          node --check assets/webcore/app.js
+          node --check assets/webcore/arcpilot.js
+          node --check assets/webcore/sw.js
+          cmp -s arcpilot.js assets/webcore/arcpilot.js
+          cmp -s v26-arcpilot.css assets/webcore/v26-arcpilot.css
+          cmp -s sw.js assets/webcore/sw.js
+          grep -q 'arcpilot.js' index.html
+          grep -q 'arcpilot.js' assets/webcore/index.html
+          grep -q 'v26-arcpilot.css' assets/webcore/index.html
+
+  build-apk:
+    needs: validate-web
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
+
       - name: Prepare Flutter platforms
         run: bash ./tool/prepare_platforms.sh
+
+      - name: Remove default Flutter sample test
+        run: rm -f test/widget_test.dart
+
       - name: Get packages
         run: flutter pub get
-      - name: Analyze
+
+      - name: Fix flutter_inappwebview Android ProGuard config for AGP 9+
+        shell: bash
+        run: |
+          set -euo pipefail
+          matches=$(find "$HOME/.pub-cache" -type f -path '*/flutter_inappwebview_android-*/android/build.gradle' 2>/dev/null || true)
+          if [ -z "$matches" ]; then
+            echo "flutter_inappwebview_android build.gradle not found"
+            exit 1
+          fi
+          while IFS= read -r f; do
+            echo "Patching $f"
+            sed -i "s/proguard-android\.txt/proguard-android-optimize.txt/g" "$f"
+          done <<< "$matches"
+
+      - name: Analyze Flutter project
         run: flutter analyze
-      - name: Build debug APK
+
+      - name: Build Android debug APK
         run: flutter build apk --debug
-      - name: Upload APK
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: winter-arc-v25-debug-apk
+          name: winter-arc-v26-debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
 
-  pages-artifact:
+  deploy-pages:
+    needs: validate-web
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Upload Web Core
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Winter Arc web core
         uses: actions/upload-pages-artifact@v3
         with:
           path: assets/webcore
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#3da35d">
-<meta name="description" content="Winter Arc Tracker V25.4 — mobile-first habit tracker preserving the complete feature set.">
+<meta name="description" content="Winter Arc Tracker V26.0 — mobile-first habit tracker with private ArcPilot habit insights.">
 <meta name="application-name" content="Winter Arc Tracker">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Winter Arc Tracker">
@@ -12,18 +12,17 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>Winter Arc Tracker V25.4</title>
+<title>Winter Arc Tracker V26.0</title>
 <link rel="stylesheet" href="styles.css">
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="v25-overrides.css">
+<link rel="stylesheet" href="v26-arcpilot.css">
 </head>
 <body>
 <div id="app" aria-live="polite"></div>
 <noscript>This website needs JavaScript to run. Please enable JavaScript in your browser.</noscript>
 <script>
-/* Preserve the existing creator photos if a fresh repository is missing the image files.
-   The deployment workflow also copies these exact assets into the published website. */
 (function(){
   const assetNames=new Set(['creator-profile.jpg','creator-photo-1.jpg','creator-photo-2.jpg','creator-photo-3.jpg','icon-192.png','icon-512.png']);
   const original='https://raw.githubusercontent.com/Vikas915577/Tracker/main/';
@@ -41,5 +40,6 @@
 })();
 </script>
 <script src="app.js"></script>
+<script src="arcpilot.js"></script>
 </body>
 </html>

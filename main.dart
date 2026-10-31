@@ -3,16 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
-const String appVersion = 'V25.4';
+const String appVersion = 'V26.0';
 const String localWebRoot = 'assets';
+const int localWebPort = 8080;
 const String localWebEntry = 'webcore/index.html';
-final InAppLocalhostServer _localhostServer = InAppLocalhostServer(documentRoot: localWebRoot);
+const String localWebUrl = 'http://localhost:8080/webcore/index.html';
+
+final InAppLocalhostServer _localhostServer =
+    InAppLocalhostServer(port: localWebPort, documentRoot: localWebRoot);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // No Node/npm is required. Serve bundled web assets through localhost so
-  // relative CSS/JS/image paths work reliably inside the WebView.
   if (!kIsWeb) {
     await _localhostServer.start();
   }
@@ -75,31 +76,35 @@ class _WinterArcHostState extends State<WinterArcHost> {
       );
 
   Future<void> _load() async {
+    if (!mounted) return;
     setState(() {
       _failed = false;
       _loading = true;
       _progress = 0;
       _error = '';
     });
+
     try {
-      if (kIsWeb) {
-        await _controller?.loadUrl(urlRequest: URLRequest(url: WebUri('./assets/webcore/index.html')));
-      } else {
-        await _controller?.loadUrl(urlRequest: URLRequest(url: WebUri('http://localhost:8080/$localWebEntry')));
+      if (!_localhostServer.isRunning()) {
+        await _localhostServer.start();
       }
-    } catch (e) {
+      await _controller?.loadUrl(
+        urlRequest: URLRequest(url: WebUri(localWebUrl)),
+      );
+    } catch (error) {
+      if (!mounted) return;
       setState(() {
         _failed = true;
         _loading = false;
-        _error = '$e';
+        _error = '$error';
       });
     }
   }
 
   Future<bool> _handleBack() async {
-    final c = _controller;
-    if (c != null && await c.canGoBack()) {
-      await c.goBack();
+    final controller = _controller;
+    if (controller != null && await controller.canGoBack()) {
+      await controller.goBack();
       return false;
     }
     return true;
@@ -153,7 +158,6 @@ class _WinterArcHostState extends State<WinterArcHost> {
                   });
                 },
                 onReceivedError: (controller, request, error) {
-                  // Don't replace the app for recoverable subresource failures.
                   if (request.isForMainFrame ?? true) {
                     setState(() {
                       _failed = true;
@@ -171,7 +175,7 @@ class _WinterArcHostState extends State<WinterArcHost> {
               if (_loading)
                 IgnorePointer(
                   child: ColoredBox(
-                    color: Color(0xFFF5F3ED),
+                    color: const Color(0xFFF5F3ED),
                     child: Center(
                       child: SizedBox(
                         width: 260,
@@ -188,7 +192,9 @@ class _WinterArcHostState extends State<WinterArcHost> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            LinearProgressIndicator(value: _progress == 0 ? null : _progress),
+                            LinearProgressIndicator(
+                              value: _progress == 0 ? null : _progress,
+                            ),
                             const SizedBox(height: 10),
                             Text(
                               _progress == 0
@@ -216,12 +222,15 @@ class _WinterArcHostState extends State<WinterArcHost> {
                           const Text(
                             'Winter Arc could not open',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             _error.isEmpty
-                                ? 'The local app shell is unavailable.'
+                                ? 'The bundled web app could not be loaded.'
                                 : _error,
                             textAlign: TextAlign.center,
                             style: const TextStyle(fontSize: 13),
@@ -234,10 +243,12 @@ class _WinterArcHostState extends State<WinterArcHost> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            '$appVersion · No npm required',
+                            '$appVersion · Offline web bundle',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                           ),
                         ],

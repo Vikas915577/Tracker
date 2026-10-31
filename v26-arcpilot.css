@@ -1,0 +1,39 @@
+/* V26 ArcPilot — matches the existing Winter Arc light/dark theme. */
+.v26-arcpilot{display:grid;gap:12px;padding-bottom:24px}
+.v26-arcpilot .v24-detail-head{display:grid;grid-template-columns:1fr;gap:8px}
+.v26-arcpilot .v24-detail-head h1{margin:2px 0;font-size:27px;line-height:1.12}
+.v26-pilot-intro b{font-size:16px;letter-spacing:-.02em}
+.v26-pilot-intro p{margin:7px 0;color:var(--muted);font-size:13px;line-height:1.5}
+.v26-pilot-intro span{display:block;font-size:11px;font-weight:800;color:var(--green2);margin-top:8px}
+.v26-pilot-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.v26-pilot-summary>div{min-width:0;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 8px}
+.v26-pilot-summary b{display:block;font-size:21px;line-height:1.15}
+.v26-pilot-summary span{display:block;color:var(--muted);font-size:10px;line-height:1.3;margin-top:4px}
+.v26-pilot-list{display:grid;gap:7px;margin-top:10px}
+.v26-pilot-row{display:flex;justify-content:space-between;align-items:center;gap:9px;padding:10px;border:1px solid var(--line);border-radius:13px;background:var(--soft2)}
+.v26-pilot-row-main{display:grid;gap:4px;min-width:0}
+.v26-pilot-row-main b{font-size:13px;overflow-wrap:anywhere}
+.v26-pilot-row-main small{color:var(--muted);font-size:10px;line-height:1.35}
+.v26-pilot-status{flex:none;padding:6px 8px;border-radius:99px;font-size:10px;font-weight:900;background:var(--soft);color:var(--muted)}
+.v26-pilot-status.good{background:#e6f5e9;color:#256e3e}
+.v26-pilot-status.watch{background:#fff2d8;color:#876018}
+.v26-pilot-status.risk{background:#fbe8e8;color:#a33d3d}
+.dark .v26-pilot-status.good{background:#1f3a27;color:#9be3aa}
+.dark .v26-pilot-status.watch{background:#3b3020;color:#f4d28c}
+.dark .v26-pilot-status.risk{background:#402525;color:#ffaaaa}
+.v26-pilot-controls{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:11px}
+.v26-pilot-controls label{display:grid;gap:6px;color:var(--muted);font-size:11px;font-weight:850}
+.v26-pilot-controls select{width:100%;min-width:0;min-height:46px;padding:9px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font-size:12px}
+.v26-pilot-result{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.v26-pilot-result>div{padding:12px;border-radius:14px;background:var(--soft);border:1px solid var(--line)}
+.v26-pilot-result span{display:block;color:var(--muted);font-size:10px;line-height:1.35}
+.v26-pilot-result b{display:block;margin-top:5px;font-size:23px;line-height:1.15}
+.v26-pilot-foot{margin:9px 0 0;color:var(--muted);font-size:11px;line-height:1.45}
+.v26-pilot-rescue{padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--soft2);display:grid;gap:6px;margin-top:9px}
+.v26-pilot-rescue b{font-size:14px}
+.v26-pilot-rescue p{margin:0;font-size:13px;line-height:1.45}
+.v26-pilot-rescue small{color:var(--muted);font-size:10px;line-height:1.4}
+.v26-pilot-note{padding:12px;border:1px dashed var(--line);border-radius:14px;background:var(--soft2);color:var(--muted);font-size:11px;line-height:1.5}
+.v26-pilot-note b{color:var(--ink)}
+.v26-pilot-launch{width:100%;text-align:left}
+@media(max-width:420px){.v26-pilot-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.v26-pilot-controls{grid-template-columns:1fr}.v26-pilot-row{align-items:flex-start}}
