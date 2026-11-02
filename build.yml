@@ -1,40 +1,54 @@
-name: Winter Arc V26 Build and Deploy
+name: Winter Arc Phase 2 Stability Build
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
-  group: winter-arc-v26-pages
+  group: winter-arc-phase2-pages
   cancel-in-progress: true
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
 
 jobs:
   prepare-and-upload-pages:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pages: write
-      id-token: write
     steps:
-      - name: Checkout repository
+      - name: Checkout current main source
         uses: actions/checkout@v4
         with:
           persist-credentials: true
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Set up Python and Node
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Repair cloudSync binding and boot guidance
-        run: python3 scripts/repair_app_boot.py app.js --index index.html
+      - name: Create safety backup branch before changing code
+        shell: bash
+        run: |
+          set -euo pipefail
+          BACKUP_BRANCH="phase2-backup-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          git push origin "HEAD:refs/heads/${BACKUP_BRANCH}"
+          echo "Created safety branch: ${BACKUP_BRANCH}"
 
-      - name: Build one consistent Pages bundle from the root source
-        run: python3 scripts/prepare_web_bundle.py --source . --target assets/webcore
+      - name: Patch startup and habit-date issues (local frontend only)
+        run: |
+          set -euo pipefail
+          python3 phase2_stability_patch.py --repo .
+          python3 repair_app_boot.py app.js --index index.html
 
-      - name: Check JavaScript syntax
+      - name: Prepare one canonical GitHub Pages bundle
+        run: python3 prepare_web_bundle.py --source . --target assets/webcore
+
+      - name: JavaScript syntax checks
         shell: bash
         run: |
           set -euo pipefail
@@ -45,31 +59,34 @@ jobs:
           node --check assets/webcore/arcpilot.js
           node --check assets/webcore/sw.js
 
-      - name: Validate the exact website artifact
-        run: python3 scripts/verify_web_bundle.py --site assets/webcore
+      - name: Verify tracker data, UI assets and exact published bundle
+        run: |
+          set -euo pipefail
+          python3 phase2_stability_test.py --repo . --site assets/webcore
+          python3 verify_web_bundle.py --site assets/webcore
 
-      - name: Persist the source hotfix when repository token permits
+      - name: Commit repaired source and synchronized webcore
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app.js index.html
+          git add app.js index.html sw.js lib/main.dart pubspec.yaml assets/webcore
           if git diff --cached --quiet; then
-            echo "Source already contains the V26 cloudSync fix."
+            echo "No source changes were needed."
           else
-            git commit -m "Fix V26 cloudSync startup binding [skip ci]"
+            git commit -m "Stabilize Winter Arc frontend and sync V26 webcore [skip ci]"
             if git push origin HEAD:main; then
-              echo "V26 source fix saved to main."
+              echo "Repaired source and webcore committed to main."
             else
-              echo "::warning::Source commit could not be pushed by GITHUB_TOKEN. The validated Pages artifact is still prepared for this run."
+              echo "::warning::Main-branch source push was denied. This run will still deploy the validated artifact; the backup branch exists."
             fi
           fi
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload the verified website
+      - name: Upload the exact verified Pages directory
         uses: actions/upload-pages-artifact@v4
         with:
           path: assets/webcore
@@ -78,14 +95,13 @@ jobs:
     needs: prepare-and-upload-pages
     runs-on: ubuntu-latest
     permissions:
-      contents: read
       pages: write
       id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy the verified V26 artifact
+      - name: Deploy verified Winter Arc frontend
         id: deployment
         uses: actions/deploy-pages@v4
 
@@ -95,19 +111,25 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Checkout repository
+      - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Repair and prepare bundled V26 web assets
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prepare and check Android web assets
         shell: bash
         run: |
           set -euo pipefail
-          python3 scripts/repair_app_boot.py app.js --index index.html
-          python3 scripts/prepare_web_bundle.py --source . --target assets/webcore
+          python3 phase2_stability_patch.py --repo .
+          python3 repair_app_boot.py app.js --index index.html
+          python3 prepare_web_bundle.py --source . --target assets/webcore
+          python3 phase2_stability_test.py --repo . --site assets/webcore
+          python3 verify_web_bundle.py --site assets/webcore
           node --check assets/webcore/app.js
-          node --check assets/webcore/arcpilot.js
           node --check assets/webcore/sw.js
-          python3 scripts/verify_web_bundle.py --site assets/webcore
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -115,28 +137,14 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Prepare Flutter platforms
+      - name: Prepare Flutter platform folders
         run: bash ./tool/prepare_platforms.sh
 
       - name: Remove default Flutter sample test
         run: rm -f test/widget_test.dart
 
-      - name: Get packages
+      - name: Get Flutter packages
         run: flutter pub get
-
-      - name: Fix flutter_inappwebview Android ProGuard config for AGP 9+
-        shell: bash
-        run: |
-          set -euo pipefail
-          matches=$(find "$HOME/.pub-cache" -type f -path '*/flutter_inappwebview_android-*/android/build.gradle' 2>/dev/null || true)
-          if [ -z "$matches" ]; then
-            echo "flutter_inappwebview_android build.gradle not found"
-            exit 1
-          fi
-          while IFS= read -r f; do
-            echo "Patching $f"
-            sed -i "s/proguard-android\.txt/proguard-android-optimize.txt/g" "$f"
-          done <<< "$matches"
 
       - name: Analyze Flutter project
         run: flutter analyze
@@ -144,9 +152,9 @@ jobs:
       - name: Build Android debug APK
         run: flutter build apk --debug
 
-      - name: Upload APK artifact
+      - name: Upload Android test APK
         uses: actions/upload-artifact@v4
         with:
-          name: winter-arc-v26-debug-apk
+          name: winter-arc-v26-phase2-debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
