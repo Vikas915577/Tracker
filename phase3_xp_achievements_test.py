@@ -12,7 +12,6 @@ REQUIRED=(
     "function v26XpCard()",
     "function achievementsPage()",
     "function insightsPage()",
-    "${v24RecoveryCard()}${v26XpCard()}<section class=\"v24-statbar\">",
     "XP is calculated from the existing check and daily-bonus ledger",
 )
 
@@ -34,6 +33,7 @@ def main() -> int:
     check("Phase 2 cloudSync binding retained", "let cloudSync = async function" in app and app.find("let cloudSync = async function") < app.find("const baseCloudSyncV19=cloudSync;"), failures)
     check("Phase 3 marker occurs once", app.count(MARKER)==1, failures)
     for item in REQUIRED: check("feature: "+item[:72], item in app, failures)
+    check("XP card inserted on Today", any(x in app for x in ('${v24RecoveryCard()}${v26XpCard()}<section class="v24-statbar">', '${v24RecoveryCard()}${v26XpCard()}${v26PetCard()}<section class="v24-statbar">')), failures)
     check("21 achievement milestone definitions", app.count("group:'")>=21, failures)
     block=app[app.index("PHASE 3 — XP, LEVELS & ACHIEVEMENTS"):app.index("function v20More(){",app.index("PHASE 3 — XP, LEVELS & ACHIEVEMENTS"))]
     check("Phase 3 remains local-only", all(x.lower() not in block.lower() for x in ("fetch(","supabase","CLOUD_CFG","localStorage.setItem","localStorage.removeItem")), failures)

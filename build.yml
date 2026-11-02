@@ -1,16 +1,19 @@
-name: Winter Arc V26 Phase 2-4 Release
+name: Winter Arc V26 Safe Release — Phases 2 to 5
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
 
 concurrency:
-  group: winter-arc-v26-pages
+  group: winter-arc-v26-safe-release
   cancel-in-progress: true
 
+# No contents:write and no branch creation are needed. Source backup is uploaded
+# as an artifact, while Pages receives only the fully validated web bundle.
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -18,14 +21,26 @@ jobs:
   prepare-and-upload-pages:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       pages: write
       id-token: write
     steps:
-      - name: Checkout Tracker repository
+      - name: Checkout Tracker source
         uses: actions/checkout@v4
+
+      - name: Create downloadable pre-build source backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          git archive --format=zip --output="$RUNNER_TEMP/tracker-source-before-v26-build.zip" HEAD
+
+      - name: Upload source backup artifact
+        uses: actions/upload-artifact@v4
         with:
-          persist-credentials: true
+          name: tracker-source-backup-${{ github.run_id }}
+          path: ${{ runner.temp }}/tracker-source-before-v26-build.zip
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Set up Python and Node
         uses: actions/setup-python@v5
@@ -33,7 +48,7 @@ jobs:
           python-version: '3.12'
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '22'
 
       - name: Checkout pinned YaarJam V2 offline source
         uses: actions/checkout@v4
@@ -43,30 +58,43 @@ jobs:
           path: .phase4-source
           fetch-depth: 1
 
-      - name: Create safety backup branch before patching
+      - name: Phase 2 — repair app startup and local data safety
+        run: python3 phase2_stability_patch.py --repo .
+
+      - name: Phase 3 — add XP, levels and achievements
+        run: python3 phase3_xp_achievements_patch.py --repo .
+
+      - name: Phase 4 — add isolated offline arcade
+        run: python3 phase4_local_arcade_patch.py --repo . --source .phase4-source --no-publish
+
+      - name: Prepare bundle for Phase 2–4 baseline QA
+        run: |
+          set -euo pipefail
+          python3 prepare_web_bundle.py --source . --target assets/webcore
+          python3 phase4_local_arcade_patch.py --repo . --source .phase4-source --publish assets/webcore
+
+      - name: Verify Phase 2–4 baseline before Phase 5
         shell: bash
         run: |
           set -euo pipefail
-          BACKUP_BRANCH="phase2-4-backup-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          git push origin "HEAD:refs/heads/${BACKUP_BRANCH}"
-          echo "Created safety branch: ${BACKUP_BRANCH}"
+          python3 phase2_stability_test.py --repo . --site assets/webcore
+          python3 phase3_xp_achievements_test.py --repo . --site assets/webcore
+          python3 phase4_local_arcade_test.py --repo . --site assets/webcore
 
-      - name: Apply frontend stability repair (Phase 2)
-        run: python3 phase2_stability_patch.py --repo .
+      - name: Phase 5 — add local virtual pet and premium companion UI
+        run: python3 phase5_virtual_pet_patch.py --repo .
 
-      - name: Apply XP, levels and achievements (Phase 3)
+      - name: Verify Phase 3 patch remains idempotent after Phase 5
         run: python3 phase3_xp_achievements_patch.py --repo .
 
-      - name: Integrate isolated offline arcade (Phase 4)
-        run: python3 phase4_local_arcade_patch.py --repo . --source .phase4-source --no-publish
+      - name: Rebuild exact Pages bundle after Phase 5
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 prepare_web_bundle.py --source . --target assets/webcore
+          python3 phase4_local_arcade_patch.py --repo . --source .phase4-source --publish assets/webcore
 
-      - name: Prepare canonical GitHub Pages bundle
-        run: python3 prepare_web_bundle.py --source . --target assets/webcore
-
-      - name: Copy arcade into the exact Pages bundle
-        run: python3 phase4_local_arcade_patch.py --repo . --source .phase4-source --publish assets/webcore
-
-      - name: JavaScript syntax checks
+      - name: Final JavaScript syntax checks
         shell: bash
         run: |
           set -euo pipefail
@@ -79,42 +107,35 @@ jobs:
           node --check assets/webcore/arcade/app.js
           node --check assets/webcore/arcade/sw.js
 
-      - name: Verify Phase 2, Phase 3, Phase 4 and published bundle
+      - name: Final Phase 2, 3, 4, 5 and deployment bundle QA
         shell: bash
         run: |
           set -euo pipefail
           python3 phase2_stability_test.py --repo . --site assets/webcore
           python3 phase3_xp_achievements_test.py --repo . --site assets/webcore
           python3 phase4_local_arcade_test.py --repo . --site assets/webcore
+          python3 phase5_virtual_pet_test.py --repo . --site assets/webcore
           python3 verify_web_bundle.py --site assets/webcore
 
-      - name: Commit validated frontend and arcade to main
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .github/workflows/build.yml \
-            phase2_stability_patch.py phase2_stability_test.py \
-            phase3_xp_achievements_patch.py phase3_xp_achievements_test.py \
-            phase4_local_arcade_patch.py phase4_local_arcade_test.py \
-            app.js index.html sw.js lib/main.dart pubspec.yaml \
-            arcade assets/webcore
-          if git diff --cached --quiet; then
-            echo "No source changes were needed."
-          else
-            git commit -m "Repair V26 startup and add offline arcade phases 2-4 [skip ci]"
-            if git push origin HEAD:main; then
-              echo "Validated source and webcore committed to main."
-            else
-              echo "::warning::Main branch source push was denied. The verified Pages artifact can still deploy; the backup branch is preserved."
-            fi
-          fi
+      - name: Upload patched source snapshot for optional manual review
+        uses: actions/upload-artifact@v4
+        with:
+          name: winter-arc-v26-phases-2-5-patched-source-${{ github.run_id }}
+          path: |
+            app.js
+            index.html
+            sw.js
+            arcade/
+            assets/webcore/
+            lib/main.dart
+            pubspec.yaml
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload verified Pages bundle
+      - name: Upload validated Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
           path: assets/webcore
@@ -129,7 +150,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy exact verified bundle
+      - name: Deploy the exact validated bundle
         id: deployment
         uses: actions/deploy-pages@v4
 
@@ -139,16 +160,16 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Checkout Tracker repository
+      - name: Checkout Tracker source
         uses: actions/checkout@v4
-      - name: Set up Python
+      - name: Set up Python and Node
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '22'
+
       - name: Checkout pinned YaarJam V2 offline source
         uses: actions/checkout@v4
         with:
@@ -156,18 +177,22 @@ jobs:
           ref: 8f9f206d12835617c8974d8668a8a56fb060c54b
           path: .phase4-source
           fetch-depth: 1
-      - name: Prepare and validate Android web assets
+
+      - name: Apply and verify Phases 2–5 for Android web runtime
         shell: bash
         run: |
           set -euo pipefail
           python3 phase2_stability_patch.py --repo .
           python3 phase3_xp_achievements_patch.py --repo .
           python3 phase4_local_arcade_patch.py --repo . --source .phase4-source --no-publish
+          python3 phase5_virtual_pet_patch.py --repo .
+          python3 phase3_xp_achievements_patch.py --repo .
           python3 prepare_web_bundle.py --source . --target assets/webcore
           python3 phase4_local_arcade_patch.py --repo . --source .phase4-source --publish assets/webcore
           python3 phase2_stability_test.py --repo . --site assets/webcore
           python3 phase3_xp_achievements_test.py --repo . --site assets/webcore
           python3 phase4_local_arcade_test.py --repo . --site assets/webcore
+          python3 phase5_virtual_pet_test.py --repo . --site assets/webcore
           python3 verify_web_bundle.py --site assets/webcore
           node --check assets/webcore/app.js
           node --check assets/webcore/arcade/app.js
@@ -184,6 +209,19 @@ jobs:
         run: rm -f test/widget_test.dart
       - name: Get Flutter packages
         run: flutter pub get
+      - name: Fix flutter_inappwebview Android ProGuard config for AGP 9+
+        shell: bash
+        run: |
+          set -euo pipefail
+          matches=$(find "$HOME/.pub-cache" -type f -path '*/flutter_inappwebview_android-*/android/build.gradle' 2>/dev/null || true)
+          if [ -z "$matches" ]; then
+            echo "flutter_inappwebview_android build.gradle not found"
+            exit 1
+          fi
+          while IFS= read -r f; do
+            echo "Patching $f"
+            sed -i "s/proguard-android\.txt/proguard-android-optimize.txt/g" "$f"
+          done <<< "$matches"
       - name: Analyze Flutter project
         run: flutter analyze
       - name: Build Android debug APK
@@ -191,6 +229,7 @@ jobs:
       - name: Upload Android test APK
         uses: actions/upload-artifact@v4
         with:
-          name: winter-arc-v26-phase4-debug-apk
+          name: winter-arc-v26-phases-2-5-debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
+          retention-days: 14

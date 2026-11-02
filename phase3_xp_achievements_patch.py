@@ -11,6 +11,7 @@ from pathlib import Path
 PHASE3_MARKER = "  /* ========================= PHASE 3 — XP, LEVELS & ACHIEVEMENTS ========================= */"
 TODAY_ANCHOR = '${v24RecoveryCard()}<section class="v24-statbar">'
 TODAY_REPLACEMENT = '${v24RecoveryCard()}${v26XpCard()}<section class="v24-statbar">'
+TODAY_REPLACEMENT_WITH_PET = '${v24RecoveryCard()}${v26XpCard()}${v26PetCard()}<section class="v24-statbar">'
 MORE_ANCHOR = "  function v20More(){"
 STORE_KEY = "const KEY='progress_tracker_v17';"
 
@@ -158,7 +159,7 @@ def patch_app_text(source: str) -> tuple[str, list[str]]:
     marker_count=source.count(PHASE3_MARKER)
     if marker_count:
         required=("function v26LevelInfo()", "function v26AchievementCatalog()", "function v26XpCard()", "function achievementsPage()", "function insightsPage()")
-        if marker_count != 1 or any(x not in source for x in required) or TODAY_REPLACEMENT not in source:
+        if marker_count != 1 or any(x not in source for x in required) or not any(x in source for x in (TODAY_REPLACEMENT, TODAY_REPLACEMENT_WITH_PET)):
             raise ValueError("A partial Phase 3 block exists; manual review is required.")
         return source, ["Phase 3 already applied (idempotent no-op)"]
 
@@ -233,7 +234,10 @@ ${v24RecoveryCard()}<section class="v24-statbar">
     assert "function achievementsPage()" in fixed and "function insightsPage()" in fixed
     again,second=patch_app_text(fixed)
     assert again==fixed and second==["Phase 3 already applied (idempotent no-op)"]
-    print("PASS: Phase 3 patch self-test (duplicate More renderers, active insertion, local-only, idempotency)")
+    pet_ready=fixed.replace(TODAY_REPLACEMENT,TODAY_REPLACEMENT_WITH_PET,1)
+    pet_again,pet_changes=patch_app_text(pet_ready)
+    assert pet_again==pet_ready and pet_changes==["Phase 3 already applied (idempotent no-op)"]
+    print("PASS: Phase 3 patch self-test (duplicate More renderers, Phase 5-compatible idempotency, local-only)")
 
 
 def main() -> int:
