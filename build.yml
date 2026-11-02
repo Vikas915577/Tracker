@@ -44,6 +44,7 @@ jobs:
           set -euo pipefail
           python3 phase2_stability_patch.py --repo .
           python3 repair_app_boot.py app.js --index index.html
+          python3 phase3_xp_achievements_patch.py --repo .
 
       - name: Prepare one canonical GitHub Pages bundle
         run: python3 prepare_web_bundle.py --source . --target assets/webcore
@@ -63,6 +64,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 phase2_stability_test.py --repo . --site assets/webcore
+          python3 phase3_xp_achievements_test.py --repo . --site assets/webcore
           python3 verify_web_bundle.py --site assets/webcore
 
       - name: Commit repaired source and synchronized webcore
@@ -125,8 +127,10 @@ jobs:
           set -euo pipefail
           python3 phase2_stability_patch.py --repo .
           python3 repair_app_boot.py app.js --index index.html
+          python3 phase3_xp_achievements_patch.py --repo .
           python3 prepare_web_bundle.py --source . --target assets/webcore
           python3 phase2_stability_test.py --repo . --site assets/webcore
+          python3 phase3_xp_achievements_test.py --repo . --site assets/webcore
           python3 verify_web_bundle.py --site assets/webcore
           node --check assets/webcore/app.js
           node --check assets/webcore/sw.js
