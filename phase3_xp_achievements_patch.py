@@ -164,13 +164,15 @@ def patch_app_text(source: str) -> tuple[str, list[str]]:
 
     if source.count(TODAY_ANCHOR) != 1:
         raise ValueError("Expected one V24.1 Today-screen XP insertion point; refusing to modify UI.")
-    if source.count(MORE_ANCHOR) != 1:
-        raise ValueError("Expected one V24.1 More-screen function boundary; refusing to modify UI.")
+    if source.count(MORE_ANCHOR) < 1:
+        raise ValueError("V24.1 More-screen function boundary not found; refusing to modify UI.")
     if "function achievementsPage()" in source or "function insightsPage()" in source:
         raise ValueError("Achievement/insight page already exists; manual merge required.")
 
     source=source.replace(TODAY_ANCHOR,TODAY_REPLACEMENT,1)
-    at=source.index(MORE_ANCHOR)
+    # The source currently has an earlier V20 More renderer and a later V24.1
+    # replacement. Insert before the last (active) renderer, not the legacy one.
+    at=source.rindex(MORE_ANCHOR)
     source=source[:at]+PHASE3_BLOCK+source[at:]
     changes.extend(["XP and level progress card added to Today", "21 derived achievement milestones added", "Achievements and Insights pages implemented"])
 
@@ -184,7 +186,11 @@ def patch_app_text(source: str) -> tuple[str, list[str]]:
         raise ValueError("Today-screen XP card insertion validation failed.")
     if STORE_KEY not in source or "progress_tracker_v16" not in source:
         raise ValueError("Local progress/migration keys must remain unchanged.")
-    block=source[source.index(PHASE3_MARKER):source.index(MORE_ANCHOR)]
+    marker_pos=source.index(PHASE3_MARKER)
+    next_more=source.find(MORE_ANCHOR,marker_pos)
+    if next_more < 0:
+        raise ValueError("Phase 3 block is not placed before the active More renderer.")
+    block=source[marker_pos:next_more]
     for forbidden in ("fetch(", "supabase", "CLOUD_CFG", "localStorage.setItem", "localStorage.removeItem"):
         if forbidden.lower() in block.lower():
             raise ValueError(f"Phase 3 must remain local-only; found {forbidden}.")
@@ -203,14 +209,31 @@ def patch_repo(root: Path) -> dict[str, object]:
 
 
 def self_test() -> None:
-    fixture="""(function(){\n'use strict';\nconst VERSION='V26.0';\nconst KEY='progress_tracker_v17';\nconst OLD_KEYS=['progress_tracker_v16'];\nlet cloudSync = async function (_opts = {}) { return false; };\n/* ========================= V19 — ARC LEAGUE ========================= */\nconst baseCloudSyncV19=cloudSync;\nwindow.__WINTER_ARC_BOOTED = true;\nfunction v20Today(){return `today`; }\n${v24RecoveryCard()}<section class=\"v24-statbar\">\n  function v20More(){ return ''; }\n})();\n"""
+    fixture="""(function(){
+'use strict';
+const VERSION='V26.0';
+const KEY='progress_tracker_v17';
+const OLD_KEYS=['progress_tracker_v16'];
+let cloudSync = async function (_opts = {}) { return false; };
+/* ========================= V19 — ARC LEAGUE ========================= */
+const baseCloudSyncV19=cloudSync;
+window.__WINTER_ARC_BOOTED = true;
+function v20Today(){return `today`; }
+${v24RecoveryCard()}<section class="v24-statbar">
+  function v20More(){ return 'legacy'; }
+  function v20Menu(){ return ''; }
+  function v20More(){ return 'active'; }
+})();
+"""
     fixed,changes=patch_app_text(fixture)
     assert PHASE3_MARKER in fixed
+    assert fixed.rfind(MORE_ANCHOR) > fixed.index(PHASE3_MARKER)
+    assert fixed.count(MORE_ANCHOR) == 2
     assert TODAY_REPLACEMENT in fixed
     assert "function achievementsPage()" in fixed and "function insightsPage()" in fixed
     again,second=patch_app_text(fixed)
     assert again==fixed and second==["Phase 3 already applied (idempotent no-op)"]
-    print("PASS: Phase 3 patch self-test (phase gate, UI insertion, pages, local-only, idempotency)")
+    print("PASS: Phase 3 patch self-test (duplicate More renderers, active insertion, local-only, idempotency)")
 
 
 def main() -> int:
