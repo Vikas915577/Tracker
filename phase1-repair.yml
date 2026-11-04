@@ -1,19 +1,23 @@
-name: Tracker Phase 1 Startup Repair
+name: Tracker V26.1 Repair and Browser Verification
 
 on:
   workflow_dispatch:
 
 permissions:
   contents: write
-  actions: write
+  pages: write
+  id-token: write
 
 concurrency:
-  group: tracker-phase1-startup-repair
+  group: tracker-v261-repair-and-deploy
   cancel-in-progress: false
 
 jobs:
-  repair-and-deploy:
+  repair-test-deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -22,148 +26,333 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Apply guarded startup repair
+      - name: Set up Python and Node
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Create guarded release and browser QA tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p scripts qa
+          cat > scripts/prepare_web_release.py <<'PY'
+          from __future__ import annotations
+          import re
+          import shutil
+          from html.parser import HTMLParser
+          from pathlib import Path
+          from urllib.parse import urlparse
+
+          ROOT = Path(__file__).resolve().parents[1]
+          WEB = ROOT / 'assets' / 'webcore'
+          APP = ROOT / 'app.js'
+          SW = ROOT / 'sw.js'
+          MARKER = 'window.__WINTER_ARC_BOOTED = true;'
+          CACHE_NAME = "winter-arc-v26.1.0"
+
+          def stop(message: str) -> None:
+              raise SystemExit('RELEASE BLOCKED: ' + message)
+
+          if not APP.is_file() or not SW.is_file() or not WEB.is_dir():
+              stop('Expected root app.js, sw.js and assets/webcore/ are required.')
+
+          app = APP.read_text(encoding='utf-8').replace('\r\n', '\n')
+          cloud_anchor = "const CLOUD_CFG=window.WINTER_ARC_CLOUD||{url:'',anonKey:''};"
+          if not re.search(r'(?m)^\s*(?:let|const|var|function)\s+cloudSync\b', app):
+              if app.count(cloud_anchor) != 1:
+                  stop('Could not safely locate the unique CLOUD_CFG declaration to add cloudSync scope.')
+              app = app.replace(
+                  cloud_anchor,
+                  cloud_anchor + "\n// Shared binding: V19 wraps this before the secure V24 implementation is assigned.\nlet cloudSync = async function () { return false; };",
+                  1,
+              )
+
+          # A safe async fallback is declared above. The secure V24 implementation
+          # later in this same file replaces it before any user click can run.
+
+          if MARKER not in app:
+              ending = '  v25RecordOpen();\n  renderV20();\n\n})();\n\n})();\n'
+              if not app.endswith(ending):
+                  stop('App ending differs from the reviewed V25.4 layout; boot marker was not inserted.')
+              app = app[:-len(ending)] + (
+                  '  v25RecordOpen();\n  renderV20();\n\n})();\n\n' + MARKER + '\n\n})();\n'
+              )
+          if app.count(MARKER) != 1 or app.rfind(MARKER) < app.rfind('renderV20();'):
+              stop('Boot success marker is missing, duplicated, or placed before the final render.')
+          if not re.search(r'(?m)^\s*let\s+cloudSync\s*=', app):
+              stop('cloudSync is not declared in the outer application scope.')
+          if 'progress_tracker_v17' not in app:
+              stop('Existing progress storage key is missing; refusing to publish.')
+          APP.write_text(app, encoding='utf-8', newline='\n')
+
+          sw = SW.read_text(encoding='utf-8').replace('\r\n', '\n')
+          cache_re = r"const\s+CACHE\s*=\s*['\"][^'\"]+['\"];"
+          if not re.search(cache_re, sw):
+              stop('Could not identify the root service-worker cache declaration.')
+          sw = re.sub(cache_re, "const CACHE = '" + CACHE_NAME + "';", sw, count=1)
+          if 'v25-overrides.css' not in sw:
+              stop('Root service worker does not include the active override stylesheet.')
+          if "caches.match('./index.html')" in sw and 'request.mode' not in sw:
+              stop('Unsafe service-worker fallback detected.')
+          SW.write_text(sw, encoding='utf-8', newline='\n')
+
+          # Root source is canonical. Preserve extra webcore-only files such as creator-dashboard.html.
+          WEB.mkdir(parents=True, exist_ok=True)
+          required = [
+              'index.html', 'app.js', 'cloud-config.js', 'sw.js', 'manifest.json',
+              'styles.css', 'v25-overrides.css', 'icon-192.png', 'icon-512.png',
+              'creator-profile.jpg', 'creator-photo-1.jpg', 'creator-photo-2.jpg', 'creator-photo-3.jpg',
+          ]
+          for name in required:
+              source = ROOT / name
+              if not source.is_file() or source.stat().st_size == 0:
+                  stop(f'Required canonical root asset is missing or empty: {name}')
+              shutil.copy2(source, WEB / name)
+
+          class ResourceParser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.items = []
+              def handle_starttag(self, tag, attrs):
+                  attrs = dict(attrs)
+                  for key in ('src', 'href'):
+                      value = attrs.get(key)
+                      if value:
+                          self.items.append(value)
+
+          parser = ResourceParser()
+          parser.feed((WEB / 'index.html').read_text(encoding='utf-8'))
+          for raw in parser.items:
+              parsed = urlparse(raw)
+              if parsed.scheme or parsed.netloc or raw.startswith('//') or raw.startswith('#'):
+                  continue
+              path = parsed.path
+              if path.startswith('/'):
+                  stop(f'Root-absolute path breaks GitHub project Pages: {raw}')
+              if path and not (WEB / path).is_file():
+                  stop(f'HTML references a missing deployed asset: {raw}')
+
+          for name in required:
+              if (ROOT / name).read_bytes() != (WEB / name).read_bytes():
+                  stop(f'Root/deployed file mismatch after synchronization: {name}')
+          manifest = (WEB / 'manifest.json').read_text(encoding='utf-8')
+          if 'icon-192.png' not in manifest or 'icon-512.png' not in manifest:
+              stop('PWA manifest icon references are incomplete.')
+          html = (WEB / 'index.html').read_text(encoding='utf-8')
+          if 'src="app.js"' not in html or 'winter-arc-boot-error' not in html:
+              stop('Published HTML is missing app.js or the startup diagnostic.')
+          if "const CACHE = '" + CACHE_NAME + "';" not in (WEB / 'sw.js').read_text(encoding='utf-8'):
+              stop('Published service-worker cache version is stale.')
+
+          print('PASS: cloudSync has an outer-scope binding.')
+          print('PASS: boot marker is after the final render.')
+          print('PASS: root app, HTML, worker, styles and assets are synchronized.')
+          print(f'PASS: {len(parser.items)} local HTML resource references inspected.')
+          print('PASS: existing progress storage key is preserved.')
+          PY
+
+          cat > qa/browser-smoke.cjs <<'JS'
+          'use strict';
+          const assert = require('node:assert/strict');
+          const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
+          const BASE_URL = process.env.TRACKER_BASE_URL || 'http://127.0.0.1:4173/';
+
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            try {
+              const context = await browser.newContext({ serviceWorkers: 'block' });
+              const page = await context.newPage();
+              const pageErrors = [];
+              const localFailures = [];
+              page.on('pageerror', error => pageErrors.push(error.stack || error.message));
+              page.on('response', response => {
+                if (response.url().startsWith(BASE_URL) && response.status() >= 400) {
+                  localFailures.push(`${response.status()} ${response.url()}`);
+                }
+              });
+              await page.route('https://**/*', route => route.abort());
+
+              const response = await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
+              assert(response && response.ok(), 'Homepage did not return HTTP 200.');
+              await page.waitForFunction(() => window.__WINTER_ARC_BOOTED === true, null, { timeout: 20000 });
+              assert.equal(await page.locator('#onName').count(), 1, 'Fresh profile onboarding did not render.');
+
+              await page.locator('#onName').fill('Phase 1 QA');
+              await page.locator('[data-finish-onboarding]').click();
+              await page.waitForFunction(
+                () => document.querySelectorAll('[data-v20-complete]').length > 0,
+                null,
+                { timeout: 10000 }
+              );
+
+              const firstButton = page.locator('[data-v20-complete]').first();
+              const habitId = await firstButton.getAttribute('data-v20-complete');
+              assert(habitId, 'No habit completion control was rendered.');
+              await firstButton.click();
+              await page.waitForFunction(() => {
+                const state = JSON.parse(localStorage.getItem('progress_tracker_v17') || 'null');
+                return state && Array.isArray(state.habits) && Object.values(state.checks || {}).some(Boolean);
+              }, null, { timeout: 7000 });
+
+              const beforeReload = await page.evaluate(() => JSON.parse(localStorage.getItem('progress_tracker_v17')));
+              assert(beforeReload.habits.length > 0, 'Onboarding did not save habits.');
+              const checksBefore = Object.keys(beforeReload.checks || {}).filter(k => beforeReload.checks[k]).length;
+              assert(checksBefore > 0, 'Habit completion was not saved.');
+
+              await page.reload({ waitUntil: 'domcontentloaded' });
+              await page.waitForFunction(() => window.__WINTER_ARC_BOOTED === true, null, { timeout: 20000 });
+              const afterReload = await page.evaluate(() => JSON.parse(localStorage.getItem('progress_tracker_v17') || 'null'));
+              assert(afterReload, 'Progress data disappeared after refresh.');
+              assert.equal(afterReload.habits.length, beforeReload.habits.length, 'Habit count changed after refresh.');
+              const checksAfter = Object.keys(afterReload.checks || {}).filter(k => afterReload.checks[k]).length;
+              assert.equal(checksAfter, checksBefore, 'Completion history changed after refresh.');
+              const checkedButton = page.locator('[data-v20-complete]').first();
+              assert.equal(await checkedButton.getAttribute('data-v20-complete'), habitId, 'Habit order/identity changed after refresh.');
+              assert((await checkedButton.getAttribute('class') || '').includes('done'), 'Completed habit did not remain checked after refresh.');
+
+              const weekButton = page.locator('[data-v20-nav="week"]').first();
+              if (await weekButton.count()) {
+                await weekButton.click();
+                await page.waitForTimeout(150);
+                assert((await page.locator('body').innerText()).trim().length > 20, 'Week navigation rendered an empty page.');
+              }
+
+              assert.deepEqual(pageErrors, [], 'Browser runtime errors occurred.');
+              assert.deepEqual(localFailures, [], 'A local asset failed to load.');
+              console.log('PASS: real Chromium startup, onboarding, habit completion, refresh persistence and Week navigation.');
+            } finally {
+              await browser.close();
+            }
+          })().catch(error => {
+            console.error(error.stack || error);
+            process.exitCode = 1;
+          });
+          JS
+
+      - name: Repair, synchronize and validate the exact Pages bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/prepare_web_release.py
+          node --check app.js
+          node --check assets/webcore/app.js
+          node --check sw.js
+          node --check assets/webcore/sw.js
+          node --check qa/browser-smoke.cjs
+
+      - name: Install Chromium browser test runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/tracker-playwright
+          cd /tmp/tracker-playwright
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund playwright
+          npx playwright install --with-deps chromium
+
+      - name: Run real browser and data-persistence test
+        shell: bash
+        env:
+          PLAYWRIGHT_PACKAGE: /tmp/tracker-playwright/node_modules/playwright
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --directory assets/webcore >/tmp/tracker-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4173/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:4173/ >/dev/null
+          node qa/browser-smoke.cjs
+
+      - name: Add runtime validation to every future Pages deployment
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-
-          root_path = Path('app.js')
-          web_path = Path('assets/webcore/app.js')
-          root = root_path.read_text(encoding='utf-8')
-          web = web_path.read_text(encoding='utf-8')
-          marker = 'window.__WINTER_ARC_BOOTED = true;'
-
-          if marker in web and web.rstrip().endswith('})();'):
-              print('App repair already present.')
-          elif root.startswith(web) and root[len(web):] == '\n})();\n':
-              web_path.write_text(web + marker + '\n\n})();\n', encoding='utf-8', newline='\n')
-              print('Restored the verified missing outer IIFE closure.')
-          else:
-              raise SystemExit('SAFETY STOP: app.js differs beyond the verified missing outer closure. Nothing overwritten.')
-
-          diagnostic = r"""<script>
-          (function () {
-            'use strict';
-            function showBootError(message) {
-              if (window.__WINTER_ARC_BOOTED === true) return;
-              var mount = document.getElementById('app');
-              if (!mount) return;
-              mount.innerHTML = '<main style="max-width:520px;margin:12vh auto;padding:24px;font:14px/1.5 system-ui,sans-serif;color:#222">' +
-                '<div style="font-size:38px">⚠️</div><h1 style="font-size:22px;margin:10px 0">Winter Arc could not start</h1>' +
-                '<p>The tracker script failed to start. Your saved progress has not been intentionally reset.</p>' +
-                '<pre id="winter-arc-boot-error" style="white-space:pre-wrap;overflow-wrap:anywhere;background:#f1f3f1;padding:12px;border-radius:10px;color:#7b2828;font-size:12px"></pre>' +
-                '<button id="winter-arc-reload" style="margin-top:14px;min-height:46px;padding:10px 16px;border:0;border-radius:12px;background:#318b4a;color:white;font-weight:800">Reload website</button>' +
-                '<p style="font-size:12px;color:#68736a;margin-top:14px">Do not clear Chrome site storage or cookies; they may contain your saved progress.</p></main>';
-              var detail = document.getElementById('winter-arc-boot-error');
-              if (detail) detail.textContent = message || 'The app did not finish rendering.';
-              var reload = document.getElementById('winter-arc-reload');
-              if (reload) reload.addEventListener('click', function () { location.reload(); });
-            }
-            window.addEventListener('error', function (event) {
-              if (window.__WINTER_ARC_BOOTED === true) return;
-              var file = String(event.filename || '');
-              var message = String(event.message || '');
-              if (/app\.js/i.test(file) || /SyntaxError|Unexpected end of input/i.test(message)) {
-                setTimeout(function () { showBootError(message || 'The tracker JavaScript failed to execute.'); }, 50);
-              }
-            }, true);
-            window.addEventListener('load', function () {
-              setTimeout(function () {
-                if (window.__WINTER_ARC_BOOTED !== true) showBootError('The tracker did not finish starting within 12 seconds. Check the deployed bundle and service-worker cache.');
-              }, 12000);
-            });
-          })();
-          </script>
-          """
-          index_path = Path('assets/webcore/index.html')
-          index = index_path.read_text(encoding='utf-8')
-          script_tag = '<script src="app.js"></script>'
-          if 'winter-arc-boot-error' not in index:
-              if index.count(script_tag) != 1:
-                  raise SystemExit('SAFETY STOP: expected one app.js script tag in deployed index.html.')
-              index = index.replace(script_tag, diagnostic + '\n' + script_tag, 1)
-              index_path.write_text(index, encoding='utf-8', newline='\n')
-
-          sw_path = Path('assets/webcore/sw.js')
-          sw = sw_path.read_text(encoding='utf-8')
-          old_cache = "const CACHE='winter-arc-v25.3';"
-          new_cache = "const CACHE='winter-arc-v25.4.1';"
-          if old_cache in sw:
-              sw = sw.replace(old_cache, new_cache, 1)
-          old_core = "'./styles.css','./app.js'"
-          if old_core in sw:
-              sw = sw.replace(old_core, "'./styles.css','./v25-overrides.css','./app.js'", 1)
-          old_fallback = "return (await caches.match(event.request))||(await caches.match('./index.html'));"
-          new_fallback = "const cached=await caches.match(event.request);if(cached)return cached;if(event.request.mode==='navigate'){const page=await caches.match('./index.html');if(page)return page;}return new Response('Offline: this file is not available in the current cache.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store'}});"
-          if old_fallback in sw:
-              sw = sw.replace(old_fallback, new_fallback, 1)
-          if "winter-arc-v25.4.1" not in sw or "v25-overrides.css" not in sw or old_fallback in sw:
-              raise SystemExit('SAFETY STOP: service-worker baseline or fallback did not match; no blind overwrite.')
-          sw_path.write_text(sw, encoding='utf-8', newline='\n')
-
-          workflow_path = Path('.github/workflows/build.yml')
-          wf = workflow_path.read_text(encoding='utf-8')
-          step_name = '      - name: Validate exact published web bundle\n'
-          if step_name not in wf:
+          path = Path('.github/workflows/build.yml')
+          workflow = path.read_text(encoding='utf-8').replace('\r\n', '\n')
+          marker = '      - name: Run real Chromium smoke and data-persistence test\n'
+          if marker not in workflow:
+              job = workflow.find('  deploy-pages:')
+              if job < 0:
+                  raise SystemExit('Could not find deploy-pages job in the active workflow.')
               anchor = '      - name: Checkout repository\n        uses: actions/checkout@v4\n\n      - name: Configure GitHub Pages\n'
-              if wf.count(anchor) != 1:
-                  raise SystemExit('SAFETY STOP: expected one Pages workflow insertion point.')
-              validation = "\n".join([
-                  "      - name: Checkout repository",
-                  "        uses: actions/checkout@v4",
+              pos = workflow.find(anchor, job)
+              if pos < 0:
+                  raise SystemExit('Could not find the unique deploy-pages insertion point.')
+              injected = "\n".join([
+                  "      - name: Set up Python and Node",
+                  "        uses: actions/setup-python@v5",
+                  "        with:",
+                  "          python-version: '3.12'",
+                  "      - uses: actions/setup-node@v4",
+                  "        with:",
+                  "          node-version: '22'",
                   "",
-                  "      - name: Validate exact published web bundle",
+                  "      - name: Prepare canonical and validated web bundle",
+                  "        run: python3 scripts/prepare_web_release.py",
+                  "",
+                  "      - name: Install Chromium browser test runner",
                   "        shell: bash",
                   "        run: |",
                   "          set -euo pipefail",
-                  "          for asset in index.html app.js styles.css v25-overrides.css cloud-config.js sw.js manifest.json icon-192.png icon-512.png creator-profile.jpg creator-photo-1.jpg creator-photo-2.jpg creator-photo-3.jpg; do",
-                  "            test -s \"assets/webcore/$asset\" || { echo \"Missing web asset: $asset\"; exit 1; }",
+                  "          mkdir -p /tmp/tracker-playwright",
+                  "          cd /tmp/tracker-playwright",
+                  "          npm init -y >/dev/null",
+                  "          npm install --no-audit --no-fund playwright",
+                  "          npx playwright install --with-deps chromium",
+                  "",
+                  "      - name: Run real Chromium smoke and data-persistence test",
+                  "        shell: bash",
+                  "        env:",
+                  "          PLAYWRIGHT_PACKAGE: /tmp/tracker-playwright/node_modules/playwright",
+                  "        run: |",
+                  "          set -euo pipefail",
+                  "          python3 -m http.server 4173 --directory assets/webcore >/tmp/tracker-http.log 2>&1 &",
+                  "          server_pid=$!",
+                  "          trap 'kill \"$server_pid\" 2>/dev/null || true' EXIT",
+                  "          for attempt in $(seq 1 30); do",
+                  "            if curl --fail --silent http://127.0.0.1:4173/ >/dev/null; then break; fi",
+                  "            sleep 1",
                   "          done",
-                  "          node --check assets/webcore/app.js",
-                  "          node --check assets/webcore/sw.js",
-                  "          grep -q 'window.__WINTER_ARC_BOOTED = true;' assets/webcore/app.js",
-                  "          grep -q 'src=\"app.js\"' assets/webcore/index.html",
-                  "          grep -q 'href=\"v25-overrides.css\"' assets/webcore/index.html",
-                  "          grep -q \"winter-arc-v25.4.1\" assets/webcore/sw.js",
-                  "          grep -q \"'./v25-overrides.css'\" assets/webcore/sw.js",
+                  "          curl --fail --silent http://127.0.0.1:4173/ >/dev/null",
+                  "          node qa/browser-smoke.cjs",
                   "",
                   "      - name: Configure GitHub Pages",
-                  ""
-              ])
-              wf = wf.replace(anchor, validation, 1)
-              workflow_path.write_text(wf, encoding='utf-8', newline='\n')
-
-          print('Updated deployed app, diagnostics, service worker, and Pages validation.')
+              ]) + "\n"
+              workflow = workflow[:pos] + workflow[pos:].replace(anchor, '      - name: Checkout repository\n        uses: actions/checkout@v4\n\n' + injected, 1)
+              path.write_text(workflow, encoding='utf-8', newline='\n')
           PY
 
-          node --check assets/webcore/app.js
-          node --check assets/webcore/sw.js
-          for asset in index.html app.js styles.css v25-overrides.css cloud-config.js sw.js manifest.json icon-192.png icon-512.png creator-profile.jpg creator-photo-1.jpg creator-photo-2.jpg creator-photo-3.jpg; do
-            test -s "assets/webcore/$asset"
-          done
-          grep -q 'window.__WINTER_ARC_BOOTED = true;' assets/webcore/app.js
-
-      - name: Commit guarded repair to main
+      - name: Commit verified V26.1 repair to main
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add assets/webcore/app.js assets/webcore/index.html assets/webcore/sw.js .github/workflows/build.yml
+          git add app.js sw.js assets/webcore scripts/prepare_web_release.py qa/browser-smoke.cjs .github/workflows/build.yml
           if git diff --cached --quiet; then
-            echo 'Repair already applied.'
+            echo 'No source changes required; validated files already match.'
           else
-            git commit -m 'Fix Tracker blank page and validate deployed web bundle'
+            git commit -m 'Fix Tracker startup and add real browser release checks'
             git push origin HEAD:main
           fi
 
-      - name: Trigger normal Pages deployment
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          gh workflow run build.yml --ref main
-          echo 'Triggered Winter Arc Build. Check its deploy-pages job in Actions.'
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload the exact browser-tested website
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: assets/webcore
+
+      - name: Deploy verified Tracker website
+        id: deployment
+        uses: actions/deploy-pages@v4

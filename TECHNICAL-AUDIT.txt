@@ -1,0 +1,11 @@
+CONFIRMED ISSUES FOUND IN THE CURRENT TRACKER REPOSITORY
+
+1. Root app.js references cloudSync inside the V19 block but has no outer-scope declaration. The later V24 code assigns cloudSync in strict mode, which is also invalid without a declaration. This matches the screenshot ReferenceError.
+2. Root app.js and assets/webcore/app.js differ: webcore is missing the final outer IIFE closure and fails Node syntax parsing with Unexpected end of input.
+3. The root index diagnostic waits for window.__WINTER_ARC_BOOTED, but current root app.js never sets that marker after rendering.
+4. The active .github/workflows/build.yml publishes assets/webcore, while GitHub Pages also runs a branch/Jekyll deployment. These paths had different index/app/service worker sources.
+5. Root and webcore service workers have different cache versions; webcore used V25.3 while root was V25.4.1.
+6. Existing build jobs reported success without executing the app in a browser. The new repair adds Chromium onboarding, habit completion, reload persistence, and navigation checks.
+7. The previous phase1-repair.yml was in the repository root, not .github/workflows, so GitHub did not register it as an Actions workflow.
+
+No claim that the live site is fixed is made until the new workflow is correctly uploaded, run, and the exact Pages deployment succeeds.
