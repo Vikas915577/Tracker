@@ -1,0 +1,10 @@
+--- a/assets/webcore/app.js
++++ b/assets/webcore/app.js
+@@ -3377,4 +3377,7 @@
+   v25RecordOpen();
+   renderV20();
+ 
+ })();
++window.__WINTER_ARC_BOOTED = true;
++
++})();
