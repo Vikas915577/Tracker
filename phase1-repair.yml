@@ -1,0 +1,169 @@
+name: Tracker Phase 1 Startup Repair
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: tracker-phase1-startup-repair
+  cancel-in-progress: false
+
+jobs:
+  repair-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Apply guarded startup repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root_path = Path('app.js')
+          web_path = Path('assets/webcore/app.js')
+          root = root_path.read_text(encoding='utf-8')
+          web = web_path.read_text(encoding='utf-8')
+          marker = 'window.__WINTER_ARC_BOOTED = true;'
+
+          if marker in web and web.rstrip().endswith('})();'):
+              print('App repair already present.')
+          elif root.startswith(web) and root[len(web):] == '\n})();\n':
+              web_path.write_text(web + marker + '\n\n})();\n', encoding='utf-8', newline='\n')
+              print('Restored the verified missing outer IIFE closure.')
+          else:
+              raise SystemExit('SAFETY STOP: app.js differs beyond the verified missing outer closure. Nothing overwritten.')
+
+          diagnostic = r"""<script>
+          (function () {
+            'use strict';
+            function showBootError(message) {
+              if (window.__WINTER_ARC_BOOTED === true) return;
+              var mount = document.getElementById('app');
+              if (!mount) return;
+              mount.innerHTML = '<main style="max-width:520px;margin:12vh auto;padding:24px;font:14px/1.5 system-ui,sans-serif;color:#222">' +
+                '<div style="font-size:38px">⚠️</div><h1 style="font-size:22px;margin:10px 0">Winter Arc could not start</h1>' +
+                '<p>The tracker script failed to start. Your saved progress has not been intentionally reset.</p>' +
+                '<pre id="winter-arc-boot-error" style="white-space:pre-wrap;overflow-wrap:anywhere;background:#f1f3f1;padding:12px;border-radius:10px;color:#7b2828;font-size:12px"></pre>' +
+                '<button id="winter-arc-reload" style="margin-top:14px;min-height:46px;padding:10px 16px;border:0;border-radius:12px;background:#318b4a;color:white;font-weight:800">Reload website</button>' +
+                '<p style="font-size:12px;color:#68736a;margin-top:14px">Do not clear Chrome site storage or cookies; they may contain your saved progress.</p></main>';
+              var detail = document.getElementById('winter-arc-boot-error');
+              if (detail) detail.textContent = message || 'The app did not finish rendering.';
+              var reload = document.getElementById('winter-arc-reload');
+              if (reload) reload.addEventListener('click', function () { location.reload(); });
+            }
+            window.addEventListener('error', function (event) {
+              if (window.__WINTER_ARC_BOOTED === true) return;
+              var file = String(event.filename || '');
+              var message = String(event.message || '');
+              if (/app\.js/i.test(file) || /SyntaxError|Unexpected end of input/i.test(message)) {
+                setTimeout(function () { showBootError(message || 'The tracker JavaScript failed to execute.'); }, 50);
+              }
+            }, true);
+            window.addEventListener('load', function () {
+              setTimeout(function () {
+                if (window.__WINTER_ARC_BOOTED !== true) showBootError('The tracker did not finish starting within 12 seconds. Check the deployed bundle and service-worker cache.');
+              }, 12000);
+            });
+          })();
+          </script>
+          """
+          index_path = Path('assets/webcore/index.html')
+          index = index_path.read_text(encoding='utf-8')
+          script_tag = '<script src="app.js"></script>'
+          if 'winter-arc-boot-error' not in index:
+              if index.count(script_tag) != 1:
+                  raise SystemExit('SAFETY STOP: expected one app.js script tag in deployed index.html.')
+              index = index.replace(script_tag, diagnostic + '\n' + script_tag, 1)
+              index_path.write_text(index, encoding='utf-8', newline='\n')
+
+          sw_path = Path('assets/webcore/sw.js')
+          sw = sw_path.read_text(encoding='utf-8')
+          old_cache = "const CACHE='winter-arc-v25.3';"
+          new_cache = "const CACHE='winter-arc-v25.4.1';"
+          if old_cache in sw:
+              sw = sw.replace(old_cache, new_cache, 1)
+          old_core = "'./styles.css','./app.js'"
+          if old_core in sw:
+              sw = sw.replace(old_core, "'./styles.css','./v25-overrides.css','./app.js'", 1)
+          old_fallback = "return (await caches.match(event.request))||(await caches.match('./index.html'));"
+          new_fallback = "const cached=await caches.match(event.request);if(cached)return cached;if(event.request.mode==='navigate'){const page=await caches.match('./index.html');if(page)return page;}return new Response('Offline: this file is not available in the current cache.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store'}});"
+          if old_fallback in sw:
+              sw = sw.replace(old_fallback, new_fallback, 1)
+          if "winter-arc-v25.4.1" not in sw or "v25-overrides.css" not in sw or old_fallback in sw:
+              raise SystemExit('SAFETY STOP: service-worker baseline or fallback did not match; no blind overwrite.')
+          sw_path.write_text(sw, encoding='utf-8', newline='\n')
+
+          workflow_path = Path('.github/workflows/build.yml')
+          wf = workflow_path.read_text(encoding='utf-8')
+          step_name = '      - name: Validate exact published web bundle\n'
+          if step_name not in wf:
+              anchor = '      - name: Checkout repository\n        uses: actions/checkout@v4\n\n      - name: Configure GitHub Pages\n'
+              if wf.count(anchor) != 1:
+                  raise SystemExit('SAFETY STOP: expected one Pages workflow insertion point.')
+              validation = "\n".join([
+                  "      - name: Checkout repository",
+                  "        uses: actions/checkout@v4",
+                  "",
+                  "      - name: Validate exact published web bundle",
+                  "        shell: bash",
+                  "        run: |",
+                  "          set -euo pipefail",
+                  "          for asset in index.html app.js styles.css v25-overrides.css cloud-config.js sw.js manifest.json icon-192.png icon-512.png creator-profile.jpg creator-photo-1.jpg creator-photo-2.jpg creator-photo-3.jpg; do",
+                  "            test -s \"assets/webcore/$asset\" || { echo \"Missing web asset: $asset\"; exit 1; }",
+                  "          done",
+                  "          node --check assets/webcore/app.js",
+                  "          node --check assets/webcore/sw.js",
+                  "          grep -q 'window.__WINTER_ARC_BOOTED = true;' assets/webcore/app.js",
+                  "          grep -q 'src=\"app.js\"' assets/webcore/index.html",
+                  "          grep -q 'href=\"v25-overrides.css\"' assets/webcore/index.html",
+                  "          grep -q \"winter-arc-v25.4.1\" assets/webcore/sw.js",
+                  "          grep -q \"'./v25-overrides.css'\" assets/webcore/sw.js",
+                  "",
+                  "      - name: Configure GitHub Pages",
+                  ""
+              ])
+              wf = wf.replace(anchor, validation, 1)
+              workflow_path.write_text(wf, encoding='utf-8', newline='\n')
+
+          print('Updated deployed app, diagnostics, service worker, and Pages validation.')
+          PY
+
+          node --check assets/webcore/app.js
+          node --check assets/webcore/sw.js
+          for asset in index.html app.js styles.css v25-overrides.css cloud-config.js sw.js manifest.json icon-192.png icon-512.png creator-profile.jpg creator-photo-1.jpg creator-photo-2.jpg creator-photo-3.jpg; do
+            test -s "assets/webcore/$asset"
+          done
+          grep -q 'window.__WINTER_ARC_BOOTED = true;' assets/webcore/app.js
+
+      - name: Commit guarded repair to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/webcore/app.js assets/webcore/index.html assets/webcore/sw.js .github/workflows/build.yml
+          if git diff --cached --quiet; then
+            echo 'Repair already applied.'
+          else
+            git commit -m 'Fix Tracker blank page and validate deployed web bundle'
+            git push origin HEAD:main
+          fi
+
+      - name: Trigger normal Pages deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run build.yml --ref main
+          echo 'Triggered Winter Arc Build. Check its deploy-pages job in Actions.'
